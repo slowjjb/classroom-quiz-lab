@@ -1,0 +1,26 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "v0": {
+      "presence": {
+        ".read": "auth != null && auth.uid === 'TEACHER_UID_HERE' && auth.token.firebase.sign_in_provider === 'google.com'",
+        "$uid": {
+          "$session": {
+            ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous'",
+            ".validate": "newData.hasChildren(['name', 'connectedAt'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+            },
+            "connectedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    }
+  }
+}
