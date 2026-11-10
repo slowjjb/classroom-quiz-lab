@@ -116,6 +116,77 @@
           }
         }
       }
+    },
+    "v3": {
+      "versionCheck": {
+        ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+        ".write": false
+      },
+      "privateRuns": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".validate": "newData.hasChildren(['setId','setTitle','questions','createdAt'])",
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "public": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && root.child('v2/rooms/' + $code + '/members/' + auth.uid + '/profile').exists())",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".validate": "newData.hasChildren(['state','index','total']) && (newData.child('state').val() === 'ready' || newData.child('state').val() === 'question' || newData.child('state').val() === 'paused' || newData.child('state').val() === 'reveal' || newData.child('state').val() === 'finished') && newData.child('index').isNumber() && newData.child('total').isNumber()",
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "answers": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$round": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && auth.uid === $uid)",
+              ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists() && newData.exists() && root.child('v2/rooms/' + $code + '/members/' + $uid + '/profile').exists() && root.child('v2/rooms/' + $code + '/meta/state').val() !== 'ended' && root.child('v3/public/' + $code + '/state').val() === 'question' && root.child('v3/public/' + $code + '/roundId').val() === $round && now >= root.child('v3/public/' + $code + '/startedAt').val() && now <= root.child('v3/public/' + $code + '/deadline').val()",
+              ".validate": "newData.hasChildren(['value','at']) && newData.child('value').isString() && newData.child('value').val().length >= 1 && newData.child('value').val().length <= 200 && newData.child('at').isNumber() && newData.child('at').val() <= now + 1000 && newData.child('at').val() >= now - 1000",
+              "value": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+              },
+              "at": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        }
+      },
+      "grades": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$round": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && auth.uid === $uid && root.child('v3/public/' + $code + '/state').val() !== 'question' && root.child('v3/public/' + $code + '/state').val() !== 'paused')",
+              ".validate": "newData.hasChildren(['correct','points','responseMs','answer','questionNumber']) && newData.child('correct').isBoolean() && newData.child('points').isNumber() && newData.child('responseMs').isNumber()",
+              "$other": {
+                ".validate": true
+              }
+            }
+          }
+        }
+      },
+      "scores": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && root.child('v2/rooms/' + $code + '/members/' + auth.uid + '/profile').exists())",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$other": {
+            ".validate": true
+          }
+        }
+      }
     }
   }
 }
