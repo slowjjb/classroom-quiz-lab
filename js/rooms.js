@@ -22,7 +22,7 @@ function downloadRules() {
   if (!teacher) return;
   const b = new Blob([makeRulesV2(teacher.uid)], {type:'application/json;charset=utf-8'});
   const url = URL.createObjectURL(b); const a = document.createElement('a');
-  a.href = url; a.download = 'database.rules.v2.json'; document.body.append(a); a.click(); a.remove();
+  a.href = url; a.download = 'database.rules.v2-1.json'; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function stopListeners() {
@@ -66,14 +66,35 @@ function makeQR(link) {
     output.append(image);
   } catch (error) {output.textContent='QR 생성에 실패했습니다. 참여 링크를 복사해 주세요.';}
 }
+async function releaseOfflineName(uid,name){
+  if(!authorized||!selectedCode||!currentRoom||currentRoom.meta?.state==='ended')return;
+  const member=currentRoom.members?.[uid];
+  if(Object.keys(member?.connections||{}).length>0){info('room-live-message','접속 중인 참가자의 이름은 해제할 수 없습니다.','error');return;}
+  const claimOwner=currentRoom.nameClaims?.[name];
+  if(claimOwner&&claimOwner!==uid){info('room-live-message','이름 소유자가 변경됐습니다. 다시 확인해 주세요.','error');return;}
+  if(!confirm(`오프라인 학생 '${name}'의 이름 예약을 해제할까요? 해당 기기에서 다시 참여하려면 재입장해야 합니다.`))return;
+  try{
+    const paths={[`members/${uid}`]:null};
+    if(claimOwner===uid)paths[`nameClaims/${name}`]=null;
+    await update(ref(db,`v2/rooms/${selectedCode}`),paths);
+    info('room-live-message',`'${name}'의 오프라인 예약을 해제했습니다.`,'success');
+  }catch(err){info('room-live-message',`이름 해제 실패: ${formatError(err)}`,'error');}
+}
 function renderMembers(record) {
   const members=record?.members||{};
-  const online=Object.entries(members).map(([uid,value])=>({uid,name:value?.profile?.name||'이름 없음',at:value?.profile?.joinedAt||0, sessions:Object.keys(value?.connections||{}).length})).filter(v=>v.sessions>0).sort((a,b)=>a.at-b.at);
+  const all=Object.entries(members).filter(([,v])=>v?.profile?.name).map(([uid,value])=>({
+    uid,name:value.profile.name,at:value.profile.joinedAt||0,
+    sessions:Object.keys(value.connections||{}).length
+  })).sort((a,b)=>a.at-b.at);
+  const online=all.filter(x=>x.sessions>0);
+  const activeClaims=record?.nameClaims||{};
+  const orphanClaims=Object.entries(activeClaims).filter(([name,uid])=>members[uid]?.profile?.name!==name).map(([name,uid])=>({uid,name,sessions:0,at:0,orphan:true}));
+  const offline=[...all.filter(x=>x.sessions===0),...orphanClaims];
   const target=Number(record?.meta?.target)||25;
   $('room-member-count').textContent=`${online.length} / ${target}명`;
-  info('room-live-message', `현재 접속 ${online.length}명 · 총 ${online.reduce((n,v)=>n+v.sessions,0)}개 세션 · ${stateText(record?.meta?.state)}`,'success');
+  info('room-live-message', `현재 접속 ${online.length}명 · 총 ${online.reduce((n,v)=>n+v.sessions,0)}개 세션 · 오프라인 이름 ${offline.length}개 · ${stateText(record?.meta?.state)}`,'success');
   const list=$('room-members');list.replaceChildren();
-  if(!online.length) {const div=document.createElement('div');div.className='empty-state';div.textContent='참가한 가상 학생이 없습니다.';list.append(div);return;}
+  if(!online.length){const div=document.createElement('div');div.className='empty-state';div.textContent='현재 접속 중인 학생이 없습니다.';list.append(div);}
   online.forEach((item,i)=>{
     const el=document.createElement('div');el.className='student-item';
     const num=document.createElement('span');num.className='student-avatar';num.textContent=String(i+1);
@@ -81,7 +102,20 @@ function renderMembers(record) {
     const more=document.createElement('small');more.textContent=item.sessions>1?`(${item.sessions}개 창)`:'';
     el.append(num,name,more);list.append(el);
   });
+  // 이전 기기에서 나간 학생은 재접속을 위해 이름을 유지합니다. 교사가 오프라인인 경우에만 해제할 수 있습니다.
+  if(offline.length){
+    const title=document.createElement('div');title.className='helper';title.style.gridColumn='1/-1';
+    title.textContent=`오프라인 · 이름 예약 ${offline.length}개 (기기 변경 시 교사가 해제)`;list.append(title);
+    offline.forEach(item=>{
+      const el=document.createElement('div');el.className='student-item';
+      const text=document.createElement('span');text.textContent=`${item.name} · 오프라인`;
+      const btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-small';btn.textContent='이름 해제';
+      btn.disabled=record?.meta?.state==='ended';btn.addEventListener('click',()=>releaseOfflineName(item.uid,item.name));
+      el.append(text,btn);list.append(el);
+    });
+  }
 }
+
 function renderRoom(record) {
   currentRoom=record;
   const meta=record?.meta;
@@ -147,13 +181,27 @@ async function deleteRoom() {
     info('room-create-message','종료한 게임 방 기록을 삭제했습니다.','success');
   }catch(error){info('room-live-message',formatError(error),'error');}
 }
-function startListeners() {
+async function startListeners() {
   if(!teacher)return;
-  if(unsubscribeHost)unsubscribeHost();
+  if(unsubscribeHost){unsubscribeHost();unsubscribeHost=null;}
+  const checkingUid=teacher.uid;
   $('room-retry').disabled=true;
+  authBadge('v2.1 권한 확인 중');
+  try {
+    // 기존 v2 규칙만 있으면 호스트 목록은 읽히지만 이름 선점은 실패합니다.
+    // v2.1 신규 경로를 확인해 새 규칙 게시 여부를 명확히 판별합니다.
+    await get(ref(db,'v2/versionCheck'));
+  } catch(err) {
+    if(teacher?.uid!==checkingUid)return;
+    setAuthorized(false);authBadge('v2.1 규칙 필요','error');
+    $('room-rules-guide').hidden=false;$('room-retry').disabled=false;
+    info('room-auth-message','기존 v2 규칙이 적용된 상태입니다. v2.1 전체 규칙을 Firebase와 GitHub에 게시해 주세요.','error');
+    return;
+  }
+  if(teacher?.uid!==checkingUid)return;
   unsubscribeHost=onValue(ref(db,`v2/hostRooms/${teacher.uid}`),snap=>{
     setAuthorized(true);authBadge('교사 권한 확인','success');
-    info('room-auth-message','v2 게임 방 읽기·쓰기 권한을 확인했습니다.','success');
+    info('room-auth-message','v2.1 게임 방 읽기·쓰기 권한을 확인했습니다.','success');
     $('room-rules-guide').hidden=true;$('room-retry').disabled=false;
     hostRooms=snap.val()||{};renderSavedRooms();
     const last=localStorage.getItem(LAST_ROOM_KEY);
@@ -186,7 +234,7 @@ else {
   $('room-copy-rules').addEventListener('click',async()=>{
     if(!teacher)return;
     const ok=await copyText(makeRulesV2(teacher.uid));
-    info('room-rules-status',ok?'전체 v0+v1+v2 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
+    info('room-rules-status',ok?'전체 v0+v1+v2.1 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
   });
   $('room-download-rules').addEventListener('click',downloadRules);
   $('room-create').addEventListener('click',createRoom);

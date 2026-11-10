@@ -1,6 +1,7 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
+import { normalizeStudentName as normalizeName } from './names.js';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
-import { ref, get, set, remove, onValue, onDisconnect, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import { ref, get, set, remove, onValue, onDisconnect, push, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 
 const $ = id => document.getElementById(id);
 const NAME_KEY='quizlab-v2-display-name', SESSION_KEY='quizlab-v2-active-room';
@@ -11,7 +12,7 @@ const fromUrl=params.get('code')||'';if(/^\d{6}$/.test(fromUrl))$('join-code').v
 function feedback(value,kind=''){$('join-feedback').textContent=value;$('join-feedback').dataset.kind=kind;}
 function onlineStatus(value,ok=false){$('join-connection').textContent=value;$('join-dot').classList.toggle('connected',ok);}
 function roomStatus(value){$('student-room-state').textContent=({lobby:'입장 가능',locked:'입장 마감',ended:'방 종료'})[value]||'상태 확인 중';}
-function normalizeName(value){const text=String(value||'').trim();if(!text||text.length>20||/[\u0000-\u001f\u007f]/.test(text))throw new Error('가상 이름을 1~20자로 입력해 주세요.');return text;}
+
 function setActive(flag){active=flag;$('join-room-btn').hidden=flag;$('leave-room-btn').hidden=!flag;$('join-code').disabled=flag;$('join-name').disabled=flag;$('student-room').hidden=!flag;}
 async function stopPresence() {
   if(unsubConnection){unsubConnection();unsubConnection=null;}
@@ -24,7 +25,7 @@ async function leaveRoom(showMessage=true){
   setActive(false);ended=false;
   await stopPresence();activeCode='';activeUser=null;
   onlineStatus('방에서 나왔습니다.');
-  if(showMessage)feedback('대기실에서 나왔습니다. 다시 참여할 수 있어요.');
+  if(showMessage)feedback('대기실에서 나왔습니다. 이름은 재접속을 위해 보존됩니다.');
 }
 function renderRoom(data){
   if(!active)return;
@@ -59,14 +60,28 @@ function watchConnection(uid,name){
       onlineStatus('입장 연결 실패');feedback(`접속 기록 저장 실패: ${formatError(err)}`,'error');}
   },err=>feedback(formatError(err),'error'));
 }
+async function reserveName(code,name,uid){
+  // runTransaction은 서버에서 충돌을 해결합니다. 동시에 같은 이름을 신청해도 한 UID만 성공합니다.
+  const claimRef=ref(db,`v2/rooms/${code}/nameClaims/${name}`);
+  const result=await runTransaction(claimRef,current=>{
+    if(current===null||current===uid)return uid;
+    return undefined;
+  },{applyLocally:false});
+  if(!result.committed)throw new Error(`'${name}'은(는) 이미 다른 학생이 사용 중입니다. 다른 이름을 입력해 주세요.`);
+  return claimRef;
+}
+async function releaseOrphanClaim(claimRef,profileRef){
+  // 이름 선점은 성공했지만 프로필 저장은 실패한 경우에만 고아 선점을 정리합니다.
+  try{if(!(await get(profileRef)).exists())await remove(claimRef);}catch(_){/* 후속 재접속 시 복구 또는 교사가 정리 가능 */}
+}
 async function joinRoom(automatic=false){
   if(!isConfigured||joining||active)return;
   joining=true;$('join-room-btn').disabled=true;
   const code=$('join-code').value.trim(),inputName=$('join-name').value.trim();
   try{
     if(!/^\d{6}$/.test(code))throw new Error('참여 코드를 숫자 6자리로 입력해 주세요.');
-    const name=normalizeName(inputName);
-    feedback('방을 확인하고 있습니다…');
+    const requestedName=normalizeName(inputName);
+    feedback('방과 이름 중복을 확인하고 있습니다…');
     await setPersistence(auth,browserLocalPersistence);
     if(auth.currentUser&&!auth.currentUser.isAnonymous)throw new Error('교사 계정이 로그인되어 있습니다. 학생용 시크릿 창을 사용해 주세요.');
     const user=auth.currentUser||(await signInAnonymously(auth)).user;
@@ -77,8 +92,19 @@ async function joinRoom(automatic=false){
     const profileRef=ref(db,`v2/rooms/${code}/members/${user.uid}/profile`);
     const profileSnap=await get(profileRef);
     if(meta.state!=='lobby'&&!profileSnap.exists())throw new Error('입장이 마감된 방입니다.');
-    const displayName=meta.state==='lobby'?name:(profileSnap.val()?.name||name);
-    if(meta.state==='lobby')await set(profileRef,{name:displayName,joinedAt:profileSnap.exists()?(profileSnap.val().joinedAt||Date.now()):Date.now()});
+    // 이미 가입한 익명 UID는 예전 이름으로만 복귀합니다. 닉네임 변경으로 선점을 우회할 수 없습니다.
+    const displayName=profileSnap.exists()?normalizeName(profileSnap.val().name):requestedName;
+    let claimRef=null;
+    try{
+      claimRef=await reserveName(code,displayName,user.uid);
+      if(!profileSnap.exists()){
+        if(meta.state!=='lobby')throw new Error('입장이 마감된 방입니다.');
+        await set(profileRef,{name:displayName,joinedAt:Date.now()});
+      }
+    }catch(error){
+      if(claimRef)await releaseOrphanClaim(claimRef,profileRef);
+      throw error;
+    }
     localStorage.setItem(NAME_KEY,displayName);$('join-name').value=displayName;
     sessionStorage.setItem(SESSION_KEY,JSON.stringify({code,name:displayName}));
     activeCode=code;activeUser=user;setActive(true);ended=false;

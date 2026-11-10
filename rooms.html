@@ -2,22 +2,22 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퀴즈 실험실 v2</title>
+  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퀴즈 실험실 v2.1</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script type="module" src="js/rooms.js"></script>
 </head>
 <body>
-  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">실시간 게임 방 · v2</span></header>
+  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">실시간 게임 방 · v2.1</span></header>
   <main class="page-content rooms-page">
-    <div class="page-heading"><span class="eyebrow">LIVE LOBBY / V2</span><h1>게임 방 만들기</h1><p>가상 학생들이 같은 대기실에 실시간으로 참여하는지 확인합니다. 문제 출제·점수 계산은 v3에서 추가합니다.</p></div>
+    <div class="page-heading"><span class="eyebrow">LIVE LOBBY / V2.1</span><h1>게임 방 만들기</h1><p>가상 학생들이 같은 대기실에 실시간으로 참여하는지 확인합니다. 문제 출제·점수 계산은 v3에서 추가합니다.</p></div>
     <section class="panel">
       <div class="panel-header"><h2>교사 인증</h2><span id="room-auth-badge" class="pill pill-neutral">확인 중</span></div>
       <p id="room-auth-message" class="helper" aria-live="polite">Google 로그인 상태를 확인하고 있습니다.</p>
       <div class="button-row"><button id="room-login" class="btn btn-primary" disabled>교사 Google 로그인</button><button id="room-retry" class="btn btn-outline" hidden>권한 다시 확인</button><button id="room-logout" class="btn btn-quiet" hidden>로그아웃</button></div>
       <div id="room-rules-guide" class="setup-guide" hidden>
-        <strong>v2 통합 보안 규칙을 적용해야 합니다.</strong>
-        <p>로그인한 교사 UID를 이용해 <strong>v0 + v1 + v2</strong> 전체 규칙을 생성합니다. Firebase Realtime Database의 규칙에 게시하고 GitHub의 `database.rules.json`에도 같은 내용을 저장하세요.</p>
+        <strong>v2.1 통합 보안 규칙을 적용해야 합니다.</strong>
+        <p>로그인한 교사 UID를 이용해 <strong>v0 + v1 + v2.1</strong> 전체 규칙을 생성합니다. Firebase Realtime Database의 규칙에 게시하고 GitHub의 `database.rules.json`에도 같은 내용을 저장하세요.</p>
         <div class="button-row"><button class="btn btn-outline" id="room-copy-rules">전체 규칙 복사</button><button class="btn btn-outline" id="room-download-rules">규칙 JSON 다운로드</button></div>
         <p id="room-rules-status" class="helper" aria-live="polite"></p>
       </div>
@@ -57,8 +57,8 @@
         <p class="helper">입장 마감 후 기존 학생은 재접속 가능하며, 새로운 학생은 참여할 수 없습니다. 방 종료는 v2 대기실 종료이며 퀴즈를 출제하지 않습니다.</p>
       </section>
     </div>
-    <div class="tip">테스트에서는 가상 학생 이름만 사용하세요. v2의 명단과 참여 코드는 실제 교실 배포 전 보안·동시접속 검증이 필요합니다.</div>
+    <div class="tip">테스트에서는 가상 학생 이름만 사용하세요. v2.1의 명단과 참여 코드는 실제 교실 배포 전 보안·동시접속 검증이 필요합니다.</div>
     <a class="back-link" href="teacher.html">← 기존 교사 접속 현황</a>
-  </main><footer>CLASSROOM QUIZ LAB · v2</footer></div>
+  </main><footer>CLASSROOM QUIZ LAB · v2.1</footer></div>
 </body>
 </html>
