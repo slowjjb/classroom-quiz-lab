@@ -21,6 +21,38 @@
           }
         }
       }
+    },
+    "v1": {
+      "questionSets": {
+        ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+        ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+        "$setId": {
+          ".validate": "newData.hasChildren(['title', 'createdAt', 'updatedAt', 'questions']) && newData.child('title').isString() && newData.child('title').val().length >= 1 && newData.child('title').val().length <= 80 && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber() && newData.child('questions').hasChildren()",
+          "title": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "sourceName": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "questions": {
+            "$qid": {
+              ".validate": "newData.hasChildren(['number','prompt','type','timeLimit','options','correctIndex']) && newData.child('number').isNumber() && newData.child('prompt').isString() && newData.child('timeLimit').isNumber() && newData.child('correctIndex').isNumber() && (newData.child('type').val() === 'typing' || newData.child('type').val() === 'multiple_choice')",
+              "$other": {
+                ".validate": true
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }
