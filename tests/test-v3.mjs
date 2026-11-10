@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { gradeAnswer, normalizedAnswer, correctDisplay, totalScores, ranking, escapeCsv } from '../js/classic-core.js';
+import { makeRulesV3 } from '../js/rules-v3.js';
+const q1={type:'multiple_choice',correctIndex:1,options:['서울','부산','대전','제주'],timeLimit:30};
+assert.equal(gradeAnswer(q1,'1',1100,1000,31000).correct,true);
+assert.equal(gradeAnswer(q1,'2',1100,1000,31000).points,0);
+assert.equal(gradeAnswer(q1,'1',32000,1000,31000).points,0);
+assert.equal(gradeAnswer(q1,'1',1000,1000,31000).points,1000);
+assert.equal(gradeAnswer(q1,'1',31000,1000,31000).points,500);
+const q2={type:'typing',correctIndex:0,options:['세종대왕','  세종 대왕  ',''],timeLimit:10};
+assert.equal(gradeAnswer(q2,'  세종대왕 ',1001,1000,11000).correct,true);
+assert.equal(gradeAnswer(q2,'세종   대왕',1001,1000,11000).correct,true);
+assert.equal(gradeAnswer(q2,'이순신',1001,1000,11000).correct,false);
+assert.equal(normalizedAnswer('ＡＢＣ  DEF'),'abc def');
+assert.match(correctDisplay(q1),/^1번/);
+assert.equal(escapeCsv('a,"b"'),'"a,""b"""');
+assert.equal(escapeCsv('=1+1'),"\"'=1+1\"");
+const score=totalScores({q1:{u1:{points:900,correct:true,responseMs:1000},u2:{points:0,correct:false,responseMs:2000}},q2:{u1:{points:0,correct:false,responseMs:1500}}},{u1:{profile:{name:'테스트1'}},u2:{profile:{name:'테스트2'}}});
+assert.equal(score.u1.score,900);assert.equal(score.u1.answered,2);assert.equal(score.u1.correct,1);
+assert.equal(ranking(score)[0].uid,'u1');
+const rules=JSON.parse(makeRulesV3('myTeacherUid123456'));
+assert.ok(rules.rules.v0&&rules.rules.v1&&rules.rules.v2&&rules.rules.v3);
+assert.equal(rules.rules['.read'],false);
+assert.equal(rules.rules.v3.privateRuns.$code['.read'].includes('google.com'),true);
+assert.equal(rules.rules.v3.public.$code['.validate'].includes("['state','index','total']"),true);
+assert.match(rules.rules.v3.answers.$code.$round.$uid['.write'],/!data.exists\(\)/);
+assert.match(rules.rules.v3.answers.$code.$round.$uid['.write'],/now <=/);
+assert.match(rules.rules.v3.grades.$code.$round.$uid['.read'],/state/);
+const dir=new URL('../',import.meta.url);
+for(const f of ['rooms.html','join.html']){const html=fs.readFileSync(new URL(f,dir),'utf8');assert.match(html,/v3/);}
+for(const f of ['classic-core.js','classic-host.js','classic-student.js','rules-v3.js']){assert.ok(fs.statSync(new URL('js/'+f,dir)).size>500);}
+console.log('v3 pure calculations, rules JSON, files: PASS');

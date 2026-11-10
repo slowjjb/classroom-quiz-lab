@@ -1,0 +1,16 @@
+퀴즈 실험실 v3 설치 순서
+
+1) v3 업그레이드 ZIP 압축 해제
+2) GitHub > classroom-quiz-lab > Add file > Upload files
+3) 압축 풀린 안쪽 파일과 js 및 tests 폴더 업로드 > Commit changes
+4) https://slowjjb.github.io/classroom-quiz-lab/rooms.html 접속, Ctrl+Shift+R
+5) 교사 Google 로그인 후 클래식 방을 선택(없으면 문제 세트를 선택하여 새 클래식 방 생성)
+6) v3 규칙 필요 안내에서 'v3 전체 규칙 복사/다운로드' 선택
+7) Firebase > Realtime Database > 규칙 > 전체 교체 > 게시
+8) GitHub database.rules.json도 동일한 전체 규칙으로 교체 > Commit
+9) 교사 화면에서 '권한 다시 확인'
+10) 시크릿 창에서 가상 학생 입장 → 교사 '게임 준비 및 입장 마감' → '다음 문제 출제'
+11) 학생 답안 제출 → 교사 정답 공개 → 점수/문항별 정답률 확인
+12) 학생별 결과 CSV 저장
+
+주의: v3은 교사용 브라우저가 채점을 담당하는 시범판입니다. 실제 학생이 아닌 가상 학생으로 검증해 주세요.

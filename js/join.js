@@ -1,3 +1,4 @@
+import { startQuizView, stopQuizView } from './classic-student.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
@@ -21,6 +22,7 @@ async function stopPresence() {
 }
 async function leaveRoom(showMessage=true){
   sessionStorage.removeItem(SESSION_KEY);
+  stopQuizView();
   if(unsubRoom){unsubRoom();unsubRoom=null;}
   setActive(false);ended=false;
   await stopPresence();activeCode='';activeUser=null;
@@ -32,7 +34,7 @@ function renderRoom(data){
   const meta=data?.meta;
   if(!meta){feedback('방이 삭제되거나 존재하지 않습니다. 다시 참여해 주세요.','error');leaveRoom(false);return;}
   $('student-room-title').textContent=meta.title||'퀴즈 대기실';roomStatus(meta.state);
-  $('student-room-meta').textContent=`참여 코드 ${activeCode} · ${meta.setTitle||'문제 미선택'} · 문제 풀이는 v3에서 시작됩니다.`;
+  $('student-room-meta').textContent=`참여 코드 ${activeCode} · ${meta.setTitle||'문제 미선택'} · 게임을 시작하면 아래에 문제가 나타납니다.`;
   if(meta.state==='ended'&&!ended){
     ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopPresence();onlineStatus('방이 종료되었습니다.');
   }
@@ -108,6 +110,7 @@ async function joinRoom(automatic=false){
     localStorage.setItem(NAME_KEY,displayName);$('join-name').value=displayName;
     sessionStorage.setItem(SESSION_KEY,JSON.stringify({code,name:displayName}));
     activeCode=code;activeUser=user;setActive(true);ended=false;
+    startQuizView(code,user.uid);
     onlineStatus('실시간 서버 연결 중…');
     unsubRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),err=>{
       feedback(`대기실 조회 실패: ${formatError(err)}`,'error');
@@ -115,7 +118,7 @@ async function joinRoom(automatic=false){
     watchConnection(user.uid,displayName);
     if(!automatic) history.replaceState(null,'',`join.html?code=${code}`);
   }catch(err){feedback(formatError(err),'error');onlineStatus('입장 실패');
-    sessionStorage.removeItem(SESSION_KEY);if(unsubRoom){unsubRoom();unsubRoom=null;}setActive(false);activeCode='';activeUser=null;
+    sessionStorage.removeItem(SESSION_KEY);if(unsubRoom){unsubRoom();unsubRoom=null;}setActive(false);stopQuizView();activeCode='';activeUser=null;
   }finally{joining=false;$('join-room-btn').disabled=false;}
 }
 $('join-room-btn').addEventListener('click',()=>joinRoom(false));

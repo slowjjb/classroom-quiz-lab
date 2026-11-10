@@ -123,7 +123,7 @@ function renderRoom(record) {
   $('room-code').textContent=selectedCode;
   $('room-state').textContent=stateText(meta.state);
   $('room-state').className=`pill pill-${meta.state==='ended'?'error':meta.state==='lobby'?'success':'neutral'}`;
-  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (v2 대기실)`;
+  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'&&meta.setId?'v3 클래식':'v2 대기실'})`;
   $('room-toggle-lock').disabled = meta.state==='ended';
   $('room-toggle-lock').textContent = meta.state==='locked'?'입장 다시 허용':'입장 마감';
   $('room-end').disabled = meta.state==='ended';
@@ -134,6 +134,7 @@ function openRoom(code) {
   if (!authorized || !teacher || !/^\d{6}$/.test(code)) return;
   if (unsubscribeRoom) unsubscribeRoom();
   selectedCode=code;localStorage.setItem(LAST_ROOM_KEY,code);
+  window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code}}));
   $('room-detail').hidden=false;$('room-code').textContent=code;
   makeQR(joinLink(code));
   unsubscribeRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),error=>{
@@ -177,7 +178,7 @@ async function deleteRoom() {
   try {
     await remove(ref(db,`v2/rooms/${code}`));await remove(ref(db,`v2/hostRooms/${teacher.uid}/${code}`));
     if(unsubscribeRoom){unsubscribeRoom();unsubscribeRoom=null;}
-    selectedCode='';currentRoom=null;$('room-detail').hidden=true;localStorage.removeItem(LAST_ROOM_KEY);
+    selectedCode='';currentRoom=null;$('room-detail').hidden=true;localStorage.removeItem(LAST_ROOM_KEY);window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code:''}}));
     info('room-create-message','종료한 게임 방 기록을 삭제했습니다.','success');
   }catch(error){info('room-live-message',formatError(error),'error');}
 }
