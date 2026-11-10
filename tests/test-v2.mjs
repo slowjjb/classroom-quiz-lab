@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { makeRulesV2 } from '../js/rules-v2.js';
+const uid='testTeacherUid0123456789';
+const rules=JSON.parse(makeRulesV2(uid)).rules;
+assert.equal(rules['.read'],false);
+assert.equal(rules['.write'],false);
+assert.ok(rules.v0.presence['.read'].includes(uid));
+assert.ok(rules.v1.questionSets['.read'].includes(uid));
+assert.ok(rules.v2.rooms.$code['.read'].includes('members'));
+assert.ok(rules.v2.rooms.$code['.write'].includes(uid));
+assert.ok(rules.v2.rooms.$code.members.$uid.profile['.write'].includes('lobby'));
+assert.ok(rules.v2.rooms.$code.members.$uid.connections.$session['.write'].includes('!newData.exists()'));
+assert.ok(rules.v2.rooms.$code.meta['.read'].includes('auth != null'));
+assert.ok(rules.v2.hostRooms.$hostUid['.read'].includes(uid));
+const source=readFileSync(new URL('../js/rooms.js',import.meta.url),'utf8');
+const joined=readFileSync(new URL('../js/join.js',import.meta.url),'utf8');
+assert.match(source,/runTransaction\(/); // 중복 6자리 코드 생성 방지
+assert.match(source,/crypto\.getRandomValues/);
+assert.match(joined,/onDisconnect\(path\)\.remove\(\)/);
+assert.match(joined,/sessionStorage\.setItem/);
+assert.match(joined,/onValue\(ref\(db,'\.info\/connected'\)/);
+for(const name of ['v0','v1','v2']) assert.ok(rules[name]);
+console.log('✅ v0/v1 유지 · v2 교사/학생 권한 · 6자리 코드 충돌 방지 · 재접속 로직 정적 검사 통과');
