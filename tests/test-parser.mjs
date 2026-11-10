@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {parseCSV, makeDraftRows,validateRows,toCSV} from '../js/csv.js';
+import {makeRules} from '../js/rules.js';
+function file(path){return readFileSync(new URL(path,import.meta.url),'utf8')}
+const rows=makeDraftRows(parseCSV(file('./정상_테스트_20문항.csv')));
+const pass=validateRows(rows);
+assert.equal(rows.length,20);
+assert.deepEqual(pass.issues,[]);
+assert.equal(pass.problems.filter(q=>q.type==='typing').length,4);
+assert.equal(pass.problems.filter(q=>q.type==='multiple_choice').length,16);
+assert.equal(pass.problems[17].prompt.includes('\n'),true);
+assert.equal(pass.problems[15].options[0],'네, 정상 처리돼요');
+assert.equal(pass.problems[16].prompt.includes('"안녕하세요!"'),true);
+assert.equal(validateRows(makeDraftRows(parseCSV(toCSV(rows)))).issues.length,0);
+const broken=makeDraftRows(parseCSV(file('./오류_테스트_8문항.csv')));
+const bad=validateRows(broken);
+assert.ok(bad.issues.length>=8,bad.issues.map(x=>x.message).join('\n'));
+assert.ok(bad.issues.some(x=>x.message.includes('10열')));
+assert.ok(bad.issues.some(x=>x.message.includes('중복')));
+assert.ok(bad.issues.some(x=>x.message.includes('typing')));
+assert.throws(()=>parseCSV('1,"닫히지 않은 인용'),/닫히지/);
+const rules=JSON.parse(makeRules('TestTeacher1234567890'));
+assert.ok(rules.rules.v0.presence['.read'].includes('TestTeacher1234567890'));
+assert.ok(rules.rules.v1.questionSets['.read'].includes('TestTeacher1234567890'));
+assert.equal(rules.rules['.read'],false);
+assert.equal(rules.rules.v1.questionSets['.read'].includes('anonymous'),false);
+console.log(`✅ CSV 정상 20문항·오류 ${bad.issues.length}건·문항별 정답·CSV 왕복·안전 규칙 템플릿 검사 통과`);
