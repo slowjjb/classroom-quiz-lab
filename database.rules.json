@@ -55,6 +55,10 @@
       }
     },
     "v2": {
+      "versionCheck": {
+        ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+        ".write": false
+      },
       "hostRooms": {
         "$hostUid": {
           ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' && $hostUid === auth.uid",
@@ -79,11 +83,18 @@
               ".validate": true
             }
           },
+          "nameClaims": {
+            "$name": {
+              ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous'",
+              ".write": "auth != null && auth.uid != null && auth.token.firebase.sign_in_provider === 'anonymous' && (newData.exists() ? (newData.isString() && newData.val() === auth.uid && (data.val() === auth.uid || (!data.exists() && (root.child('v2/rooms/' + $code).child('meta/state').val() === 'lobby' || (root.child('v2/rooms/' + $code).child('members').child(auth.uid).child('profile/name').val() === $name && root.child('v2/rooms/' + $code).child('meta/state').val() === 'locked'))))) : (data.val() === auth.uid && !root.child('v2/rooms/' + $code).child('members').child(auth.uid).child('profile').exists()))",
+              ".validate": "newData.isString() && newData.val() === auth.uid && $name.length >= 1 && $name.length <= 20"
+            }
+          },
           "members": {
             "$uid": {
               "profile": {
                 ".read": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous'",
-                ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('v2/rooms/' + $code).child('meta/state').val() === 'lobby'",
+                ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && (!newData.exists() || ((root.child('v2/rooms/' + $code).child('meta/state').val() === 'lobby' || data.exists()) && root.child('v2/rooms/' + $code + '/nameClaims/' + newData.child('name').val()).val() === auth.uid && (!data.exists() || data.child('name').val() === newData.child('name').val())))",
                 ".validate": "newData.hasChildren(['name','joinedAt']) && newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 20 && newData.child('joinedAt').isNumber()",
                 "name": {
                   ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
@@ -97,7 +108,7 @@
               },
               "connections": {
                 "$session": {
-                  ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && (!newData.exists() || (root.child('v2/rooms/' + $code).child('members').child($uid).child('profile').exists() && root.child('v2/rooms/' + $code).child('meta/state').val() !== 'ended'))",
+                  ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && (!newData.exists() || (root.child('v2/rooms/' + $code).child('members').child($uid).child('profile').exists() && root.child('v2/rooms/' + $code + '/nameClaims/' + root.child('v2/rooms/' + $code + '/members/' + $uid + '/profile/name').val()).val() === auth.uid && root.child('v2/rooms/' + $code).child('meta/state').val() !== 'ended'))",
                   ".validate": "newData.isNumber()"
                 }
               }
