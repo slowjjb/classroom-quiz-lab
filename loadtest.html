@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#234dd0">
+  <title>동시 접속 검증 | 퀴즈 실험실 v2.2</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/loadtest.js"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">동시 접속 테스트 · v2.2</span></header>
+  <main class="page-content load-page">
+    <div class="page-heading"><span class="eyebrow">LIVE STRESS TEST / V2.2</span><h1>동시 접속 검증</h1>
+      <p>가상 학생마다 <strong>별도의 Firebase 익명 계정 및 Realtime Database 연결</strong>을 만들어, 실제 방 입장과 실시간 동기화를 시험합니다.</p>
+    </div>
+    <section class="panel">
+      <div class="panel-header"><h2>교사 인증</h2><span id="load-auth-badge" class="pill pill-neutral">확인 중</span></div>
+      <p class="helper" id="load-auth-msg" role="status">교사 계정을 확인하고 있습니다.</p>
+      <div class="button-row"><button id="load-login" class="btn btn-primary" hidden>Google 로그인</button><button id="load-check" class="btn btn-outline" hidden>권한 다시 확인</button></div>
+    </section>
+    <div id="load-workspace" class="workspace-locked" aria-disabled="true">
+      <section class="panel">
+        <div class="panel-header"><h2>1. 전용 테스트 방</h2><span class="pill pill-neutral">일반 수업 방과 분리</span></div>
+        <p class="helper">이 화면에서 만든 <strong>테스트 전용 방</strong>에서만 자동 입장할 수 있습니다. 기존 게임 방과 문제 세트에는 접근하지 않습니다.</p>
+        <div class="button-row"><button class="btn btn-primary" id="load-create-room">새 테스트 방 만들기</button><span id="load-room-code" class="load-room-code">방 없음</span></div>
+        <p class="helper" id="load-room-msg" role="status">먼저 전용 테스트 방을 생성하세요.</p>
+        <div class="load-leftover" id="load-leftovers" hidden>
+          <h3>이전에 남은 테스트 방</h3>
+          <p class="helper">테스트 중 창을 닫았다면, 여기에서 해당 테스트 방만 정리할 수 있습니다.</p>
+          <div id="load-leftover-list" class="saved-list"></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-header"><h2>2. 가상 학생 준비 및 동시 입장</h2><span class="pill pill-neutral">5 → 15 → 30명 권장</span></div>
+        <label class="field-label" for="load-count">가상 학생 수</label>
+        <select id="load-count" class="load-select"><option value="5">5명 — 기본 점검</option><option value="15">15명 — 중간 부하</option><option value="30" selected>30명 — 목표 시험</option></select>
+        <p class="helper">준비 단계에서는 익명 계정을 최대 3개씩 순차 생성하고, 입장 단계에서 준비된 학생들이 한꺼번에 참여합니다. 인증 생성 제한이 걸리면 속도를 낮춰 다시 시험해야 합니다.</p>
+        <div class="button-row">
+          <button id="load-prepare" class="btn btn-primary" disabled>가상 학생 준비</button>
+          <button id="load-run" class="btn btn-outline" disabled>동시 입장 실행</button>
+          <button id="load-reconnect" class="btn btn-outline" disabled>5명 연결 끊기·복구</button>
+          <button id="load-verify" class="btn btn-outline" disabled>현재 상태 재검사</button>
+        </div>
+        <div class="load-stats" aria-label="테스트 통계">
+          <div class="load-stat"><span>준비된 계정</span><strong id="stat-prepared">0명</strong></div>
+          <div class="load-stat"><span>접속 중</span><strong id="stat-online">0명</strong></div>
+          <div class="load-stat"><span>입장 성공 / 실패</span><strong id="stat-result">0 / 0</strong></div>
+          <div class="load-stat"><span>평균 입장 시간</span><strong id="stat-average">—</strong></div>
+          <div class="load-stat"><span>95백분위 입장 시간</span><strong id="stat-p95">—</strong></div>
+          <div class="load-stat"><span>고유 계정 / 이름</span><strong id="stat-unique">0 / 0</strong></div>
+        </div>
+        <p class="load-progress-text" id="load-progress" aria-live="polite">테스트 방 생성 대기 중</p>
+        <progress id="load-progressbar" max="100" value="0" aria-label="테스트 진행률"></progress>
+        <p id="load-verdict" class="load-verdict" role="status">아직 검증 결과가 없습니다.</p>
+      </section>
+      <section class="panel">
+        <div class="panel-header"><h2>3. 결과 확인 및 정리</h2><span class="pill pill-neutral">테스트 종료 후 필수</span></div>
+        <p class="helper">연결·재접속 시험 후 <strong>테스트 방과 참가자 데이터를 삭제</strong>하세요. 가상 계정도 삭제를 시도하며, 삭제되지 않은 계정은 오류로 기록합니다.</p>
+        <div class="button-row">
+          <button id="load-export" class="btn btn-outline" disabled>테스트 결과 CSV 저장</button>
+          <button id="load-cleanup" class="btn btn-danger" disabled>테스트 종료 및 방 정리</button>
+        </div>
+        <h3>실행 기록</h3>
+        <div id="load-log" class="load-log" aria-live="polite">테스트를 시작하면 접속 결과가 여기에 표시됩니다.</div>
+      </section>
+    </div>
+    <div class="tip"><strong>테스트 해석 주의</strong> — 가상 학생 30개는 각각 별도 Firebase 연결을 사용하지만, 동일 컴퓨터·브라우저·인터넷 회선을 공유합니다. 따라서 이 테스트를 통과해도 실제 태블릿 30대의 기기 성능과 학교 Wi-Fi 안정성을 모두 검증한 것은 아닙니다. 실제 학생 이름은 입력하지 마세요.</div>
+    <a class="back-link" href="rooms.html">← 게임 방 관리로 돌아가기</a>
+  </main>
+  <footer>CLASSROOM QUIZ LAB · v2.2 STRESS TEST</footer>
+</div>
+</body>
+</html>
