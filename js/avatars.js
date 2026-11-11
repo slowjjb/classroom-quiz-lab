@@ -1,4 +1,4 @@
-/** Quiz Lab v3.8: 기본 픽셀 캐릭터 20종. 외부 이미지/CDN에 의존하지 않습니다. */
+/** PurpleKit v3.9: 배경 투명 완성형 캐릭터 20종. 외부 이미지/CDN에 의존하지 않습니다. */
 export const AVATARS = Object.freeze([
   {id:'a01',name:'우주 탐험가',kind:'사람'}, {id:'a02',name:'별빛 마법사',kind:'사람'},
   {id:'a03',name:'스케이트 소년',kind:'사람'}, {id:'a04',name:'푸른 기사',kind:'사람'},
@@ -22,7 +22,7 @@ export function avatarInfo(value){
   return AVATARS.find(avatar=>avatar.id===id);
 }
 export function avatarImageUrl(value){
-  return new URL(`../images/avatars/${normalizeAvatarId(value)}.png`,import.meta.url).href;
+  return new URL(`../images/avatars/${normalizeAvatarId(value)}.png?v=3.9`,import.meta.url).href;
 }
 export function createAvatarImage(value,{size='sm',decorative=false}={}){
   const img=document.createElement('img');

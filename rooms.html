@@ -2,16 +2,16 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퀴즈 실험실 v3.8</title>
+  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퍼플킷 v3.9</title>
   <link rel="stylesheet" href="styles.css?v=3.8"><link rel="stylesheet" href="arcade.css?v=3.8"><link rel="stylesheet" href="responsive-v3.6.css?v=3.8"><link rel="stylesheet" href="avatars.css?v=3.8">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
   <script type="module" src="js/rooms.js?v=3.8"></script>
   <script type="module" src="js/classic-host.js?v=3.8"></script>
 </head>
 <body class="arcade-theme">
-  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">실시간 게임 방 · v3.8</span></header>
+  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">P</span> 퍼플킷</a><span class="version">실시간 게임 방 · v3.9</span></header>
   <main class="page-content rooms-page">
-    <div class="page-heading"><span class="eyebrow">CLASSIC QUIZ / V3.8</span><h1>게임 방 만들기</h1><p>게임 방에 학생들을 모은 다음 클래식 문제를 동시에 출제하고 실시간으로 채점합니다.</p></div>
+    <div class="page-heading"><span class="eyebrow">CLASSIC QUIZ / V3.9</span><h1>게임 방 만들기</h1><p>게임 방에 학생들을 모은 다음 클래식 문제를 동시에 출제하고 실시간으로 채점합니다.</p></div>
     <section class="panel">
       <div class="panel-header"><h2>교사 인증</h2><span id="room-auth-badge" class="pill pill-neutral">확인 중</span></div>
       <p id="room-auth-message" class="helper" aria-live="polite">Google 로그인 상태를 확인하고 있습니다.</p>
@@ -33,7 +33,7 @@
       <section class="panel">
         <div class="panel-header"><h2>새 게임 방</h2><span class="pill pill-neutral">실습 모드</span></div>
         <div class="two-col-form">
-          <div><label class="field-label" for="new-room-title">방 이름</label><input id="new-room-title" maxlength="80" type="text" value="퀴즈 실험실 테스트"></div>
+          <div><label class="field-label" for="new-room-title">방 이름</label><input id="new-room-title" maxlength="80" type="text" value="퍼플킷 테스트"></div>
           <div><label class="field-label" for="room-target">운영 기준 인원</label><input id="room-target" type="number" min="1" max="200" value="25"><p class="helper">표시 기준이며 실제 최대 인원을 제한하지 않습니다.</p></div>
           <div><label class="field-label" for="room-mode">게임 모드 (v3은 클래식만 지원)</label><select id="room-mode"><option value="classic">클래식</option><option value="gold">골드 퀘스트</option><option value="fishing">피싱 프렌지</option><option value="racing">레이싱</option></select></div>
           <div><label class="field-label" for="room-set">문제 세트 (클래식에서는 필수 선택)</label><select id="room-set"><option value="">연결 테스트용 — 선택 안 함</option></select></div>
@@ -64,7 +64,7 @@
         <p class="helper">입장 마감 후 기존 학생은 재접속 가능하며, 새로운 학생은 참여할 수 없습니다. 게임 결과 CSV를 저장한 뒤 방을 종료하세요.</p>
       </section>
       <section class="panel" id="classic-panel" hidden>
-        <div class="panel-header"><h2>v3.8 · 클래식 퀴즈 진행</h2><span class="pill pill-neutral" id="classic-badge">확인 중</span></div>
+        <div class="panel-header"><h2>v3.9 · 클래식 퀴즈 진행</h2><span class="pill pill-neutral" id="classic-badge">확인 중</span></div>
         <p class="helper" id="classic-room-label"></p>
         <div id="classic-rules" class="setup-guide" hidden>
           <strong>v3 통합 보안 규칙이 필요합니다.</strong>
@@ -128,6 +128,6 @@
     <div class="tip">테스트에서는 가상 학생 이름만 사용하세요. 기존 참가자 명단과 참여 코드를 유지합니다. v3 정답은 교사용 경로에만 저장됩니다.</div>
     <p class="notice"><strong>v2.2 동시 접속 검증:</strong> 자동으로 별도 가상 학생 5·15·30명을 입장시키려면 <a href="loadtest.html">동시 접속 테스트 도구 열기 →</a></p>
     <a class="back-link" href="teacher.html">← 기존 교사 접속 현황</a>
-  </main><footer>CLASSROOM QUIZ LAB · v3.8</footer></div>
+  </main><footer>PURPLEKIT · v3.9</footer></div>
 </body>
 </html>
