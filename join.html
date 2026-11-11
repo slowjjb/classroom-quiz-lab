@@ -2,13 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퀴즈 실험실 v2.1</title>
-  <link rel="stylesheet" href="styles.css"><script type="module" src="js/join.js"></script>
+  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퀴즈 실험실 v3.1</title>
+  <link rel="stylesheet" href="styles.css?v=3.1"><script type="module" src="js/join.js?v=3.1"></script>
 </head>
 <body>
-<div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">학생 게임 입장 · v3</span></header>
+<div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">학생 게임 입장 · v3.1</span></header>
 <main class="page-content student-page">
-  <div class="page-heading"><span class="eyebrow">JOIN QUIZ / V3</span><h1>퀴즈 방에 입장하기</h1><p>선생님이 알려주신 참여 코드를 입력해 주세요. 지금은 가상 이름으로 연결을 시험합니다.</p></div>
+  <div class="page-heading"><span class="eyebrow">JOIN QUIZ / V3.1</span><h1>퀴즈 방에 입장하기</h1><p>선생님이 알려주신 참여 코드를 입력해 주세요. 지금은 가상 이름으로 연결을 시험합니다.</p></div>
   <section class="panel student-panel">
     <div class="connection"><span id="join-dot" class="connection-dot"></span><span id="join-connection">서버 연결 확인 중…</span></div>
     <label class="field-label" for="join-code">6자리 참여 코드</label><input id="join-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" placeholder="예: 482731" aria-label="6자리 참여 코드">
@@ -20,24 +20,55 @@
   <section id="student-room" class="panel" hidden>
     <div class="panel-header"><h2 id="student-room-title">대기실</h2><span id="student-room-state" class="pill pill-neutral">대기 중</span></div>
     <p id="student-room-meta" class="helper"></p>
-    <div class="room-waiting"><span aria-hidden="true">🎮</span><strong>선생님의 안내를 기다려 주세요</strong><span>게임이 시작되면 아래에 문제가 나타납니다.</span></div>
+    <div class="room-waiting"><span aria-hidden="true">🎮</span><strong>선생님의 안내를 기다려 주세요</strong><span>게임이 시작되면 큰 문제 화면으로 자동 전환됩니다.</span></div>
     <div class="panel-header"><h2>접속한 친구들</h2><span class="count" id="join-count">0명</span></div>
     <div id="join-members" class="student-grid"></div>
   </section>
-  <section id="quiz-panel" class="panel" hidden>
-    <div class="panel-header"><h2>클래식 퀴즈</h2><span id="quiz-state" class="pill pill-neutral">게임 대기</span></div>
-    <div class="classic-topline"><span id="quiz-progress"></span><strong id="quiz-time"></strong></div>
-    <div id="quiz-question-block" hidden><h3 id="quiz-question" class="classic-prompt"></h3>
-      <p id="quiz-response-type" class="helper"></p></div>
-    <div id="quiz-response" hidden><div id="quiz-options" class="classic-options"></div>
-      <button id="quiz-submit" class="btn btn-primary btn-big" type="button">정답 제출</button></div>
-    <p id="quiz-message" class="feedback" role="status"></p>
-    <p id="quiz-answer-feedback" class="notice" hidden></p>
-    <div class="panel-header"><h3>실시간 순위</h3><span id="quiz-my-score" class="helper">아직 점수가 없습니다.</span></div>
-    <div id="quiz-ranking" class="classic-board">게임 시작 전입니다.</div>
+  <!-- v3.1: 팝업 차단 없이 현재 페이지 위를 덮는 집중형 퀴즈 화면 -->
+  <section id="quiz-panel" class="quiz-stage" hidden aria-label="클래식 퀴즈 전용 화면">
+    <div class="quiz-stage-inner">
+      <div class="quiz-stage-head">
+        <div><span class="quiz-stage-kicker">QUIZ LAB · CLASSIC</span><strong id="quiz-state">문제 대기</strong></div>
+        <div class="quiz-stage-meta"><span id="quiz-progress"></span><strong id="quiz-time" aria-live="off"></strong></div>
+      </div>
+      <div id="quiz-solve-view" class="quiz-stage-view" hidden>
+        <div id="quiz-question-block" class="quiz-question-card" hidden>
+          <h2 id="quiz-question" class="quiz-question-heading"></h2>
+          <p id="quiz-response-type" class="quiz-question-guide"></p>
+        </div>
+        <div id="quiz-response" hidden>
+          <div id="quiz-options" class="quiz-large-options"></div>
+          <button id="quiz-submit" class="btn btn-primary quiz-large-submit" type="button">정답 제출하기</button>
+        </div>
+        <p id="quiz-message" class="quiz-stage-message" role="status" aria-live="polite"></p>
+      </div>
+      <div id="quiz-reveal-view" class="quiz-stage-view" hidden>
+        <div id="quiz-verdict" class="quiz-verdict" role="status" aria-live="polite"></div>
+        <h2 id="quiz-reveal-question" class="quiz-reveal-question"></h2>
+        <div id="quiz-reveal-options" class="quiz-reveal-options"></div>
+        <div class="quiz-score-summary"><div><span>이번 문제 점수</span><strong id="quiz-round-points">—</strong></div><div><span>누적 점수</span><strong id="quiz-my-score">—</strong></div></div>
+        <p id="quiz-answer-feedback" class="quiz-reveal-feedback" hidden></p>
+        <button id="quiz-show-results" type="button" class="btn btn-primary quiz-large-submit">결과 확인 · 친구들 순위 보기</button>
+      </div>
+      <div id="quiz-results-view" class="quiz-stage-view" hidden>
+        <div class="quiz-results-heading"><span class="quiz-stage-kicker">ROUND RESULTS</span><h2>이번 문제 결과</h2><p id="quiz-results-summary">채점 결과를 불러오는 중입니다.</p></div>
+        <div class="quiz-results-columns">
+          <div class="quiz-results-card"><h3>이번 문제 · 정답/오답과 응답 속도</h3><div id="quiz-round-ranking" class="quiz-results-list"></div></div>
+          <div class="quiz-results-card"><h3>전체 누적 순위</h3><div id="quiz-ranking" class="quiz-results-list"></div></div>
+        </div>
+        <div class="quiz-results-footer"><button id="quiz-back-reveal" type="button" class="btn btn-outline">정답 화면 다시 보기</button><p>다음 문제가 출제되면 자동으로 문제 화면으로 이동합니다.</p></div>
+      </div>
+      <div id="quiz-finished-view" class="quiz-stage-view" hidden>
+        <div class="quiz-finish-icon" aria-hidden="true">🏆</div><h2>클래식 게임 종료!</h2>
+        <p>참여해 주셔서 감사합니다. 최종 순위를 확인해 보세요.</p>
+        <div id="quiz-final-ranking" class="quiz-results-card"></div>
+        <button id="quiz-finish-exit" type="button" class="btn btn-outline">대기실로 돌아가기</button>
+      </div>
+      <p id="quiz-stage-error" class="quiz-stage-error" role="alert" hidden></p>
+    </div>
   </section>
   <p class="notice centered">학생에게는 문제와 보기만 전달됩니다. 정답과 점수는 교사 화면에서 처리합니다.</p>
   <a class="back-link" href="./">← 처음 화면으로</a>
-</main><footer>CLASSROOM QUIZ LAB · v3</footer></div>
+</main><footer>CLASSROOM QUIZ LAB · v3.1</footer></div>
 </body>
 </html>

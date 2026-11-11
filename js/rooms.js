@@ -123,7 +123,7 @@ function renderRoom(record) {
   $('room-code').textContent=selectedCode;
   $('room-state').textContent=stateText(meta.state);
   $('room-state').className=`pill pill-${meta.state==='ended'?'error':meta.state==='lobby'?'success':'neutral'}`;
-  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'&&meta.setId?'v3 클래식':'v2 대기실'})`;
+  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'&&meta.setId?'v3.1 클래식':'v2 대기실'})`;
   $('room-toggle-lock').disabled = meta.state==='ended';
   $('room-toggle-lock').textContent = meta.state==='locked'?'입장 다시 허용':'입장 마감';
   $('room-end').disabled = meta.state==='ended';

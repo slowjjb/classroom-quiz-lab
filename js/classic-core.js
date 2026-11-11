@@ -51,3 +51,36 @@ export function escapeCsv(value) {
   const safe = /^[\s]*[=+\-@]/.test(text) ? "'" + text : text;
   return `"${safe.replace(/"/g,'""')}"`;
 }
+
+// v3.1: 교사가 정답 공개 이후에만 전송하는 문항별 공개 결과.
+// 학생이 제출한 답안 원문이나 정답 목록은 포함하지 않습니다.
+export function buildRoundReport(roundId, gradesForRound = {}, answersForRound = {}, roster = {}, cumulative = {}) {
+  const rankMap = new Map(ranking(cumulative).map((item, i) => [item.uid, i + 1]));
+  const entries = {};
+  for (const [uid, nameValue] of Object.entries(roster)) {
+    const name = typeof nameValue === 'string' ? nameValue : nameValue?.profile?.name;
+    if (!name) continue;
+    const grade = gradesForRound?.[uid];
+    const submitted = !!answersForRound?.[uid];
+    entries[uid] = {
+      name: String(name),
+      status: grade ? (grade.correct ? 'correct' : 'wrong') : (submitted ? 'pending' : 'missing'),
+      points: grade ? Number(grade.points || 0) : 0,
+      responseMs: grade ? Number(grade.responseMs || 0) : 0,
+      cumulative: Number(cumulative?.[uid]?.score || 0),
+      cumulativeCorrect: Number(cumulative?.[uid]?.correct || 0),
+      cumulativeAnswered: Number(cumulative?.[uid]?.answered || 0),
+      cumulativeMs: Number(cumulative?.[uid]?.totalMs || 0),
+      cumulativeRank: Number(rankMap.get(uid) || 0)
+    };
+  }
+  const values = Object.values(entries);
+  return {
+    roundId,
+    submittedCount: values.filter(e => e.status !== 'missing').length,
+    gradedCount: values.filter(e => e.status === 'correct' || e.status === 'wrong').length,
+    correctCount: values.filter(e => e.status === 'correct').length,
+    participantCount: values.length,
+    entries
+  };
+}

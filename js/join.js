@@ -1,4 +1,4 @@
-import { startQuizView, stopQuizView } from './classic-student.js';
+import { startQuizView, stopQuizView } from './classic-student.js?v=3.1';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
@@ -36,7 +36,7 @@ function renderRoom(data){
   $('student-room-title').textContent=meta.title||'퀴즈 대기실';roomStatus(meta.state);
   $('student-room-meta').textContent=`참여 코드 ${activeCode} · ${meta.setTitle||'문제 미선택'} · 게임을 시작하면 아래에 문제가 나타납니다.`;
   if(meta.state==='ended'&&!ended){
-    ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopPresence();onlineStatus('방이 종료되었습니다.');
+    ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopQuizView();stopPresence();onlineStatus('방이 종료되었습니다.');
   }
   const members=Object.values(data.members||{}).filter(x=>Object.keys(x?.connections||{}).length>0).map(x=>x.profile?.name||'이름 없음');
   $('join-count').textContent=`${members.length}명`;

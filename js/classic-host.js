@@ -2,11 +2,12 @@ import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeRulesV3 } from './rules-v3.js';
-import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv } from './classic-core.js';
+import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport } from './classic-core.js?v=3.1';
 
 const $ = x => document.getElementById(x);
 let teacher=null, code='', ready=false, room=null, run=null, publicRound=null, answers={}, grades={}, savedSet=null;
 let unsub=[], operation=false, scorePublished='', grading=new Set(), clockOffset=0, autoRevealPending=false, checkToken=0;
+let focusOpen=false, focusResults=false, reportPublished='', reportTimer=null;
 const times = {};
 function msg(str,kind=''){$('classic-message').textContent=str;$('classic-message').dataset.kind=kind;}
 function badge(str,kind='neutral'){$('classic-badge').textContent=str;$('classic-badge').className=`pill pill-${kind}`;}
@@ -14,7 +15,7 @@ function getQuestions(r=run){
   const qs=r?.questions;return Array.isArray(qs)?qs:Object.keys(qs||{}).sort((a,b)=>Number(a)-Number(b)).map(k=>qs[k]);
 }
 function serverNow(){return Date.now()+clockOffset;}
-function detach(){checkToken++;for(const stop of unsub)stop();unsub=[];room=null;run=null;publicRound=null;answers={};grades={};savedSet=null;scorePublished='';grading.clear();}
+function detach(){checkToken++;for(const stop of unsub)stop();unsub=[];room=null;run=null;publicRound=null;answers={};grades={};savedSet=null;scorePublished='';reportPublished='';if(reportTimer)clearTimeout(reportTimer);reportTimer=null;grading.clear();focusOpen=false;focusResults=false;setVisibleFocus(false);}
 function resetUi(){
   $('classic-panel').hidden=!code;
   $('classic-rules').hidden=true;
@@ -22,6 +23,7 @@ function resetUi(){
   $('classic-board').replaceChildren();
   $('classic-stats').replaceChildren();
   badge('대기 중');
+  $('classic-focus-open').disabled=true;
 }
 async function checkRights(){
   if(!teacher||!code){ready=false;return;}
@@ -38,11 +40,11 @@ function watch(){
   if(!ready||!code||!teacher)return;
   const myCode=code;
   const bind=(path,callback)=>unsub.push(onValue(ref(db,path),snap=>{if(code===myCode){callback(snap.val());render();}},e=>msg(`Firebase 읽기 실패: ${formatError(e)}`,'error')));
-  bind(`v2/rooms/${code}`,v=>{room=v;syncScores();});
-  bind(`v3/privateRuns/${code}`,v=>{run=v;gradePending();syncScores();});
-  bind(`v3/public/${code}`,v=>{publicRound=v;gradePending();});
-  bind(`v3/answers/${code}`,v=>{answers=v||{};gradePending();});
-  bind(`v3/grades/${code}`,v=>{grades=v||{};syncScores();});
+  bind(`v2/rooms/${code}`,v=>{room=v;syncScores();scheduleReport();});
+  bind(`v3/privateRuns/${code}`,v=>{run=v;gradePending();syncScores();scheduleReport();});
+  bind(`v3/public/${code}`,v=>{publicRound=v;gradePending();syncScores();scheduleReport();});
+  bind(`v3/answers/${code}`,v=>{answers=v||{};gradePending();scheduleReport();});
+  bind(`v3/grades/${code}`,v=>{grades=v||{};syncScores();scheduleReport();});
 }
 function roomTitle(){return room?.meta?.title||'게임 방';}
 function stateName(state){return ({ready:'게임 준비',question:'문제 진행',paused:'일시 정지',reveal:'정답 공개',finished:'게임 종료'})[state]||'시작 전';}
@@ -64,6 +66,7 @@ function render(){
   $('classic-extend').disabled=!run||operation||state!=='question';
   $('classic-end').disabled=!run||operation||state==='finished';
   $('classic-export').disabled=!run;
+  $('classic-focus-open').disabled=!run||!(state==='question'||state==='paused'||state==='reveal'||state==='finished');
   if(!isClassic)msg('클래식 모드로 만든 방에서만 v3 게임을 진행할 수 있습니다.','error');
   else if(!validSet)msg('게임 방을 생성할 때 v1 문제 세트를 선택해야 합니다. 새 클래식 방을 만들어 주세요.','error');
   else if(room?.meta?.state==='ended'&&!run)msg('이미 종료된 방입니다. 새 방을 만들어 주세요.','error');
@@ -88,6 +91,7 @@ function render(){
     box.textContent=`${i+1}번 · ${vals.length}명 제출 · ${vals.filter(x=>x.correct).length}명 정답 · 정답률 ${vals.length?Math.round(100*vals.filter(x=>x.correct).length/vals.length):0}%`;
     stats.append(box);
   });
+  renderFocus();
 }
 function rosterMembers(){
   if(run?.roster){return Object.fromEntries(Object.entries(run.roster).map(([id,name])=>[id,{profile:{name}}]));}
@@ -130,13 +134,15 @@ async function nextQuestion(){await mutate(async()=>{
     [`v3/public/${code}`]:{state:'question',index,total:questions.length,roundId,questionNumber:q.number,
       prompt:q.prompt,type:q.type,timeLimit:q.timeLimit,options:q.type==='typing'?[]:optionsArray(q.options),startedAt:serverTimestamp(),deadline,title:roomTitle()}
   });
+  focusOpen=true;focusResults=false;setVisibleFocus(true);
   msg(`${index+1}번 문제가 전송됐습니다. 제한 시간 ${q.timeLimit}초.`,'success');
 });}
 async function revealQuestion(){await mutate(async()=>{
   if(!publicRound||!['question','paused'].includes(publicRound.state))return;
   const q=getQuestions()[publicRound.index];if(!q)return;
   await update(ref(db,`v3/public/${code}`),{state:'reveal',correctAnswer:correctDisplay(q)});
-  msg('정답을 공개했습니다. 준비되면 다음 문제를 출제하세요.','success');
+  scheduleReport();
+  msg('정답을 공개했습니다. 결과를 확인한 뒤 다음 문제를 출제하세요.','success');
 });}
 async function pauseResume(){await mutate(async()=>{
   if(publicRound?.state==='question'){
@@ -179,11 +185,32 @@ function gradePending(){
   }
 }
 async function syncScores(){
-  if(!ready||!run||!code)return;
+  // 문제 풀이 중에는 점수 상승으로 정답 여부를 유추하지 못하도록 공개 점수를 갱신하지 않습니다.
+  if(!ready||!run||!code||!['reveal','finished'].includes(publicRound?.state))return;
   const scores=totalScores(grades,rosterMembers());
   const json=JSON.stringify(scores);if(json===scorePublished)return;
   scorePublished=json;
   try{await set(ref(db,`v3/scores/${code}`),scores);}catch(e){scorePublished='';msg('점수 동기화 실패: '+formatError(e),'error');}
+}
+// 학생이 결과 확인을 누를 때 사용할 공개 결과는 교사 브라우저에서만 생성합니다.
+// 기존 v3/public 경로에 저장하므로 Firebase 규칙 재배포가 필요하지 않습니다.
+function scheduleReport(){
+  if(!ready||!run||!publicRound||publicRound.state!=='reveal'||!publicRound.roundId)return;
+  if(reportTimer)clearTimeout(reportTimer);
+  reportTimer=setTimeout(publishRoundReport,180);
+}
+async function publishRoundReport(){
+  reportTimer=null;
+  if(!ready||!run||!publicRound||publicRound.state!=='reveal'||!code)return;
+  const myCode=code, roundId=publicRound.roundId;
+  const report=buildRoundReport(roundId,grades?.[roundId]||{},answers?.[roundId]||{},run.roster||{},totalScores(grades,rosterMembers()));
+  const fingerprint=JSON.stringify(report);
+  if(reportPublished===fingerprint)return;
+  reportPublished=fingerprint;
+  try{
+    if(code!==myCode||publicRound?.roundId!==roundId||publicRound.state!=='reveal')return;
+    await set(ref(db,`v3/public/${myCode}/roundResults`),report);
+  }catch(err){reportPublished='';msg('결과 공개 동기화 실패: '+formatError(err),'error');}
 }
 function csvExport(){
   if(!run)return;
@@ -212,7 +239,94 @@ function tick(){
     if(ms<=-350 && !autoRevealPending && ready && !operation){autoRevealPending=true;revealQuestion().finally(()=>autoRevealPending=false);}
   }else if(publicRound?.state==='paused')$('classic-timer').textContent=`일시 정지 · ${Math.ceil(Number(publicRound.remainingMs||0)/1000)}초`;
   else $('classic-timer').textContent='—';
+  if(focusOpen)$('classic-focus-timer').textContent=$('classic-timer').textContent;
 }
+function setVisibleFocus(show){
+  $('classic-focus').hidden=!show;
+  document.body.classList.toggle('quiz-stage-active',show);
+}
+function openFocus(){
+  if(!run)return;
+  focusOpen=true;focusResults=false;setVisibleFocus(true);renderFocus();
+}
+function closeFocus(){focusOpen=false;setVisibleFocus(false);}
+function focusRow(entry,index,kind){
+  const row=document.createElement('div');row.className='quiz-result-row';
+  const rank=document.createElement('span');rank.className='quiz-result-place';rank.textContent=`${index}위`;
+  const info=document.createElement('div');info.className='quiz-result-person';
+  const name=document.createElement('strong');name.textContent=entry.name||'학생';
+  const status=document.createElement('small');status.textContent=kind==='total'?`${entry.correct||0}문제 정답`:
+    ({correct:'정답',wrong:'오답',pending:'채점 중',missing:'미제출'})[entry.status]||'확인 중';
+  info.append(name,status);
+  const metrics=document.createElement('div');metrics.className='quiz-result-metrics';
+  const points=document.createElement('strong');points.textContent=`${Number(kind==='total'?entry.score:entry.points||0).toLocaleString()}점`;
+  const speed=document.createElement('small');speed.textContent=kind==='total'?'누적 점수':
+    ['correct','wrong'].includes(entry.status)?`${(Number(entry.responseMs||0)/1000).toFixed(2)}초`:'—';
+  metrics.append(points,speed);row.append(rank,info,metrics);return row;
+}
+function renderFocus(){
+  if(!focusOpen)return;
+  setVisibleFocus(true);
+  const state=publicRound?.state||'ready';
+  $('classic-focus-state').textContent=stateName(state);
+  $('classic-focus-progress').textContent=run?`${Math.max(0,(publicRound?.index??-1)+1)} / ${getQuestions().length}문항`:'';
+  $('classic-focus-timer').textContent=$('classic-timer').textContent;
+  $('classic-focus-pause').disabled=operation||!['question','paused'].includes(state);
+  $('classic-focus-pause').textContent=state==='paused'?'재개':'일시 정지';
+  $('classic-focus-extend').disabled=operation||state!=='question';
+  $('classic-focus-reveal').disabled=operation||!['question','paused'].includes(state);
+  $('classic-focus-result').disabled=operation||!['reveal','finished'].includes(state);
+  $('classic-focus-result').textContent=focusResults?'문제로 돌아가기':'결과 크게 보기';
+  $('classic-focus-next').disabled=operation||!['ready','reveal'].includes(state);
+  const id=publicRound?.roundId;
+  const submitted=id?Object.keys(answers?.[id]||{}).length:0;
+  $('classic-focus-submitted').textContent=`${submitted}명 제출 / 총 ${Object.keys(run?.roster||{}).length}명`;
+  const viewingResults=focusResults&&['reveal','finished'].includes(state);
+  $('classic-focus-question-view').hidden=viewingResults;
+  $('classic-focus-results-view').hidden=!viewingResults;
+  const q=getQuestions()[publicRound?.index??-1];
+  $('classic-focus-question').textContent=q?`[${q.number}번] ${q.prompt}`:'문제를 준비 중입니다.';
+  const choices=$('classic-focus-options');choices.replaceChildren();
+  if(q){
+    const reveal=state==='reveal'||state==='finished';
+    if(q.type==='typing'){
+      const item=document.createElement('div');item.className='quiz-reveal-option';
+      item.textContent=reveal?`정답: ${correctDisplay(q)}`:'주관식 · 학생들이 정답을 입력합니다.';choices.append(item);
+    }else{
+      optionsArray(q.options).forEach((answer,i)=>{
+        const item=document.createElement('div');item.className='quiz-large-option teacher-choice';
+        if(reveal&&Number(q.correctIndex)===i+1)item.classList.add('is-correct');
+        const digit=document.createElement('span');digit.className='quiz-option-number';digit.textContent=String(i+1);
+        const text=document.createElement('span');text.textContent=answer;
+        item.append(digit,text);choices.append(item);
+      });
+    }
+  }
+  const answerNode=$('classic-focus-answer');
+  answerNode.hidden=!(q&&['reveal','finished'].includes(state));
+  if(!answerNode.hidden)answerNode.textContent=`정답: ${correctDisplay(q)}`;
+  if(!viewingResults)return;
+  const report=buildRoundReport(id||'',grades?.[id]||{},answers?.[id]||{},run?.roster||{},totalScores(grades,rosterMembers()));
+  $('classic-focus-summary').textContent=`${report.submittedCount}/${report.participantCount}명 제출 · ${report.correctCount}명 정답 · ${report.gradedCount}명 채점 완료`;
+  const rows=$('classic-focus-round-list');rows.replaceChildren();
+  const arr=Object.entries(report.entries).map(([userId,e])=>({uid:userId,...e}));
+  const statusOrder={correct:0,wrong:1,pending:2,missing:3};
+  arr.sort((a,b)=>(statusOrder[a.status]??4)-(statusOrder[b.status]??4)||b.points-a.points||a.responseMs-b.responseMs||a.name.localeCompare(b.name,'ko'));
+  arr.forEach((r,i)=>rows.append(focusRow(r,i+1,'round')));
+  if(!arr.length)rows.textContent='참가 학생이 없습니다.';
+  const totals=$('classic-focus-total-list');totals.replaceChildren();
+  ranking(totalScores(grades,rosterMembers())).forEach((r,i)=>totals.append(focusRow(r,i+1,'total')));
+  if(!totals.childElementCount)totals.textContent='아직 결과가 없습니다.';
+}
+$('classic-focus-open').addEventListener('click',openFocus);
+$('classic-focus-close').addEventListener('click',closeFocus);
+$('classic-focus-next').addEventListener('click',nextQuestion);
+$('classic-focus-pause').addEventListener('click',pauseResume);
+$('classic-focus-extend').addEventListener('click',extendTime);
+$('classic-focus-reveal').addEventListener('click',revealQuestion);
+$('classic-focus-result').addEventListener('click',()=>{focusResults=!focusResults;renderFocus();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)closeFocus();});
+
 // 교사 인증과 rooms.js의 방 선택 이벤트가 각각 비동기로 도착합니다.
 window.addEventListener('quizlab-room-open',e=>bindRoom(e.detail?.code||''));
 if(auth)onAuthStateChanged(auth,user=>{

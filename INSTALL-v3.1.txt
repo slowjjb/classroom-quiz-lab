@@ -1,0 +1,14 @@
+퀴즈 실험실 v3.1 적용 방법
+
+1) 퀴즈 게임을 종료한 뒤 quizlab-v3.1-upgrade.zip 압축 해제
+2) GitHub 저장소 > Add file > Upload files
+3) 압축 해제한 index.html / join.html / rooms.html / styles.css / README-v3.1.md / js 폴더 / tests 폴더 등 업로드
+4) Commit changes
+5) https://slowjjb.github.io/classroom-quiz-lab/rooms.html 새로고침 (Ctrl+Shift+R)
+6) 교사와 학생 페이지 모두 v3.1 표시 확인
+7) 새 클래식 테스트 방 + 가상 학생 2명으로 진행 확인
+
+이번 v3.1은 database.rules.json 및 firebase-config.js를 교체하지 않습니다.
+새 Firebase 규칙은 필요하지 않습니다. 기존 문제 세트와 게임 데이터는 삭제하지 않습니다.
+
+자세한 설명은 README-v3.1.md 참고.
