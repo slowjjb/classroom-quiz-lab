@@ -1,7 +1,7 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV2 } from './rules-v2.js';
+import { makeRulesV3 } from './rules-v3.js';
 
 const $ = id => document.getElementById(id);
 const modeNames = {classic:'클래식',gold:'골드 퀘스트',fishing:'피싱 프렌지',racing:'레이싱'};
@@ -20,9 +20,9 @@ async function copyText(value) {
 }
 function downloadRules() {
   if (!teacher) return;
-  const b = new Blob([makeRulesV2(teacher.uid)], {type:'application/json;charset=utf-8'});
+  const b = new Blob([makeRulesV3(teacher.uid)], {type:'application/json;charset=utf-8'});
   const url = URL.createObjectURL(b); const a = document.createElement('a');
-  a.href = url; a.download = 'database.rules.v2-1.json'; document.body.append(a); a.click(); a.remove();
+  a.href = url; a.download = 'database.rules.v3.json'; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function stopListeners() {
@@ -123,7 +123,7 @@ function renderRoom(record) {
   $('room-code').textContent=selectedCode;
   $('room-state').textContent=stateText(meta.state);
   $('room-state').className=`pill pill-${meta.state==='ended'?'error':meta.state==='lobby'?'success':'neutral'}`;
-  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'&&meta.setId?'v3.1 클래식':'v2 대기실'})`;
+  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'&&meta.setId?'v3.2 클래식':'v2 대기실'})`;
   $('room-toggle-lock').disabled = meta.state==='ended';
   $('room-toggle-lock').textContent = meta.state==='locked'?'입장 다시 허용':'입장 마감';
   $('room-end').disabled = meta.state==='ended';
@@ -234,8 +234,8 @@ else {
   $('room-retry').addEventListener('click',startListeners);
   $('room-copy-rules').addEventListener('click',async()=>{
     if(!teacher)return;
-    const ok=await copyText(makeRulesV2(teacher.uid));
-    info('room-rules-status',ok?'전체 v0+v1+v2.1 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
+    const ok=await copyText(makeRulesV3(teacher.uid));
+    info('room-rules-status',ok?'전체 v0~v3 통합 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
   });
   $('room-download-rules').addEventListener('click',downloadRules);
   $('room-create').addEventListener('click',createRoom);

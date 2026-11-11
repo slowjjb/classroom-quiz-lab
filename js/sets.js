@@ -1,8 +1,9 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { onValue, ref, push, set, remove } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV } from './csv.js';
-import { makeRules } from './rules.js';
+import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV } from './csv.js?v=3.2';
+import { makeRulesV3 } from './rules-v3.js';
+import { normalizeQuestionImage, siteRootFromPage } from './image-utils.js?v=3.2';
 
 const $ = id => document.getElementById(id);
 let user = null, unsubscribe = null, authorized = false, savedSets = {};
@@ -11,6 +12,7 @@ const q = sel => document.querySelector(sel);
 function text(id, value, kind = '') { $(id).textContent = value; $(id).dataset.kind = kind; }
 function badge(textValue, kind = 'neutral') { $('sets-auth-badge').textContent = textValue; $('sets-auth-badge').className = `pill pill-${kind}`; }
 function draftBadge(value, kind='neutral') { $('draft-badge').textContent = value; $('draft-badge').className = `pill pill-${kind}`; }
+const rootUrl=siteRootFromPage(location.href);
 function warnDiscard() { return !dirty || confirm('저장하지 않은 수정 내용이 있습니다. 현재 초안을 버릴까요?'); }
 function formBlock(tag, label, value, onChange, attrs = {}) {
   const box = document.createElement('label'); box.className = 'edit-field';
@@ -85,11 +87,14 @@ function renderSaved() {
     actions.append(makeButton('불러오기', () => loadSet(id)));
     actions.append(makeButton('CSV', () => {
       const rec = savedSets[id]; const qs = Object.values(rec.questions || {}).sort((a,b)=>a.number-b.number);
-      downloadText(safeFileName(rec.title)+'.csv', toCSV(qs.map(questionToDraft)), 'text/csv;charset=utf-8');
+      if(confirmImageLoss(qs))downloadText(safeFileName(rec.title)+'.csv', toCSV(qs.map(questionToDraft)), 'text/csv;charset=utf-8');
     }));
     actions.append(makeButton('삭제', () => deleteSet(id), 'btn btn-danger btn-small'));
     row.append(label, actions); list.append(row);
   }
+}
+function confirmImageLoss(rows){
+  return !rows.some(q=>Boolean(q.imageUrl)) || confirm('블루킷 CSV에는 이미지 열이 없어 이미지 연결이 내보내지지 않습니다. 이미지는 Firebase 문제 세트에만 보존됩니다. CSV를 저장할까요?');
 }
 function safeFileName(name) { return String(name || 'quiz-questions').replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0, 70); }
 function loadSet(id) {
@@ -144,6 +149,25 @@ function renderEditor() {
       [['','정답 번호 선택'],['1','1'],['2','2'],['3','3'],['4','4']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;pick.append(o);});
       pick.value=row.fields[7].trim(); pick.addEventListener('change',()=>changeField(row,7,pick.value));correct.append(lab,pick);card.append(correct);
     }
+    // 이미지 정보는 블루킷 10열 CSV가 아닌 문제 세트의 부가 정보로 관리합니다.
+    const imageField=formBlock('input', '문제 이미지 (GitHub images/questions 폴더의 파일명 또는 주소)',row.imageUrl||'',value=>{
+      row.imageUrl=value;markEdited();
+      const warning=card.querySelector('.question-image-warning');
+      const preview=card.querySelector('.question-image-preview');
+      try{
+        const safe=normalizeQuestionImage(value,rootUrl);
+        warning.textContent='';
+        preview.hidden=!safe;
+        if(safe)preview.src=new URL(safe,rootUrl).href;
+      }catch(e){warning.textContent=e.message;preview.hidden=true;}
+    },{placeholder:'예: 도형_05.png 또는 images/questions/도형_05.png'});
+    card.append(imageField);
+    const imagePreview=document.createElement('img');imagePreview.className='question-image-preview';imagePreview.alt=`${idx+1}번 문제 이미지 미리보기`;imagePreview.loading='lazy';
+    const imageWarning=document.createElement('p');imageWarning.className='helper question-image-warning';
+    imagePreview.addEventListener('error',()=>{imageWarning.textContent='이미지를 불러오지 못했습니다. GitHub에 파일을 올렸는지, 파일 이름과 대소문자가 일치하는지 확인하세요.';});
+    try{const safe=normalizeQuestionImage(row.imageUrl,rootUrl);imagePreview.hidden=!safe;if(safe)imagePreview.src=new URL(safe,rootUrl).href;}
+    catch(e){imagePreview.hidden=true;imageWarning.textContent=e.message;}
+    card.append(imagePreview,imageWarning);
     if (row.columnCount !== 10 && !row.acknowledged && row.columnCount < 10) {
       card.append(makeButton(`${row.columnCount}열 → 10열 보정 승인`,()=>{row.acknowledged=true;markEdited();validateAndDisplay();}));
     }
@@ -153,6 +177,14 @@ function renderEditor() {
 }
 function validateAndDisplay() {
   const result=validateRows(draftRows);const holder=$('validation-results');holder.replaceChildren();
+  // 오류 있는 이미지 링크도 명확히 알려줍니다. 정상 문항에는 이미지 주소만 보존합니다.
+  draftRows.forEach((row,i)=>{
+    try{
+      const safe=normalizeQuestionImage(row.imageUrl||'',rootUrl);
+      if(result.problems&&safe)result.problems[i].imageUrl=safe;
+    }catch(e){result.issues.push({line:row.line,message:`문제 이미지: ${e.message}`});}
+  });
+  if(result.issues.length)result.problems=null;
   const title=$('set-title').value.trim();
   if (!title) result.issues.push({line:0,message:'세트 이름을 입력해 주세요.'});
   if (title.length > 80) result.issues.push({line:0,message:'세트 이름은 최대 80자입니다.'});
@@ -206,14 +238,14 @@ $('csv-file').addEventListener('change',e=>importFile(e.target.files?.[0]));
 $('new-draft').addEventListener('click',newDraft);
 $('check-draft').addEventListener('click',()=>{const r=validateAndDisplay();text('editor-status',r.issues.length?`수정할 오류 ${r.issues.length}개가 있습니다.`:'모든 문항 검증을 통과했습니다.',r.issues.length?'error':'success');});
 $('save-set').addEventListener('click',saveSet);
-$('download-draft').addEventListener('click',()=>downloadText(safeFileName($('set-title').value || 'quiz-v1-draft')+'.csv',toCSV(draftRows),'text/csv;charset=utf-8'));
+$('download-draft').addEventListener('click',()=>{if(confirmImageLoss(draftRows))downloadText(safeFileName($('set-title').value || 'quiz-v1-draft')+'.csv',toCSV(draftRows),'text/csv;charset=utf-8');});
 $('sets-retry').addEventListener('click',listenSets);
 $('rules-copy').addEventListener('click',async()=>{
   if(!user)return;
-  try {await navigator.clipboard.writeText(makeRules(user.uid));text('rules-status','전체 규칙을 복사했습니다. Firebase Realtime Database > 규칙에 붙여넣고 게시하세요. GitHub database.rules.json도 같은 내용으로 변경해야 합니다.','success');}
+  try {await navigator.clipboard.writeText(makeRulesV3(user.uid));text('rules-status','v0~v3 통합 규칙을 복사했습니다. Firebase Realtime Database > 규칙에 붙여넣고 게시하세요. GitHub database.rules.json도 같은 내용으로 변경해야 합니다.','success');}
   catch(error){text('rules-status','복사에 실패했습니다. JSON 파일 다운로드를 이용하세요. '+error.message,'error');}
 });
-$('rules-download').addEventListener('click',()=>{if(user)downloadText('database.rules.json',makeRules(user.uid),'application/json;charset=utf-8');});
+$('rules-download').addEventListener('click',()=>{if(user)downloadText('database.rules.json',makeRulesV3(user.uid),'application/json;charset=utf-8');});
 if(!isConfigured){badge('Firebase 설정 필요','error');text('sets-auth-message','firebase-config.js 설정을 확인해 주세요.','error');}
 else {
   $('sets-login').disabled=false;

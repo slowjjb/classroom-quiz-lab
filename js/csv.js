@@ -58,7 +58,8 @@ export function makeDraftRows(parsed) {
     line: row.line,
     fields: row.fields.slice(0, 10).concat(Array(Math.max(0, 10 - row.fields.length)).fill('')),
     columnCount: row.fields.length,
-    acknowledged: row.fields.length === 10
+    acknowledged: row.fields.length === 10,
+    imageUrl: ''
   }));
 }
 
@@ -108,7 +109,7 @@ export function validateRows(draftRows) {
 
 export function questionToDraft(question, index) {
   return {
-    line: index + 1, columnCount: 10, acknowledged: true,
+    line: index + 1, columnCount: 10, acknowledged: true, imageUrl: question.imageUrl || '',
     fields: [
       String(question.number), question.prompt, ...(question.options || ['', '', '', '']).slice(0, 4),
       String(question.timeLimit), question.type === 'typing' ? '' : String(question.correctIndex),

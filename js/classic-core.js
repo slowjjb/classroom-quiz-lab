@@ -52,7 +52,7 @@ export function escapeCsv(value) {
   return `"${safe.replace(/"/g,'""')}"`;
 }
 
-// v3.1: 교사가 정답 공개 이후에만 전송하는 문항별 공개 결과.
+// v3.2: 교사가 정답 공개 이후에만 전송하는 문항별 공개 결과.
 // 학생이 제출한 답안 원문이나 정답 목록은 포함하지 않습니다.
 export function buildRoundReport(roundId, gradesForRound = {}, answersForRound = {}, roster = {}, cumulative = {}) {
   const rankMap = new Map(ranking(cumulative).map((item, i) => [item.uid, i + 1]));
@@ -83,4 +83,18 @@ export function buildRoundReport(roundId, gradesForRound = {}, answersForRound =
     participantCount: values.length,
     entries
   };
+}
+
+// v3.2: 자동 공개의 대상은 준비 시 확정한 명단 중 접속 중이거나 이미 제출한 학생입니다.
+// 오프라인 미제출 학생 때문에 전원 제출 처리가 무한 대기하지 않도록 합니다.
+export function autoRevealAttendance(roster={},members={},answers={},grades={}) {
+  const uids=Object.keys(roster);
+  const online=uids.filter(uid=>Object.keys(members?.[uid]?.connections||{}).length>0);
+  const active=new Set(online);
+  for(const uid of uids)if(answers?.[uid])active.add(uid);
+  const eligible=[...active];
+  const submitted=eligible.filter(uid=>Boolean(answers?.[uid]));
+  const graded=eligible.filter(uid=>Boolean(grades?.[uid]));
+  return {online:online.length,eligible:eligible.length,submitted:submitted.length,graded:graded.length,
+    complete:online.length>0 && eligible.length>0 && submitted.length===eligible.length && graded.length===eligible.length};
 }

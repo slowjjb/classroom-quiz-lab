@@ -1,0 +1,13 @@
+퀴즈 실험실 v3.2 설치 순서
+============================
+1. 진행 중인 게임 종료 + 결과 CSV 백업
+2. quizlab-v3.2-upgrade.zip 압축 해제
+3. GitHub slowjjb/classroom-quiz-lab > Add file > Upload files
+4. 압축 푼 내부 파일과 js/, tests/, images/questions/ 폴더를 업로드하고 Commit changes
+5. Firebase 설정 파일과 규칙은 수정하지 않음 (기존 v3 규칙 유지)
+6. rooms.html 및 join.html을 Ctrl+Shift+R로 새로고침하고 v3.2 확인
+7. 가상 학생 2명 입장 → 전원 제출 자동 공개 → 새 문항 초기화 확인
+8. 이미지 시험: sets.html에서 한 문항에 v32-example-shape.png 입력, 검사 후 저장, 새 방 생성
+9. 실제 학생 사용 전 기기 테스트 및 결과 CSV 확인
+
+자세한 설명: README-v3.2.md

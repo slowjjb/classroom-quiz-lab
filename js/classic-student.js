@@ -1,13 +1,15 @@
-// 퀴즈 실험실 v3.1 — 대기실 대신 전용 큰 화면을 사용하는 클래식 학생 화면.
+// 퀴즈 실험실 v3.2 — 대기실 대신 전용 큰 화면을 사용하는 클래식 학생 화면.
 // 모든 채점/공개 결과는 교사 브라우저가 보낸 읽기 전용 v3/public 경로에서 받습니다.
 import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { ranking } from './classic-core.js?v=3.1';
+import { ranking } from './classic-core.js?v=3.2';
+import { fullQuestionImageUrl } from './image-utils.js?v=3.2';
 
 const $ = id => document.getElementById(id);
 let code = '', uid = '', round = null, ownAnswer = null, ownGrade = null;
 let scores = {}, sending = false, clockOffset = 0, currentRoundId = null;
 let resultsOpen = false, finishedDismissed = false, unsub = [], unanswer = null, ungrade = null;
+let selectedChoice='', typedDraft='';
 const stateLabels = {ready:'게임 준비', question:'문제 풀이', paused:'일시 정지', reveal:'정답 공개', finished:'게임 종료'};
 function setVisible(id, show) { $(id).hidden = !show; }
 function notify(text, kind = '') { const el=$('quiz-message');el.textContent=text;el.dataset.kind=kind; }
@@ -15,7 +17,7 @@ function showError(text) { const el=$('quiz-stage-error');el.textContent=text;el
 function clearSubscriptions(){
   for(const stop of unsub)stop();unsub=[];
   if(unanswer){unanswer();unanswer=null;}if(ungrade){ungrade();ungrade=null;}
-  round=null;ownAnswer=null;ownGrade=null;currentRoundId=null;scores={};sending=false;resultsOpen=false;finishedDismissed=false;
+  round=null;ownAnswer=null;ownGrade=null;currentRoundId=null;scores={};sending=false;resultsOpen=false;finishedDismissed=false;selectedChoice='';typedDraft='';
 }
 export function stopQuizView(){
   clearSubscriptions();code='';uid='';setVisible('quiz-panel',false);
@@ -30,7 +32,7 @@ export function startQuizView(nextCode,nextUid){
     if(code!==activeCode||uid!==activeUid)return;
     const next=snap.val(),newId=next?.roundId||null;
     if(newId!==currentRoundId){
-      currentRoundId=newId;ownAnswer=null;ownGrade=null;resultsOpen=false;finishedDismissed=false;
+      currentRoundId=newId;ownAnswer=null;ownGrade=null;resultsOpen=false;finishedDismissed=false;selectedChoice='';typedDraft='';$('quiz-options').replaceChildren();
       subscribePersonal();
     }
     round=next;
@@ -66,15 +68,16 @@ function optionsArray(value){
 }
 function renderOptions(){
   const root=$('quiz-options');
-  const previousChoice=root.querySelector('input[name="quiz-choice"]:checked')?.value||'';
-  const previousTyping=root.querySelector('#quiz-typing')?.value||'';
+  // 같은 문제에서 재렌더될 때 입력을 보존하되, 새 문항에서는 별도 상태를 초기화합니다.
+  selectedChoice=root.querySelector('input[name="quiz-choice"]:checked')?.value||selectedChoice;
+  typedDraft=root.querySelector('#quiz-typing')?.value??typedDraft;
   root.replaceChildren();
   if(!round)return;
   const locked=!!ownAnswer||round.state!=='question'||sending;
   if(round.type==='typing'){
     const input=document.createElement('input');input.id='quiz-typing';input.type='text';input.maxLength=200;
     input.placeholder='정답을 입력하세요';input.autocomplete='off';input.disabled=locked;
-    input.value=ownAnswer?.value||previousTyping;
+    input.value=ownAnswer?.value??typedDraft;
     input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!input.disabled){e.preventDefault();submitAnswer();}});
     root.append(input);
   }else{
@@ -83,7 +86,8 @@ function renderOptions(){
       const label=document.createElement('label');label.className='quiz-large-option';
       const input=document.createElement('input');input.type='radio';input.name='quiz-choice';
       input.value=String(i+1);input.disabled=locked;
-      input.checked=(ownAnswer?.value||previousChoice)===String(i+1);
+      input.addEventListener('change',()=>{selectedChoice=input.value;});
+      input.checked=(ownAnswer?.value??selectedChoice)===String(i+1);
       const numeral=document.createElement('span');numeral.className='quiz-option-number';numeral.textContent=String(i+1);
       const text=document.createElement('span');text.textContent=String(choice);
       label.append(input,numeral,text);root.append(label);
@@ -161,6 +165,18 @@ function renderFinished(){
   ranking(scores).forEach((entry,i)=>list.append(makeResultRow(entry,i+1,{cumulative:true,mine:entry.uid===uid})));
   if(!list.childElementCount)list.textContent='최종 순위를 준비하고 있습니다.';
 }
+function renderImage(wrapId,imgId,errorId,source){
+  const wrap=$(wrapId),img=$(imgId),err=$(errorId);
+  let url='';try{url=fullQuestionImageUrl(source||'',location.href);}catch{ /* 유효하지 않은 주소는 표시하지 않습니다. */ }
+  wrap.hidden=!url;
+  if(!url)return;
+  if(img.dataset.loadedSrc!==url){
+    img.dataset.loadedSrc=url;err.hidden=true;img.hidden=false;
+    img.onerror=()=>{img.hidden=true;err.hidden=false;};
+    img.onload=()=>{img.hidden=false;err.hidden=true;};
+    img.src=url;
+  }
+}
 function render(){
   if(!code)return;
   const state=round?.state||'waiting';
@@ -178,6 +194,7 @@ function render(){
   if(solve){
     setVisible('quiz-question-block',true);setVisible('quiz-response',true);
     $('quiz-question').textContent=round?.prompt||'';
+    renderImage('quiz-image-wrap','quiz-image','quiz-image-error',round?.imageUrl);
     $('quiz-response-type').textContent=round?.type==='typing'?'정답을 직접 입력해 주세요.':'정답이라고 생각하는 보기를 누르세요.';
     renderOptions();
     if(ownAnswer)notify('제출 완료! 선생님의 정답 공개를 기다려 주세요.','success');
@@ -186,7 +203,7 @@ function render(){
   }
   if(state==='reveal'){
     if(!ungrade)subscribeGrade();
-    if(resultsOpen)renderResults();else renderReveal();
+    if(resultsOpen)renderResults();else {renderImage('quiz-reveal-image-wrap','quiz-reveal-image','quiz-reveal-image-error',round?.imageUrl);renderReveal();}
   }
   if(state==='finished')renderFinished();
 }
