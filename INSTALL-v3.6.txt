@@ -1,0 +1,9 @@
+퀴즈 실험실 v3.6 배포
+
+1) quizlab-v3.6-upgrade.zip 압축 풀기
+2) 압축을 푼 폴더 안의 파일 및 js 폴더를 GitHub 저장소의 최상위 경로에 업로드
+3) Commit changes
+4) https://slowjjb.github.io/classroom-quiz-lab/join.html 및 rooms.html에서 Ctrl + Shift + R
+
+Firebase 보안 규칙/설정 변경 없음.
+교사 화면 열어둔 채 가상 학생 1~2명으로 제출→정답 공개→결과를 먼저 시험할 것.

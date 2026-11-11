@@ -68,6 +68,16 @@ function optionsArray(value){
   if(!value||typeof value!=='object')return [];
   return Object.keys(value).sort((a,b)=>Number(a)-Number(b)).map(key=>value[key]);
 }
+function extractCorrectChoiceIndex(answer){
+  const source=String(answer||'');
+  return Number(source.match(/^(\d+)\s*번/)?.[1]||source.match(/^(\d+)/)?.[1]||0);
+}
+function choiceDisplay(index, choices){
+  const num=Number(index||0);
+  if(!num)return '';
+  const label=choices?.[num-1];
+  return label!=null?`${num}번 · ${label}`:`${num}번`;
+}
 function renderOptions(){
   const root=$('quiz-options');
   // 같은 문제에서 재렌더될 때 입력을 보존하되, 새 문항에서는 별도 상태를 초기화합니다.
@@ -111,18 +121,45 @@ function renderReveal(){
   const cumulative=report?.roundId===round?.roundId?report.entries?.[uid]?.cumulative:null;
   const personalScore=cumulative??scores?.[uid]?.score;
   $('quiz-my-score').textContent=personalScore==null?'집계 중':Number(personalScore).toLocaleString()+'점';
-  const answer=$('quiz-answer-feedback');answer.hidden=false;
-  answer.textContent=`정답: ${round?.correctAnswer||'정답 확인 중'}`;
-  const output=$('quiz-reveal-options');output.replaceChildren();
+
+  const choices=optionsArray(round?.options);
+  const correctIndex=extractCorrectChoiceIndex(round?.correctAnswer);
+  const correctDisplay=round?.type==='typing'
+    ?(round?.correctAnswer||'정답 확인 중')
+    :(choiceDisplay(correctIndex,choices)||round?.correctAnswer||'정답 확인 중');
+  const myIndex=Number(ownAnswer?.value||0);
+  const myDisplay=round?.type==='typing'
+    ?(ownAnswer?.value||'미제출')
+    :(ownAnswer?choiceDisplay(myIndex,choices)||`${ownAnswer.value}번`:'미제출');
+  $('quiz-correct-answer-big').textContent=correctDisplay;
+  $('quiz-my-choice-summary').textContent=ownAnswer
+    ?`내 선택: ${myDisplay}${grade?.correct?' · 정답!':''}`
+    :'내 선택: 미제출';
+
+  // 선택한 답과 정답은 중앙 카드에 이미 표시되므로 객관식에서는 중복 문구를 숨깁니다.
+  // 주관식만 입력 내용을 별도로 명확하게 재확인할 수 있도록 유지합니다.
+  const answer=$('quiz-answer-feedback');
+  answer.hidden=round?.type!=='typing';
+  answer.textContent=round?.type==='typing'
+    ?(ownAnswer?`내 입력: ${myDisplay}`:'이번 문제는 제출하지 않았습니다.')
+    :'';
+
+  const output=$('quiz-reveal-options');
+  output.replaceChildren();
   if(round?.type==='typing')return;
-  const correctIndex=Number(String(round.correctAnswer||'').match(/^([1-4])번/)?.[1]||0);
-  optionsArray(round?.options).forEach((choice,i)=>{
+  choices.forEach((choice,i)=>{
     const number=i+1;
-    const item=document.createElement('div');item.className='quiz-reveal-option';
+    const item=document.createElement('div');
+    item.className='quiz-reveal-option';
+    const mine=String(ownAnswer?.value||'')===String(number);
     if(number===correctIndex)item.classList.add('is-correct');
-    if(String(ownAnswer?.value||'')===String(number)&&number!==correctIndex)item.classList.add('is-selected-wrong');
-    const flag=number===correctIndex?' ✓ 정답':String(ownAnswer?.value||'')===String(number)?' · 내가 선택':' ';
-    item.textContent=`${number}. ${choice}${flag}`;output.append(item);
+    if(mine&&number!==correctIndex)item.classList.add('is-selected-wrong');
+    const flags=[];
+    if(number===correctIndex)flags.push('✓ 정답');
+    if(mine)flags.push('내가 선택');
+    const suffix=flags.length?` · ${flags.join(' · ')}`:'';
+    item.textContent=`${number}. ${choice}${suffix}`;
+    output.append(item);
   });
 }
 function makeResultRow(entry,index,{cumulative=false,mine=false}={}){
