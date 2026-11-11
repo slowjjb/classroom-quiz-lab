@@ -2,16 +2,18 @@
 // 모든 채점/공개 결과는 교사 브라우저가 보낸 읽기 전용 v3/public 경로에서 받습니다.
 import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { ranking } from './classic-core.js?v=3.4';
+import { ranking } from './classic-core.js?v=3.8';
 import { fullQuestionImageUrl } from './image-utils.js?v=3.4';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.4';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.8';
+import { createAvatarImage } from './avatars.js';
 
 const $ = id => document.getElementById(id);
 const arcade = createArcadeUi('quiz-panel', {role:'student'});
 let code = '', uid = '', round = null, ownAnswer = null, ownGrade = null;
 let scores = {}, sending = false, clockOffset = 0, currentRoundId = null;
 let resultsOpen = false, finishedDismissed = false, unsub = [], unanswer = null, ungrade = null;
-let selectedChoice='', typedDraft='';
+let selectedChoice='', typedDraft='', avatarRoster={};
+export function setAvatarRoster(next={}){avatarRoster=next||{};if(code)render();}
 const stateLabels = {ready:'게임 준비', question:'문제 풀이', paused:'일시 정지', reveal:'정답 공개', finished:'게임 종료'};
 function setVisible(id, show) { $(id).hidden = !show; }
 function notify(text, kind = '') { const el=$('quiz-message');el.textContent=text;el.dataset.kind=kind; }
@@ -175,7 +177,8 @@ function makeResultRow(entry,index,{cumulative=false,mine=false}={}){
   const points=document.createElement('strong');points.textContent=cumulative?`${Number(entry.score||0).toLocaleString()}점`:`+${Number(entry.points||0).toLocaleString()}점`;
   const duration=document.createElement('small');
   duration.textContent=cumulative?'누적 점수':entry.status==='correct'||entry.status==='wrong'?`${(Number(entry.responseMs||0)/1000).toFixed(2)}초`:'—';
-  metrics.append(points,duration);el.append(rank,label,metrics);return el;
+  metrics.append(points,duration);
+  el.append(rank,createAvatarImage(entry.avatarId||avatarRoster[entry.uid],{size:'sm',decorative:true}),label,metrics);return el;
 }
 function renderResults(){
   const report=round?.roundResults;
@@ -196,11 +199,12 @@ function renderResults(){
   const rankList=$('quiz-ranking');rankList.replaceChildren();
   // 공개 문항 결과의 누적 점수는 공개 시점에서 교사가 확정한 값으로 표시합니다.
   const combined=isValid?Object.fromEntries(Object.entries(report.entries||{}).map(([id,e])=>[id,{name:e.name,score:e.cumulative,correct:e.cumulativeCorrect,answered:e.cumulativeAnswered,totalMs:e.cumulativeMs}])):scores;
-  ranking(combined).forEach((entry,i)=>rankList.append(makeResultRow(entry,i+1,{cumulative:true,mine:entry.uid===uid})));
+  ranking(combined).forEach((entry,i)=>rankList.append(makeResultRow(entry,i+1,{cumulative:true,mine:entry.uid===uid}))); 
   if(!rankList.childElementCount)rankList.textContent='아직 누적 순위가 없습니다.';
 }
 function renderFinished(){
-  const ranked=ranking(scores);renderPodium($('quiz-final-podium'),ranked);
+  const ranked=ranking(Object.fromEntries(Object.entries(scores).map(([id,entry])=>[id,{...entry,avatarId:entry.avatarId||avatarRoster[id]}])));
+  renderPodium($('quiz-final-podium'),ranked);
   const list=$('quiz-final-ranking');list.replaceChildren();
   ranked.forEach((entry,i)=>list.append(makeResultRow(entry,i+1,{cumulative:true,mine:entry.uid===uid})));
   if(!list.childElementCount)list.textContent='최종 순위를 준비하고 있습니다.';
@@ -222,6 +226,7 @@ function render(){
   const state=round?.state||'waiting';
   const show=['question','paused','reveal','finished'].includes(state)&&!finishedDismissed;
   setVisible('quiz-panel',show);document.body.classList.toggle('quiz-stage-active',show);
+  if(show){const picker=document.getElementById('avatar-dialog');if(picker?.open)picker.close();}
   if(!show)return;
   arcade.sync({state,questionId:round?.roundId||'',grade:state==='reveal'?ownGrade?.correct??null:null});
   $('quiz-stage-error').hidden=true;

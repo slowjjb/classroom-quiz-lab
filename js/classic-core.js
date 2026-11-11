@@ -28,7 +28,7 @@ export function totalScores(gradeMap, members = {}) {
   const totals = {};
   for (const [uid, m] of Object.entries(members)) {
     if (!m?.profile?.name) continue;
-    totals[uid] = { name: String(m.profile.name), score: 0, answered: 0, correct: 0, totalMs: 0 };
+    totals[uid] = { name: String(m.profile.name), ...(m.profile.avatarId?{avatarId:String(m.profile.avatarId)}:{}), score: 0, answered: 0, correct: 0, totalMs: 0 };
   }
   for (const round of Object.values(gradeMap || {})) {
     for (const [uid, grade] of Object.entries(round || {})) {
@@ -64,6 +64,7 @@ export function buildRoundReport(roundId, gradesForRound = {}, answersForRound =
     const submitted = !!answersForRound?.[uid];
     entries[uid] = {
       name: String(name),
+      ...(cumulative?.[uid]?.avatarId?{avatarId:String(cumulative[uid].avatarId)}:{}),
       status: grade ? (grade.correct ? 'correct' : 'wrong') : (submitted ? 'pending' : 'missing'),
       points: grade ? Number(grade.points || 0) : 0,
       responseMs: grade ? Number(grade.responseMs || 0) : 0,

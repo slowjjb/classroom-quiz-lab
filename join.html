@@ -2,14 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퀴즈 실험실 v3.6</title>
-  <link rel="stylesheet" href="styles.css?v=3.6"><link rel="stylesheet" href="arcade.css?v=3.6"><link rel="stylesheet" href="responsive-v3.6.css?v=3.6"><script type="module" src="js/join.js?v=3.6"></script>
+  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퀴즈 실험실 v3.8</title>
+  <link rel="stylesheet" href="styles.css?v=3.8"><link rel="stylesheet" href="arcade.css?v=3.8"><link rel="stylesheet" href="responsive-v3.6.css?v=3.8"><link rel="stylesheet" href="avatars.css?v=3.8"><script type="module" src="js/join.js?v=3.8"></script>
 </head>
 <body class="arcade-theme">
-<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">학생 게임 입장 · v3.6</span></header>
+<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">학생 게임 입장 · v3.8</span></header>
 <main class="page-content student-page join-page">
   <div class="join-layout"><div class="join-entry-column">
-  <div class="page-heading"><span class="eyebrow">JOIN QUIZ / V3.6</span><h1>퀴즈 방에 입장하기</h1><p>선생님이 알려주신 참여 코드를 입력해 주세요. 지금은 가상 이름으로 연결을 시험합니다.</p></div>
+  <div class="page-heading"><span class="eyebrow">JOIN QUIZ / V3.8</span><h1>퀴즈 방에 입장하기</h1><p>선생님이 알려주신 참여 코드를 입력해 주세요. 지금은 가상 이름으로 연결을 시험합니다.</p></div>
   <section class="panel student-panel">
     <div class="connection"><span id="join-dot" class="connection-dot"></span><span id="join-connection">서버 연결 확인 중…</span></div>
     <label class="field-label" for="join-code">6자리 참여 코드</label><input id="join-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" placeholder="예: 482731" aria-label="6자리 참여 코드">
@@ -22,12 +22,27 @@
   <section id="student-room" class="panel" hidden>
     <div class="panel-header"><h2 id="student-room-title">대기실</h2><span id="student-room-state" class="pill pill-neutral">대기 중</span></div>
     <p id="student-room-meta" class="helper"></p>
+    <div class="avatar-self" id="avatar-self" hidden>
+      <div id="avatar-current" class="avatar-self-picture" aria-hidden="true"></div>
+      <div class="avatar-self-text"><strong>내 캐릭터: <span id="avatar-current-name">우주 탐험가</span></strong><small>친구 명단과 게임 순위에 표시됩니다.</small></div>
+      <button id="avatar-choose" type="button" class="btn btn-outline btn-small">캐릭터 고르기</button>
+    </div>
     <div class="room-waiting"><span aria-hidden="true">🎮</span><strong>선생님의 안내를 기다려 주세요</strong><span>게임이 시작되면 큰 문제 화면으로 자동 전환됩니다.</span></div>
     <div class="panel-header"><h2>접속한 친구들</h2><span class="count" id="join-count">0명</span></div>
     <div id="join-members" class="student-grid"></div>
   </section>
   </div>
-  <!-- v3.6: 가로 화면은 좌우 배치 / 모바일은 세로 배치 -->
+  <dialog id="avatar-dialog" class="avatar-dialog" aria-labelledby="avatar-dialog-title">
+    <div class="avatar-dialog-body">
+      <div class="avatar-dialog-header">
+        <div><span class="eyebrow">MY QUIZ CHARACTER</span><h2 id="avatar-dialog-title">나의 캐릭터를 골라요!</h2><p>20종 모두 무료예요. 친구들과 같은 캐릭터를 선택해도 괜찮아요.</p></div>
+        <button id="avatar-close" type="button" class="btn btn-outline" aria-label="캐릭터 선택 닫기">닫기 ✕</button>
+      </div>
+      <div id="avatar-grid" class="avatar-choice-grid" role="group" aria-label="캐릭터 선택"></div>
+      <p id="avatar-feedback" class="feedback" role="status" aria-live="polite"></p>
+    </div>
+  </dialog>
+  <!-- v3.8: 가로 화면은 좌우 배치 / 모바일은 세로 배치 -->
   <section id="quiz-panel" class="quiz-stage" hidden aria-label="클래식 퀴즈 전용 화면">
     <div class="quiz-stage-inner">
       <div class="quiz-stage-head">
@@ -81,6 +96,6 @@
   </section>
   <p class="notice centered">학생에게는 문제와 보기만 전달됩니다. 정답과 점수는 교사 화면에서 처리합니다.</p>
   <a class="back-link" href="./">← 처음 화면으로</a>
-</main><footer>CLASSROOM QUIZ LAB · v3.6</footer></div>
+</main><footer>CLASSROOM QUIZ LAB · v3.8</footer></div>
 </body>
 </html>

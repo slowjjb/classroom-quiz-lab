@@ -1,20 +1,22 @@
-import { startQuizView, stopQuizView } from './classic-student.js?v=3.6';
+import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.8';
+import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
-import { ref, get, set, remove, onValue, onDisconnect, push, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import { ref, get, set, remove, onValue, onDisconnect, push, serverTimestamp, runTransaction, update } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 
 const $ = id => document.getElementById(id);
 const NAME_KEY='quizlab-v2-display-name', SESSION_KEY='quizlab-v2-active-room';
 const params=new URLSearchParams(location.search);
 let activeCode='', activeUser=null, sessionRef=null, unsubRoom=null, unsubConnection=null, joining=false, active=false, ended=false;
+let currentAvatarId='a01', avatarSaving=false;
 const savedName=localStorage.getItem(NAME_KEY); if(savedName)$('join-name').value=savedName;
 const fromUrl=params.get('code')||'';if(/^\d{6}$/.test(fromUrl))$('join-code').value=fromUrl;
 function feedback(value,kind=''){$('join-feedback').textContent=value;$('join-feedback').dataset.kind=kind;}
 function onlineStatus(value,ok=false){$('join-connection').textContent=value;$('join-dot').classList.toggle('connected',ok);}
 function roomStatus(value){$('student-room-state').textContent=({lobby:'입장 가능',locked:'입장 마감',ended:'방 종료'})[value]||'상태 확인 중';}
 
-function setActive(flag){active=flag;$('join-room-btn').hidden=flag;$('leave-room-btn').hidden=!flag;$('join-code').disabled=flag;$('join-name').disabled=flag;$('student-room').hidden=!flag;}
+function setActive(flag){active=flag;$('join-room-btn').hidden=flag;$('leave-room-btn').hidden=!flag;$('join-code').disabled=flag;$('join-name').disabled=flag;$('student-room').hidden=!flag;$('avatar-self').hidden=!flag;}
 async function stopPresence() {
   if(unsubConnection){unsubConnection();unsubConnection=null;}
   const old=sessionRef;sessionRef=null;
@@ -23,6 +25,8 @@ async function stopPresence() {
 async function leaveRoom(showMessage=true){
   sessionStorage.removeItem(SESSION_KEY);
   stopQuizView();
+  if($('avatar-dialog').open)$('avatar-dialog').close();
+  setAvatarRoster({});
   if(unsubRoom){unsubRoom();unsubRoom=null;}
   setActive(false);ended=false;
   await stopPresence();activeCode='';activeUser=null;
@@ -38,14 +42,69 @@ function renderRoom(data){
   if(meta.state==='ended'&&!ended){
     ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopQuizView();stopPresence();onlineStatus('방이 종료되었습니다.');
   }
-  const members=Object.values(data.members||{}).filter(x=>Object.keys(x?.connections||{}).length>0).map(x=>x.profile?.name||'이름 없음');
+  const roster=data.members||{};
+  const avatars=Object.fromEntries(Object.entries(roster).map(([memberUid,m])=>[memberUid,normalizeAvatarId(m?.profile?.avatarId)]));
+  setAvatarRoster(avatars);
+  const own=roster[activeUser?.uid]?.profile;
+  if(own){currentAvatarId=normalizeAvatarId(own.avatarId);renderOwnAvatar();}
+  const members=Object.entries(roster)
+    .filter(([,m])=>Object.keys(m?.connections||{}).length>0)
+    .map(([memberUid,m])=>({uid:memberUid,name:m.profile?.name||'이름 없음',avatarId:normalizeAvatarId(m.profile?.avatarId)}));
   $('join-count').textContent=`${members.length}명`;
   const list=$('join-members');list.replaceChildren();
   if(!members.length){const p=document.createElement('div');p.className='empty-state';p.textContent='접속 중인 친구가 없습니다.';list.append(p);return;}
-  members.forEach((name,i)=>{const el=document.createElement('div');el.className='student-item';
-    const n=document.createElement('span');n.className='student-avatar';n.textContent=String(i+1);
-    const t=document.createElement('span');t.textContent=name;el.append(n,t);list.append(el);});
+  members.forEach(member=>{
+    const el=document.createElement('div');el.className='student-item avatar-member';
+    const icon=createAvatarImage(member.avatarId,{size:'sm'});
+    const t=document.createElement('span');t.textContent=member.name;
+    el.append(icon,t);list.append(el);
+  });
 }
+function renderOwnAvatar(){
+  const selected=avatarInfo(currentAvatarId);
+  const spot=$('avatar-current');spot.replaceChildren(createAvatarImage(selected.id,{size:'md'}));
+  $('avatar-current-name').textContent=selected.name;
+  for(const button of $('avatar-grid').querySelectorAll('[data-avatar-id]')){
+    const isSelected=button.dataset.avatarId===currentAvatarId;
+    button.setAttribute('aria-pressed',String(isSelected));
+    button.classList.toggle('chosen',isSelected);
+  }
+}
+function buildAvatarPicker(){
+  const grid=$('avatar-grid');grid.replaceChildren();
+  for(const avatar of AVATARS){
+    const button=document.createElement('button');button.type='button';
+    button.className='avatar-choice';button.dataset.avatarId=avatar.id;
+    button.setAttribute('aria-label',`${avatar.name} 선택`);
+    const image=createAvatarImage(avatar.id,{size:'lg'});
+    const label=document.createElement('span');label.textContent=avatar.name;
+    button.append(image,label);button.addEventListener('click',()=>chooseAvatar(avatar.id));grid.append(button);
+  }
+  renderOwnAvatar();
+}
+async function chooseAvatar(id){
+  if(!active||!activeCode||!activeUser||ended||avatarSaving)return;
+  if(!AVATARS.some(avatar=>avatar.id===id))return;
+  avatarSaving=true;
+  const requestedCode=activeCode,requestedUid=activeUser.uid;
+  $('avatar-feedback').textContent='캐릭터를 저장하고 있습니다…';
+  try{
+    await update(ref(db,`v2/rooms/${requestedCode}/members/${requestedUid}/profile`),{avatarId:id});
+    if(requestedCode!==activeCode||requestedUid!==activeUser?.uid)return;
+    currentAvatarId=id;renderOwnAvatar();
+    $('avatar-feedback').textContent=`${avatarInfo(id).name} 선택 완료! 친구들 화면에도 표시됩니다.`;
+    $('avatar-dialog').close();
+  }catch(err){$('avatar-feedback').textContent='저장 실패: '+formatError(err)+' (v3.8 Firebase 규칙이 게시됐는지 확인하세요.)';}
+  finally{avatarSaving=false;}
+}
+$('avatar-choose').addEventListener('click',()=>{
+  if(!active||ended)return;
+  $('avatar-feedback').textContent='';renderOwnAvatar();
+  if(!$('avatar-dialog').open)$('avatar-dialog').showModal();
+});
+$('avatar-close').addEventListener('click',()=>$('avatar-dialog').close());
+$('avatar-dialog').addEventListener('click',event=>{if(event.target===$('avatar-dialog'))$('avatar-dialog').close();});
+buildAvatarPicker();
 function watchConnection(uid,name){
   if(unsubConnection)unsubConnection();
   unsubConnection=onValue(ref(db,'.info/connected'),async snap=>{
@@ -110,6 +169,7 @@ async function joinRoom(automatic=false){
     localStorage.setItem(NAME_KEY,displayName);$('join-name').value=displayName;
     sessionStorage.setItem(SESSION_KEY,JSON.stringify({code,name:displayName}));
     activeCode=code;activeUser=user;setActive(true);ended=false;
+    currentAvatarId=normalizeAvatarId(profileSnap.val()?.avatarId);renderOwnAvatar();
     startQuizView(code,user.uid);
     onlineStatus('실시간 서버 연결 중…');
     unsubRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),err=>{

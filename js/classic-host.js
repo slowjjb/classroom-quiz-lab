@@ -2,9 +2,10 @@ import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeRulesV3 } from './rules-v3.js';
-import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.4';
+import { createAvatarImage } from './avatars.js';
+import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.4';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.8';
 
 const $ = x => document.getElementById(x);
 const arcade = createArcadeUi('classic-focus',{role:'teacher'});
@@ -87,7 +88,10 @@ function render(){
   const ranks=ranking(totalScores(grades,rosterMembers()));
   for(const [i,x] of ranks.entries()){
     const line=document.createElement('div');line.className='classic-rank-line';
-    line.textContent=`${i+1}위  ${x.name}  ·  ${x.score.toLocaleString()}점  ·  ${x.correct}/${x.answered} 정답`;
+    const medal=document.createElement('span');medal.textContent=`${i+1}위`;
+    const name=document.createElement('span');name.textContent=`${x.name} · ${x.score.toLocaleString()}점 · ${x.correct}/${x.answered} 정답`;
+    line.classList.add('avatar-classic-rank');
+    line.append(medal,createAvatarImage(x.avatarId,{size:'sm',decorative:true}),name);
     list.append(line);
   }
   if(!ranks.length)list.textContent='게임 참가자가 아직 없습니다.';
@@ -102,7 +106,7 @@ function render(){
   renderFocus();
 }
 function rosterMembers(){
-  if(run?.roster){return Object.fromEntries(Object.entries(run.roster).map(([id,name])=>[id,{profile:{name}}]));}
+  if(run?.roster){return Object.fromEntries(Object.entries(run.roster).map(([id,name])=>[id,{profile:{name,...(room?.members?.[id]?.profile?.avatarId?{avatarId:room.members[id].profile.avatarId}:{})}}]));}
   return room?.members||{};
 }
 function createSetSnapshot(source){
@@ -298,7 +302,7 @@ function focusRow(entry,index,kind){
   const points=document.createElement('strong');points.textContent=`${Number(kind==='total'?entry.score:entry.points||0).toLocaleString()}점`;
   const speed=document.createElement('small');speed.textContent=kind==='total'?'누적 점수':
     ['correct','wrong'].includes(entry.status)?`${(Number(entry.responseMs||0)/1000).toFixed(2)}초`:'—';
-  metrics.append(points,speed);row.append(rank,info,metrics);return row;
+  metrics.append(points,speed);row.append(rank,createAvatarImage(entry.avatarId,{size:'sm',decorative:true}),info,metrics);return row;
 }
 function showFocusImage(path){
   const wrap=$('classic-focus-image-wrap'),img=$('classic-focus-image'),error=$('classic-focus-image-error');

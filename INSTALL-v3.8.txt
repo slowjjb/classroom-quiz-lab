@@ -1,0 +1,14 @@
+[퀴즈 실험실 v3.8 설치 안내]
+
+1) v3.8-upgrade.zip 파일을 압축 해제합니다.
+2) GitHub classroom-quiz-lab 저장소 최상위에 join.html, rooms.html 등 파일과 js/, images/, tests/ 폴더를 올립니다.
+   - 압축 ZIP 파일 자체를 업로드하지 마세요.
+   - 기존 firebase-config.js는 덮어쓰지 않습니다.
+3) GitHub Pages 반영 후 교사 계정으로 rooms.html에 로그인합니다.
+4) [v3.8 캐릭터 저장 보안 규칙 설정] 메뉴를 펼칩니다.
+5) [v3.8 전체 보안 규칙 복사] → Firebase Realtime Database → 규칙 → 붙여넣기 → 게시.
+6) 학생이 join.html에서 방 입장 → [캐릭터 고르기] → 20종 중 선택.
+7) 친구 명단, 교사 명단, 문항별 순위 및 최종 시상대에서 캐릭터 확인.
+
+중요: 이번에는 Firebase 규칙까지 갱신해야 캐릭터 저장이 성공합니다.
+전체 안내: README-v3.8.md

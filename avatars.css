@@ -1,0 +1,44 @@
+/* Quiz Lab v3.8 · 캐릭터 이미지는 자체 제작 PNG이며 128×128 픽셀아트입니다. */
+.avatar-pixel{display:block;object-fit:contain;image-rendering:pixelated;flex-shrink:0;background:transparent;user-select:none;pointer-events:none}
+.avatar-pixel--sm{width:36px;height:36px}
+.avatar-pixel--md{width:56px;height:56px}
+.avatar-pixel--lg{width:90px;height:90px}
+.student-item.avatar-member{gap:7px;overflow:hidden}
+.student-item.avatar-member .avatar-pixel{width:36px;height:36px;flex-shrink:0;border-radius:11px;background:linear-gradient(140deg,#ede5ff,#ddf6ff)}
+.student-item.avatar-member span{min-width:0;font-size:13px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.avatar-self{display:flex;gap:10px;align-items:center;min-width:0;margin:12px 0 8px;padding:8px 12px;border:1px solid #dcdafa;border-radius:16px;background:linear-gradient(125deg,#f3eeff,#f0faff)}
+.avatar-self[hidden]{display:none!important}
+.avatar-self-picture{display:grid;place-items:center;flex:0 0 56px;border-radius:13px;background:linear-gradient(135deg,#e2d8ff,#c9f5ff)}
+.avatar-self-text{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.avatar-self-text strong{font-size:14px;color:#263874;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avatar-self-text small{font-size:11px;color:#7180ac}
+#avatar-choose{min-height:37px;white-space:nowrap;font-size:12px;border:2px solid #aa9ce9;background:#fff}
+.avatar-dialog{position:fixed;width:min(910px,calc(100vw - 24px));max-height:min(90dvh,840px);padding:0;border:2px solid #c3baff;border-radius:23px;box-shadow:0 24px 90px #090c337c;background:linear-gradient(140deg,#f7f4ff,#f1faff);color:#1a2e64;overflow:auto;z-index:9000}
+.avatar-dialog:not([open]){display:none}
+.avatar-dialog::backdrop{background:#081437a8;backdrop-filter:blur(5px)}
+.avatar-dialog-body{padding:clamp(16px,2.5vw,28px)}
+.avatar-dialog-header{display:flex;align-items:start;justify-content:space-between;gap:18px;margin-bottom:18px}
+.avatar-dialog-header h2{margin:3px 0;font-size:clamp(22px,2.7vw,30px);letter-spacing:-.03em}
+.avatar-dialog-header p{color:#657aa3;margin:5px 0 0;font-size:13px}
+.avatar-dialog-header .btn{min-width:82px}
+.avatar-choice-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px}
+.avatar-choice{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;min-width:0;min-height:130px;border:2px solid #d7def1;border-radius:16px;background:#fff;cursor:pointer;padding:10px 6px;color:#253669;transition:background .16s,border-color .16s,transform .16s,box-shadow .16s}
+.avatar-choice:hover{transform:translateY(-2px);border-color:#9d8fff;background:#faf9ff}
+.avatar-choice:focus-visible{outline:3px solid #ffbc51;outline-offset:2px}
+.avatar-choice.chosen,.avatar-choice[aria-pressed=true]{border:3px solid #7756ea;background:#f0edff;box-shadow:0 0 0 3px #d9d0ff}
+.avatar-choice.chosen::after{content:'✓';position:absolute;right:6px;top:6px;width:23px;height:23px;border-radius:50%;background:#5d46cb;color:#fff;font-weight:900;font-size:15px;display:grid;place-items:center}
+.avatar-choice span{font-size:clamp(11px,1vw,14px);font-weight:800;text-align:center;overflow-wrap:anywhere;line-height:1.25;word-break:keep-all}
+.avatar-choice .avatar-pixel--lg{height:min(78px,11vw);width:min(78px,11vw);min-width:62px;min-height:62px}
+.avatar-dialog #avatar-feedback{margin:13px 0 0;min-height:20px;color:#415b94}
+.avatar-classic-rank{display:flex;align-items:center;gap:8px}
+.quiz-result-row .avatar-pixel--sm{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#e5e3ff,#e4fbff)}
+.arcade-podium-person .avatar-pixel--lg{width:clamp(54px,6vw,78px);height:clamp(54px,6vw,78px);border:3px solid #ffffffb8;border-radius:17px;background:linear-gradient(140deg,#eae1ff,#d5f4ff);filter:drop-shadow(0 4px 8px #04093655)}
+/* 디벗 가로 화면에서는 대기 명단이 20~25명이어도 기존 고정 높이를 유지합니다. */
+.join-page #join-members .student-item{min-width:0}
+@media(max-width:700px){.avatar-choice-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.avatar-dialog-header{gap:6px}.avatar-dialog-header .btn{min-width:62px;padding:8px}.avatar-self-text small{display:none}}
+@media(max-width:470px){.avatar-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.avatar-choice{min-height:121px}.avatar-choice .avatar-pixel--lg{min-width:65px;min-height:65px}.avatar-self{gap:6px;padding:7px}.avatar-self .avatar-pixel--md{width:45px;height:45px}.avatar-self-picture{flex-basis:45px}#avatar-choose{font-size:11px;padding:7px}.avatar-self-text strong{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.avatar-choice{transition:none!important}.avatar-choice:hover{transform:none}}
+.avatar-rules-help{margin:13px 0;padding:11px 14px;border-radius:14px;background:#eff5ff;border:1px solid #d9e5ff;color:#2a487d}
+.avatar-rules-help summary{cursor:pointer;font-weight:850;font-size:13px}
+.avatar-rules-help .pill{margin-left:8px;font-size:10px}
+.avatar-rules-help p{font-size:13px;line-height:1.6;margin:9px 0}

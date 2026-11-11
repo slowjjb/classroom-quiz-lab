@@ -1,3 +1,4 @@
+import { createAvatarImage } from './avatars.js';
 /**
  * QUIZ LAB v3.4: 시각 효과와 오리지널 Web Audio 배경 음악.
  * Firebase, 채점, 정답, 점수 데이터에는 접근하지 않는 순수 표시 계층입니다.
@@ -88,7 +89,7 @@ export function renderPodium(target,ranked){
     const name=document.createElement('strong');name.textContent=String(entry.name||'참가자');
     const score=document.createElement('span');score.textContent=Number(entry.score||0).toLocaleString('ko-KR')+'점';
     const block=document.createElement('div');block.className='arcade-podium-base';block.textContent=`${i+1}위`;
-    item.append(medal,name,score,block);podium.append(item);
+    item.append(medal,createAvatarImage(entry.avatarId,{size:'lg',decorative:true}),name,score,block);podium.append(item);
   }
   target.append(podium);
 }

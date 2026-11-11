@@ -5,6 +5,12 @@ export function makeRulesV3(uid) {
   const result = JSON.parse(makeRulesV2(uid));
   const teacher = `auth != null && auth.uid === '${uid}' && auth.token.firebase.sign_in_provider === 'google.com'`;
   const member = `auth != null && root.child('v2/rooms/' + $code + '/members/' + auth.uid + '/profile').exists()`;
+  // v3.8: 학생 본인 프로필에만 20종 기본 캐릭터 ID를 저장할 수 있습니다.
+  // 원래 v2.1의 이름 선점·프로필 작성 권한은 그대로 유지합니다.
+  const studentProfile = result.rules.v2.rooms['$code'].members['$uid'].profile;
+  studentProfile.avatarId = {
+    '.validate': "newData.isString() && newData.val().matches(/^a(0[1-9]|1[0-9]|20)$/)"
+  };
   result.rules.v3 = {
     versionCheck: {'.read': teacher, '.write': false},
     // 문제 원본·정답은 교사 전용: v2/rooms의 넓은 멤버 읽기 규칙을 상속하지 않도록 완전히 분리합니다.

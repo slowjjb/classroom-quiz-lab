@@ -2,6 +2,7 @@ import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeRulesV3 } from './rules-v3.js';
+import { createAvatarImage } from './avatars.js';
 
 const $ = id => document.getElementById(id);
 const modeNames = {classic:'클래식',gold:'골드 퀘스트',fishing:'피싱 프렌지',racing:'레이싱'};
@@ -83,7 +84,7 @@ async function releaseOfflineName(uid,name){
 function renderMembers(record) {
   const members=record?.members||{};
   const all=Object.entries(members).filter(([,v])=>v?.profile?.name).map(([uid,value])=>({
-    uid,name:value.profile.name,at:value.profile.joinedAt||0,
+    uid,name:value.profile.name,at:value.profile.joinedAt||0,avatarId:value.profile.avatarId||'',
     sessions:Object.keys(value.connections||{}).length
   })).sort((a,b)=>a.at-b.at);
   const online=all.filter(x=>x.sessions>0);
@@ -97,7 +98,7 @@ function renderMembers(record) {
   if(!online.length){const div=document.createElement('div');div.className='empty-state';div.textContent='현재 접속 중인 학생이 없습니다.';list.append(div);}
   online.forEach((item,i)=>{
     const el=document.createElement('div');el.className='student-item';
-    const num=document.createElement('span');num.className='student-avatar';num.textContent=String(i+1);
+    const num=createAvatarImage(item.avatarId,{size:'sm',decorative:true});
     const name=document.createElement('span');name.textContent=item.name;
     const more=document.createElement('small');more.textContent=item.sessions>1?`(${item.sessions}개 창)`:'';
     el.append(num,name,more);list.append(el);
@@ -232,6 +233,16 @@ else {
   $('room-login').addEventListener('click',async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider());}catch(err){info('room-auth-message',formatError(err),'error');}});
   $('room-logout').addEventListener('click',()=>signOut(auth).catch(err=>info('room-auth-message',formatError(err),'error')));
   $('room-retry').addEventListener('click',startListeners);
+  $('avatar-copy-rules').addEventListener('click',async()=>{
+    if(!teacher){info('avatar-rules-message','교사 Google 계정으로 로그인한 다음 다시 눌러 주세요.','error');return;}
+    try{
+      const ok=await copyText(makeRulesV3(teacher.uid));
+      info('avatar-rules-message',ok
+        ?'v3.8 전체 규칙을 복사했습니다. Firebase Realtime Database → 규칙에 붙여넣고 게시하세요.'
+        :'자동 복사에 실패했습니다. 아래 기존 「규칙 JSON 다운로드」 기능을 이용하거나 브라우저 클립보드 권한을 확인해 주세요.',
+        ok?'success':'error');
+    }catch(error){info('avatar-rules-message',formatError(error),'error');}
+  });
   $('room-copy-rules').addEventListener('click',async()=>{
     if(!teacher)return;
     const ok=await copyText(makeRulesV3(teacher.uid));

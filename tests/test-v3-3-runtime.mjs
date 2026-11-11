@@ -31,6 +31,6 @@ ui.reset();assert.equal(stage.dataset.arcadePhase,'');
 ui.sync({state:'question',questionId:'q1'});assert.equal(stage.dataset.arcadePhase,'question');
 const result=new Element();renderPodium(result,[{name:'A',score:700},{name:'B',score:600},{name:'C',score:500}]);
 assert.equal(result.children.length,1);assert.equal(result.children[0].children.length,3);
-assert.equal(result.children[0].children[1].children[1].textContent,'A');
-assert.equal(result.children[0].children[1].children[2].textContent,'700점');
+assert.equal(result.children[0].children[1].children[2].textContent,'A');
+assert.equal(result.children[0].children[1].children[3].textContent,'700점');
 console.log('v3.3 arcade UI phase/timer/medal sound opt-in runtime: PASS');
