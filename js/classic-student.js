@@ -1,11 +1,13 @@
-// 퀴즈 실험실 v3.2 — 대기실 대신 전용 큰 화면을 사용하는 클래식 학생 화면.
+// 퀴즈 실험실 v3.3 — 대기실 대신 전용 큰 화면을 사용하는 클래식 학생 화면.
 // 모든 채점/공개 결과는 교사 브라우저가 보낸 읽기 전용 v3/public 경로에서 받습니다.
 import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { ranking } from './classic-core.js?v=3.2';
-import { fullQuestionImageUrl } from './image-utils.js?v=3.2';
+import { ranking } from './classic-core.js?v=3.3';
+import { fullQuestionImageUrl } from './image-utils.js?v=3.3';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.3';
 
 const $ = id => document.getElementById(id);
+const arcade = createArcadeUi('quiz-panel', {role:'student'});
 let code = '', uid = '', round = null, ownAnswer = null, ownGrade = null;
 let scores = {}, sending = false, clockOffset = 0, currentRoundId = null;
 let resultsOpen = false, finishedDismissed = false, unsub = [], unanswer = null, ungrade = null;
@@ -20,7 +22,7 @@ function clearSubscriptions(){
   round=null;ownAnswer=null;ownGrade=null;currentRoundId=null;scores={};sending=false;resultsOpen=false;finishedDismissed=false;selectedChoice='';typedDraft='';
 }
 export function stopQuizView(){
-  clearSubscriptions();code='';uid='';setVisible('quiz-panel',false);
+  clearSubscriptions();arcade.reset();code='';uid='';setVisible('quiz-panel',false);
   document.body.classList.remove('quiz-stage-active');
 }
 export function startQuizView(nextCode,nextUid){
@@ -86,7 +88,7 @@ function renderOptions(){
       const label=document.createElement('label');label.className='quiz-large-option';
       const input=document.createElement('input');input.type='radio';input.name='quiz-choice';
       input.value=String(i+1);input.disabled=locked;
-      input.addEventListener('change',()=>{selectedChoice=input.value;});
+      input.addEventListener('change',()=>{selectedChoice=input.value;arcade.choice();});
       input.checked=(ownAnswer?.value??selectedChoice)===String(i+1);
       const numeral=document.createElement('span');numeral.className='quiz-option-number';numeral.textContent=String(i+1);
       const text=document.createElement('span');text.textContent=String(choice);
@@ -125,7 +127,7 @@ function renderReveal(){
 }
 function makeResultRow(entry,index,{cumulative=false,mine=false}={}){
   const el=document.createElement('div');el.className='quiz-result-row';if(mine)el.classList.add('mine');
-  const rank=document.createElement('span');rank.className='quiz-result-place';rank.textContent=`${index}위`;
+  const rank=document.createElement('span');rank.className='quiz-result-place';rank.textContent=['🥇','🥈','🥉'][index-1]||`${index}위`;
   const label=document.createElement('div');label.className='quiz-result-person';
   const name=document.createElement('strong');name.textContent=entry.name||'이름 없음';
   const status=document.createElement('small');
@@ -161,8 +163,9 @@ function renderResults(){
   if(!rankList.childElementCount)rankList.textContent='아직 누적 순위가 없습니다.';
 }
 function renderFinished(){
+  const ranked=ranking(scores);renderPodium($('quiz-final-podium'),ranked);
   const list=$('quiz-final-ranking');list.replaceChildren();
-  ranking(scores).forEach((entry,i)=>list.append(makeResultRow(entry,i+1,{cumulative:true,mine:entry.uid===uid})));
+  ranked.forEach((entry,i)=>list.append(makeResultRow(entry,i+1,{cumulative:true,mine:entry.uid===uid})));
   if(!list.childElementCount)list.textContent='최종 순위를 준비하고 있습니다.';
 }
 function renderImage(wrapId,imgId,errorId,source){
@@ -183,6 +186,7 @@ function render(){
   const show=['question','paused','reveal','finished'].includes(state)&&!finishedDismissed;
   setVisible('quiz-panel',show);document.body.classList.toggle('quiz-stage-active',show);
   if(!show)return;
+  arcade.sync({state,questionId:round?.roundId||'',grade:state==='reveal'?ownGrade?.correct??null:null});
   $('quiz-stage-error').hidden=true;
   $('quiz-state').textContent=stateLabels[state]||'게임 대기';
   $('quiz-progress').textContent=round?.total?`${Number(round.index||0)+1} / ${round.total}문항`:'';
@@ -214,12 +218,12 @@ async function submitAnswer(){
   if(value.length>200){notify('답안은 200자 이하로 입력해 주세요.','error');return;}
   const c=code,r=round.roundId,u=uid;
   sending=true;$('quiz-submit').disabled=true;
-  try{await set(ref(db,`v3/answers/${c}/${r}/${u}`),{value,at:serverTimestamp()});notify('제출 완료! 정답 공개를 기다려 주세요.','success');}
+  try{await set(ref(db,`v3/answers/${c}/${r}/${u}`),{value,at:serverTimestamp()});arcade.submit();notify('제출 완료! 정답 공개를 기다려 주세요.','success');}
   catch(err){notify('제출 실패: 제한 시간이 지났거나 이미 제출한 답안일 수 있습니다. '+formatError(err),'error');}
   finally{sending=false;render();}
 }
 $('quiz-submit').addEventListener('click',submitAnswer);
-$('quiz-show-results').addEventListener('click',()=>{resultsOpen=true;render();});
+$('quiz-show-results').addEventListener('click',()=>{arcade.showResults();resultsOpen=true;render();});
 $('quiz-back-reveal').addEventListener('click',()=>{resultsOpen=false;render();});
 $('quiz-finish-exit').addEventListener('click',()=>{finishedDismissed=true;render();});
 if(db)onValue(ref(db,'.info/serverTimeOffset'),snap=>{clockOffset=Number(snap.val()||0);});
@@ -227,9 +231,9 @@ setInterval(()=>{
   if(!code||$('quiz-panel').hidden)return;
   if(round?.state==='question'){
     const seconds=Math.max(0,Math.ceil((Number(round.deadline||0)-(Date.now()+clockOffset))/1000));
-    $('quiz-time').textContent=`남은 시간 ${seconds}초`;
+    $('quiz-time').textContent=`남은 시간 ${seconds}초`;arcade.updateTime(seconds,round.timeLimit);
     if(seconds===0)$('quiz-submit').disabled=true;
-  }else if(round?.state==='paused')$('quiz-time').textContent='일시 정지';
+  }else if(round?.state==='paused'){$('quiz-time').textContent='일시 정지';arcade.updateTime(0,round.timeLimit);}
   else if(round?.state==='reveal')$('quiz-time').textContent='정답 공개';
   else $('quiz-time').textContent='';
 },250);

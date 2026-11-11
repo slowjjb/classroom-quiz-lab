@@ -2,10 +2,12 @@ import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeRulesV3 } from './rules-v3.js';
-import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.2';
-import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.2';
+import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.3';
+import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.3';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.3';
 
 const $ = x => document.getElementById(x);
+const arcade = createArcadeUi('classic-focus',{role:'teacher'});
 let teacher=null, code='', ready=false, room=null, run=null, publicRound=null, answers={}, grades={}, savedSet=null;
 let unsub=[], operation=false, scorePublished='', grading=new Set(), clockOffset=0, autoRevealPending=false, checkToken=0;
 let focusOpen=false, focusResults=false, reportPublished='', reportTimer=null;
@@ -17,7 +19,7 @@ function getQuestions(r=run){
   const qs=r?.questions;return Array.isArray(qs)?qs:Object.keys(qs||{}).sort((a,b)=>Number(a)-Number(b)).map(k=>qs[k]);
 }
 function serverNow(){return Date.now()+clockOffset;}
-function detach(){checkToken++;for(const stop of unsub)stop();unsub=[];room=null;run=null;publicRound=null;answers={};grades={};savedSet=null;scorePublished='';reportPublished='';if(reportTimer)clearTimeout(reportTimer);reportTimer=null;grading.clear();focusOpen=false;focusResults=false;autoRevealPreference=true;completeSince=0;completeRound='';setVisibleFocus(false);}
+function detach(){arcade.reset();checkToken++;for(const stop of unsub)stop();unsub=[];room=null;run=null;publicRound=null;answers={};grades={};savedSet=null;scorePublished='';reportPublished='';if(reportTimer)clearTimeout(reportTimer);reportTimer=null;grading.clear();focusOpen=false;focusResults=false;autoRevealPreference=true;completeSince=0;completeRound='';setVisibleFocus(false);}
 function resetUi(){
   $('classic-panel').hidden=!code;
   $('classic-rules').hidden=true;
@@ -269,7 +271,11 @@ function tick(){
     }
   }else if(publicRound?.state==='paused')$('classic-timer').textContent=`일시 정지 · ${Math.ceil(Number(publicRound.remainingMs||0)/1000)}초`;
   else { $('classic-timer').textContent='—';completeSince=0; }
-  if(focusOpen)$('classic-focus-timer').textContent=$('classic-timer').textContent;
+  if(focusOpen){
+    $('classic-focus-timer').textContent=$('classic-timer').textContent;
+    if(publicRound?.state==='question')arcade.updateTime(Math.ceil(Math.max(0,Number(publicRound.deadline)-serverNow())/1000),publicRound.timeLimit);
+    else if(publicRound?.state==='paused')arcade.updateTime(0,publicRound.timeLimit);
+  }
 }
 function setVisibleFocus(show){
   $('classic-focus').hidden=!show;
@@ -282,7 +288,7 @@ function openFocus(){
 function closeFocus(){focusOpen=false;setVisibleFocus(false);}
 function focusRow(entry,index,kind){
   const row=document.createElement('div');row.className='quiz-result-row';
-  const rank=document.createElement('span');rank.className='quiz-result-place';rank.textContent=`${index}위`;
+  const rank=document.createElement('span');rank.className='quiz-result-place';rank.textContent=['🥇','🥈','🥉'][index-1]||`${index}위`;
   const info=document.createElement('div');info.className='quiz-result-person';
   const name=document.createElement('strong');name.textContent=entry.name||'학생';
   const status=document.createElement('small');status.textContent=kind==='total'?`${entry.correct||0}문제 정답`:
@@ -309,6 +315,7 @@ function renderFocus(){
   if(!focusOpen)return;
   setVisibleFocus(true);
   const state=publicRound?.state||'ready';
+  arcade.sync({state,questionId:publicRound?.roundId||''});
   $('classic-focus-state').textContent=stateName(state);
   $('classic-focus-progress').textContent=run?`${Math.max(0,(publicRound?.index??-1)+1)} / ${getQuestions().length}문항`:'';
   $('classic-focus-timer').textContent=$('classic-timer').textContent;
@@ -357,7 +364,10 @@ function renderFocus(){
   arr.forEach((r,i)=>rows.append(focusRow(r,i+1,'round')));
   if(!arr.length)rows.textContent='참가 학생이 없습니다.';
   const totals=$('classic-focus-total-list');totals.replaceChildren();
-  ranking(totalScores(grades,rosterMembers())).forEach((r,i)=>totals.append(focusRow(r,i+1,'total')));
+  const ranked=ranking(totalScores(grades,rosterMembers()));
+  const podium=$('classic-focus-podium');podium.hidden=state!=='finished';
+  if(state==='finished')renderPodium(podium,ranked);else podium.replaceChildren();
+  ranked.forEach((r,i)=>totals.append(focusRow(r,i+1,'total')));
   if(!totals.childElementCount)totals.textContent='아직 결과가 없습니다.';
 }
 $('classic-auto-reveal').addEventListener('change',event=>setAutoReveal(event.target.checked));
@@ -368,7 +378,7 @@ $('classic-focus-next').addEventListener('click',nextQuestion);
 $('classic-focus-pause').addEventListener('click',pauseResume);
 $('classic-focus-extend').addEventListener('click',extendTime);
 $('classic-focus-reveal').addEventListener('click',revealQuestion);
-$('classic-focus-result').addEventListener('click',()=>{focusResults=!focusResults;renderFocus();});
+$('classic-focus-result').addEventListener('click',()=>{arcade.showResults();focusResults=!focusResults;renderFocus();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)closeFocus();});
 
 // 교사 인증과 rooms.js의 방 선택 이벤트가 각각 비동기로 도착합니다.

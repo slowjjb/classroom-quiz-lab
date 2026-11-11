@@ -1,4 +1,4 @@
-import { startQuizView, stopQuizView } from './classic-student.js?v=3.2';
+import { startQuizView, stopQuizView } from './classic-student.js?v=3.3';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
