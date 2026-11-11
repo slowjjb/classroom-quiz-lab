@@ -2,9 +2,9 @@ import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeRulesV3 } from './rules-v3.js';
-import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.3';
-import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.3';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.3';
+import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.4';
+import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.4';
 
 const $ = x => document.getElementById(x);
 const arcade = createArcadeUi('classic-focus',{role:'teacher'});

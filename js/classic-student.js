@@ -1,10 +1,10 @@
-// 퀴즈 실험실 v3.3 — 대기실 대신 전용 큰 화면을 사용하는 클래식 학생 화면.
+// 퀴즈 실험실 v3.4 — 대기실 대신 전용 큰 화면을 사용하는 클래식 학생 화면.
 // 모든 채점/공개 결과는 교사 브라우저가 보낸 읽기 전용 v3/public 경로에서 받습니다.
 import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { ranking } from './classic-core.js?v=3.3';
-import { fullQuestionImageUrl } from './image-utils.js?v=3.3';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.3';
+import { ranking } from './classic-core.js?v=3.4';
+import { fullQuestionImageUrl } from './image-utils.js?v=3.4';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.4';
 
 const $ = id => document.getElementById(id);
 const arcade = createArcadeUi('quiz-panel', {role:'student'});

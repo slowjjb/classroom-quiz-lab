@@ -1,0 +1,27 @@
+퀴즈 실험실 v3.4 업그레이드 설치 순서
+
+1. quizlab-v3.4-upgrade.zip 다운로드 후 압축 풀기
+2. https://github.com/slowjjb/classroom-quiz-lab 열기
+3. Add file → Upload files → 압축 푼 파일/폴더를 저장소 맨 위 경로에 업로드
+4. Commit changes
+5. https://slowjjb.github.io/classroom-quiz-lab/rooms.html (교사)
+   https://slowjjb.github.io/classroom-quiz-lab/join.html (학생)
+6. 두 화면 모두 Ctrl + Shift + R 로 강력 새로고침
+7. 가상 학생 2명으로 입장/문제/그림/정답공개/사운드 점검
+
+수정된 주요 파일:
+index.html
+join.html
+rooms.html
+sets.html
+responsive-v3.4.css
+js/join.js
+js/classic-student.js
+js/classic-host.js
+js/arcade-ui.js
+새 테스트 파일 및 설명서
+
+Firebase 규칙 수정 없음.
+firebase-config.js와 database.rules.json은 이번 업그레이드 파일에 포함하지 않음.
+학생은 BGM이 재생되지 않고 조작 후 효과음만 재생됨.
+교사 BGM은 교사용 집중화면에서 켜고 음량을 0~100%로 조절.

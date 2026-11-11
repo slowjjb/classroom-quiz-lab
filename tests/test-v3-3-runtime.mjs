@@ -11,21 +11,20 @@ class Element{
 }
 const head=new Element('header');const inner=new Element('main');const stage=new Element('section');stage.parts={'.quiz-stage-head':head,'.quiz-stage-inner':inner};
 globalThis.window={};globalThis.matchMedia=()=>({matches:true});
-globalThis.document={getElementById:(id)=>({'quiz-panel':stage})[id],createElement:(tag)=>new Element(tag)};
+globalThis.document={addEventListener:()=>{},removeEventListener:()=>{},getElementById:(id)=>({'quiz-panel':stage})[id],createElement:(tag)=>new Element(tag)};
 const ui=createArcadeUi('quiz-panel',{role:'student'});
 assert.ok(stage.classList.values.has('arcade-enhanced'));
-assert.equal(head.children.length,2); // audio toggle and timer bar
-assert.equal(head.children[0].textContent,'🔇 소리 켜기');
-assert.equal(head.children[0].attributes['aria-pressed'],'false');
+assert.equal(head.children.length,1); // v3.4 student has only timer bar; no music button
+assert.equal(head.children[0].className,'arcade-time-track');
 ui.sync({state:'question',questionId:'q1'});
 ui.updateTime(15,30);
-assert.equal(head.children[1].children[0].style.width,'50%');
+assert.equal(head.children[0].children[0].style.width,'50%');
 ui.sync({state:'reveal',questionId:'q1',grade:true});
 assert.equal(stage.dataset.arcadePhase,'reveal');
 ui.sync({state:'question',questionId:'q2'});
 assert.equal(stage.dataset.arcadePhase,'question');
 ui.updateTime(3,30);
-assert.equal(head.children[1].children[0].style.width,'10%');
+assert.equal(head.children[0].children[0].style.width,'10%');
 ui.sync({state:'finished',questionId:'q2'});
 assert.equal(stage.dataset.arcadePhase,'finished');
 ui.reset();assert.equal(stage.dataset.arcadePhase,'');

@@ -1,0 +1,189 @@
+/* Quiz Lab v3.4 · 교실 디벗(가로 화면) 우선 레이아웃. 기존 점수·채점과 무관한 스타일만 정의 */
+
+/* --- 학생 입장/대기실: 모니터에서는 입력 폼 왼쪽, 친구 목록 오른쪽 --- */
+.join-shell{max-width:1620px;padding-inline:clamp(16px,2.8vw,44px)}
+.join-page{max-width:none;margin-top:clamp(12px,2vh,24px)}
+.join-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(16px,2vw,28px);align-items:start}
+.join-layout .join-entry-column{min-width:0}
+.join-page .page-heading{margin:0 0 17px}
+.join-page .page-heading h1{font-size:clamp(27px,3vw,39px);margin:6px 0}
+.join-page .page-heading p{margin:9px 0 0;font-size:14px;line-height:1.55}
+.join-page .student-panel{margin:0;text-align:left;padding:clamp(18px,2.1vw,28px)}
+.join-page .student-panel .connection{justify-content:flex-start;margin:0 0 17px}
+.join-page .student-panel .field-label{margin-bottom:6px}
+.join-page .student-panel input{min-height:49px;font-size:17px}
+.join-page .student-panel .button-row{margin-top:12px}
+.join-page .student-panel .feedback{margin:10px 0 0;min-height:0}
+.join-page #student-room{margin:0;padding:clamp(18px,2vw,28px);min-width:0}
+.join-page #student-room .panel-header h2{overflow-wrap:anywhere}
+.join-page #student-room .room-waiting{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 12px;text-align:left;padding:11px 15px;margin:12px 0 16px}
+.join-page #student-room .room-waiting>span:first-child{grid-row:1 / span 2;font-size:28px;line-height:1.2;align-self:center}
+.join-page #student-room .room-waiting strong{font-size:15px}
+.join-page #student-room .room-waiting>span:last-child{font-size:12px;line-height:1.4}
+.join-page #student-room .helper{margin:9px 0;font-size:13px}
+.join-page #join-members{margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:7px;overflow-y:auto;align-content:start;max-height:clamp(180px,calc(100dvh - 355px),550px);padding-right:3px}
+.join-page #join-members .student-item{padding:7px 9px;min-height:41px;gap:7px}
+.join-page #join-members .student-avatar{width:27px;height:27px;font-size:12px}
+.join-page #join-members .student-item span:last-child{font-size:13px}
+.join-page #join-members .empty-state{padding:18px}
+@media(min-width:900px){
+  .join-layout:has(#student-room:not([hidden])){grid-template-columns:minmax(310px,.83fr) minmax(0,1.42fr)}
+  .join-layout:not(:has(#student-room:not([hidden]))){max-width:620px;margin-inline:auto}
+  .join-page #student-room{min-height:450px}
+}
+@media(max-width:899.98px){
+  .join-page #join-members{max-height:440px}
+  .join-layout{max-width:780px;margin-inline:auto}
+}
+@media(max-width:550px){
+  .join-page .page-heading h1{font-size:29px}
+  .join-page #student-room .room-waiting{grid-template-columns:auto minmax(0,1fr)}
+  .join-page #join-members{grid-template-columns:repeat(2,minmax(0,1fr));max-height:440px}
+  .join-page #student-room{padding:16px}
+  .join-page .student-panel{padding:19px 16px}
+}
+
+/* --- 교사 전용 사운드: 교실 스피커에서 BGM 음량 조절 --- */
+.arcade-audio-settings{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-left:auto}
+.arcade-audio-settings .arcade-audio-toggle{margin:0;white-space:nowrap}
+.arcade-audio-volume-label{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:800;color:#eef1ff;white-space:nowrap}
+.arcade-audio-volume{appearance:auto;width:105px;min-height:22px;margin:0;accent-color:#ffdd7e;cursor:pointer}
+.arcade-enhanced .arcade-time-track{margin:8px 0 0}
+
+/* --- 학생 디벗 화면: 왼쪽 게임 상황판 / 오른쪽 문제 + 2x2 보기 --- */
+@media(min-width:760px) and (min-height:540px){
+  #quiz-panel.quiz-stage.arcade-enhanced,
+  #classic-focus.quiz-stage.arcade-enhanced{padding:10px 12px 12px}
+  #quiz-panel.arcade-enhanced .quiz-stage-inner,
+  #classic-focus.arcade-enhanced .quiz-stage-inner{
+    display:grid;grid-template-columns:clamp(150px,16vw,220px) minmax(0,1fr);
+    column-gap:clamp(10px,1.2vw,20px);align-items:start;max-width:1580px;min-width:0;
+  }
+  #quiz-panel.arcade-enhanced .quiz-stage-head,
+  #classic-focus.arcade-enhanced .quiz-stage-head{
+    grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+    gap:13px;flex-wrap:nowrap;padding:18px 13px;border-radius:18px;min-width:0;
+  }
+  #quiz-panel.arcade-enhanced .quiz-stage-head{
+    position:sticky;top:10px;min-height:calc(100dvh - 22px)
+  }
+  #quiz-panel.arcade-enhanced .quiz-stage-head>div:first-child,
+  #classic-focus.arcade-enhanced .quiz-stage-head>div:first-child{align-items:center;text-align:center}
+  #quiz-panel.arcade-enhanced .quiz-stage-head strong,
+  #classic-focus.arcade-enhanced .quiz-stage-head strong{font-size:clamp(19px,1.8vw,25px)}
+  #quiz-panel.arcade-enhanced .quiz-stage-kicker,
+  #classic-focus.arcade-enhanced .quiz-stage-kicker{font-size:10px;letter-spacing:.08em}
+  #quiz-panel.arcade-enhanced .quiz-stage-meta,
+  #classic-focus.arcade-enhanced .quiz-stage-meta{
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    gap:10px;font-size:clamp(15px,1.4vw,20px);line-height:1.25;text-align:center;
+    margin:0;white-space:normal;
+  }
+  #quiz-panel.arcade-enhanced #quiz-time,
+  #classic-focus.arcade-enhanced #classic-focus-timer{display:block;width:100%;padding:12px 6px;font-size:clamp(16px,1.6vw,21px);text-align:center}
+  #quiz-panel.arcade-enhanced .quiz-stage-head .arcade-time-track,
+  #classic-focus.arcade-enhanced .quiz-stage-head .arcade-time-track{width:100%;margin:4px 0 0;height:10px}
+  #quiz-panel.arcade-enhanced .quiz-stage-view,
+  #classic-focus.arcade-enhanced .quiz-stage-view{
+    grid-column:2;grid-row:1 / span 3;padding:0;min-width:0;
+  }
+  #quiz-panel.arcade-enhanced .quiz-stage-error,
+  #classic-focus.arcade-enhanced .quiz-stage-error{grid-column:2;grid-row:4}
+  #quiz-panel.arcade-enhanced .quiz-question-card,
+  #classic-focus.arcade-enhanced .quiz-question-card{
+    margin:0 0 10px;padding:clamp(13px,1.55vw,23px);
+    border-radius:20px;box-shadow:0 6px 0 #10104426,0 11px 20px #080e3b22;
+  }
+  #quiz-panel.arcade-enhanced .quiz-question-heading,
+  #classic-focus.arcade-enhanced .quiz-question-heading{
+    font-size:clamp(22px,2.1vw,36px);line-height:1.28;letter-spacing:-.03em
+  }
+  #quiz-panel.arcade-enhanced .quiz-question-guide{font-size:13px;line-height:1.3;margin:6px 0 0}
+  #quiz-panel.arcade-enhanced .quiz-image-wrap,
+  #classic-focus.arcade-enhanced .quiz-image-wrap{padding:6px;margin:7px 0 0;border-radius:13px}
+  #quiz-panel.arcade-enhanced .quiz-image-wrap img,
+  #classic-focus.arcade-enhanced .quiz-image-wrap img,
+  #quiz-panel.arcade-enhanced #quiz-solve-view:has(#quiz-image-wrap:not([hidden])) .quiz-image-wrap img{
+    max-height:min(29dvh,265px);max-width:100%;
+  }
+  #quiz-panel.arcade-enhanced .quiz-large-options,
+  #classic-focus.arcade-enhanced .quiz-large-options{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;margin:10px 0;
+  }
+  #quiz-panel.arcade-enhanced .quiz-large-option,
+  #classic-focus.arcade-enhanced .quiz-large-option{
+    min-height:clamp(65px,10.5dvh,88px);padding:10px 13px;gap:10px;
+    border-radius:14px;font-size:clamp(15px,1.45vw,22px);
+    box-shadow:0 4px 0 #09153f25;
+  }
+  #quiz-panel.arcade-enhanced .quiz-option-number,
+  #classic-focus.arcade-enhanced .quiz-option-number{
+    width:clamp(32px,3.1vw,42px);height:clamp(32px,3.1vw,42px);
+    min-width:clamp(32px,3.1vw,42px);font-size:clamp(16px,1.75vw,21px);border-radius:12px
+  }
+  #quiz-panel.arcade-enhanced .quiz-large-submit,
+  #classic-focus.arcade-enhanced .quiz-large-submit{
+    min-height:48px;width:min(100%,390px);margin:10px auto 0;
+    font-size:clamp(16px,1.6vw,20px);border-radius:12px;box-shadow:0 4px 0 #1c216c;
+  }
+  #quiz-panel.arcade-enhanced .quiz-stage-message{
+    font-size:13px;line-height:1.35;padding:5px 0;margin:5px 0
+  }
+  #quiz-panel.arcade-enhanced .quiz-verdict{padding:10px;margin:0 0 7px;font-size:clamp(22px,2.6vw,35px);border-radius:16px}
+  #quiz-panel.arcade-enhanced .quiz-reveal-question{font-size:clamp(20px,1.9vw,29px);margin:7px 0 10px;line-height:1.35}
+  #quiz-panel.arcade-enhanced .quiz-reveal-options{gap:7px}
+  #quiz-panel.arcade-enhanced .quiz-reveal-option{padding:10px 12px;font-size:clamp(14px,1.25vw,19px);border-radius:10px}
+  #quiz-panel.arcade-enhanced .quiz-score-summary{gap:9px;margin:9px 0}
+  #quiz-panel.arcade-enhanced .quiz-score-summary>div{padding:8px 10px;gap:3px;border-radius:12px}
+  #quiz-panel.arcade-enhanced .quiz-score-summary span{font-size:12px}
+  #quiz-panel.arcade-enhanced .quiz-score-summary strong{font-size:clamp(19px,2vw,27px)}
+  #quiz-panel.arcade-enhanced .quiz-reveal-feedback{padding:10px;margin:8px 0;font-size:clamp(15px,1.6vw,21px)}
+  #quiz-panel.arcade-enhanced .quiz-results-list,
+  #classic-focus.arcade-enhanced .quiz-results-list{max-height:max(200px,calc(100dvh - 245px));overflow:auto;scrollbar-width:thin}
+  #quiz-panel.arcade-enhanced .quiz-results-card,
+  #classic-focus.arcade-enhanced .quiz-results-card{padding:12px}
+  #quiz-panel.arcade-enhanced .quiz-results-card h3,
+  #classic-focus.arcade-enhanced .quiz-results-card h3{font-size:16px;margin-bottom:7px}
+
+  /* 교사: 왼쪽 진행 정보 아래에 조작부, 오른쪽 문제와 정답 보기를 표시 */
+  #classic-focus.arcade-enhanced .quiz-stage-head{grid-row:1;position:static;min-height:0;gap:9px;padding:13px 10px}
+  #classic-focus.arcade-enhanced .quiz-focus-controls{
+    grid-column:1;grid-row:2;display:flex;flex-direction:column;align-items:stretch;
+    margin:8px 0 0;padding:10px;gap:8px;border-radius:14px
+  }
+  #classic-focus.arcade-enhanced .quiz-focus-controls>span{font-size:14px;text-align:center}
+  #classic-focus.arcade-enhanced .quiz-focus-controls .classic-auto-setting{
+    padding:7px;font-size:12px;line-height:1.3;margin:0
+  }
+  #classic-focus.arcade-enhanced .quiz-focus-controls .quiz-focus-buttons{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px
+  }
+  #classic-focus.arcade-enhanced .quiz-focus-buttons .btn{
+    min-height:40px;padding:6px 3px;font-size:11px;line-height:1.25;white-space:normal;word-break:keep-all
+  }
+  #classic-focus.arcade-enhanced .arcade-audio-settings{justify-content:center;gap:8px;margin:0}
+  #classic-focus.arcade-enhanced .arcade-audio-volume-label{flex-direction:column;gap:3px}
+  #classic-focus.arcade-enhanced .arcade-audio-volume{width:100%;max-width:130px}
+  #classic-focus.arcade-enhanced .arcade-audio-toggle{font-size:12px;padding:8px 12px;min-height:36px}
+  #classic-focus.arcade-enhanced .quiz-focus-controls .quiz-focus-buttons #classic-focus-close{grid-column:span 2}
+}
+@media(min-width:760px) and (min-height:540px) and (max-height:720px){
+  #quiz-panel.arcade-enhanced .quiz-question-card,
+  #classic-focus.arcade-enhanced .quiz-question-card{padding:11px 13px}
+  #quiz-panel.arcade-enhanced .quiz-image-wrap img,
+  #classic-focus.arcade-enhanced .quiz-image-wrap img,
+  #quiz-panel.arcade-enhanced #quiz-solve-view:has(#quiz-image-wrap:not([hidden])) .quiz-image-wrap img{max-height:23dvh}
+  #quiz-panel.arcade-enhanced .quiz-large-option,
+  #classic-focus.arcade-enhanced .quiz-large-option{min-height:62px;padding:6px 10px}
+  #quiz-panel.arcade-enhanced .quiz-large-options,
+  #classic-focus.arcade-enhanced .quiz-large-options{gap:7px;margin:7px 0}
+  #quiz-panel.arcade-enhanced .quiz-stage-head,
+  #classic-focus.arcade-enhanced .quiz-stage-head{padding:11px 9px}
+}
+@media(max-width:759.98px), (max-height:539.98px){
+  /* 태블릿 세로·휴대전화: 기존의 큰 세로형 레이아웃을 유지합니다. */
+  #quiz-panel.arcade-enhanced .quiz-stage-head .arcade-time-track,
+  #classic-focus.arcade-enhanced .quiz-stage-head .arcade-time-track{width:100%;flex-basis:100%}
+  #classic-focus.arcade-enhanced .arcade-audio-settings{flex:1;justify-content:flex-end}
+}
