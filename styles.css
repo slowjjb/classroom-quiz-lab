@@ -450,3 +450,18 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{border-color:#95
   .sets-page .editor-grid-meta .edit-field:nth-child(3){grid-column:2;grid-row:1}
   .sets-page .question-card .answer-grid{grid-template-columns:1fr}
 }
+
+/* v4.4 CSV K열 이미지 일괄 연결 · 기존 디자인 유지 */
+.csv-export-tools{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:12px 0 4px}
+.csv-export-tools .field-label{margin:0;white-space:nowrap;font-size:13px;font-weight:750;color:#40527c}
+.csv-export-tools .edit-input{width:auto;max-width:100%;min-height:39px;flex:1 1 255px;background:#f9faff}
+.csv-export-tools .btn{flex:0 0 auto}
+.image-check-panel{padding:13px 15px;margin:12px 0 16px;border:1px solid #dfe3f0;border-radius:13px;background:#f9faff;color:#38466a;line-height:1.6;font-size:13px}
+.image-check-panel[hidden]{display:none!important}
+.image-check-panel strong{font-size:14px;color:#34406c}
+.image-check-list{margin:8px 0;padding-left:22px;max-height:185px;overflow:auto;color:#ac3c42}
+.question-image-check{margin:8px 0 4px!important}
+.question-image-check[data-kind="exists"]{color:#128155!important}
+.question-image-check[data-kind="missing"],.question-image-check[data-kind="invalid"]{color:#b63f39!important}
+.question-image-check[data-kind="unverified"]{color:#9b6c22!important}
+@media(max-width:760px){.csv-export-tools{align-items:stretch;flex-direction:column}.csv-export-tools .edit-input{width:100%;flex:auto}.csv-export-tools .btn{width:100%}}

@@ -4,7 +4,7 @@ const text=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
 for(const file of ['join.html','rooms.html','index.html']){
  const html=text(file);
  assert.match(html,/arcade\.css\?v=3\.(3|4|6|8|11|12|13|14)/);
- assert.match(html,/(?:v3\.(3|4|5|6|7|8|9|11|12|13|14)|v4\.[0123])/);
+ assert.match(html,/(?:v3\.(3|4|5|6|7|8|9|11|12|13|14)|v4\.[01234])/);
  assert.match(html,/class="arcade-theme"/);
 }
 assert.match(text('js/join.js'),/classic-student\.js\?v=3\.(4|6|8|13|14)/);

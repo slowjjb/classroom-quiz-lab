@@ -58,8 +58,8 @@ export function makeDraftRows(parsed) {
     line: row.line,
     fields: row.fields.slice(0, 10).concat(Array(Math.max(0, 10 - row.fields.length)).fill('')),
     columnCount: row.fields.length,
-    acknowledged: row.fields.length === 10,
-    imageUrl: ''
+    acknowledged: row.fields.length === 10 || row.fields.length === 11,
+    imageUrl: row.fields.length >= 11 ? String(row.fields[10] ?? '').trim() : ''
   }));
 }
 
@@ -71,7 +71,7 @@ export function validateRows(draftRows) {
   if (draftRows.length > 500) issues.push({ line: 1, message: '한 세트에 최대 500문항까지만 저장할 수 있습니다.' });
   draftRows.forEach((row, idx) => {
     const add = message => issues.push({ line: row.line, message });
-    if (row.columnCount !== 10 && !row.acknowledged) add(`원본 CSV가 ${row.columnCount}열입니다. 10열이 필요합니다. 원본을 수정하거나 '열 수 보정'을 명시적으로 눌러주세요.`);
+    if (![10, 11].includes(row.columnCount) && !row.acknowledged) add(`원본 CSV가 ${row.columnCount}열입니다. 블루킷은 10열, 퍼플킷은 10열 또는 11열(K=이미지 파일명)이어야 합니다. 원본을 확인해 주세요.`);
     const f = row.fields.map(v => String(v ?? ''));
     const n = f[0].trim();
     if (!/^\d+$/.test(n) || Number(n) < 1) add('A열 문항 번호는 1부터 시작하는 양의 정수여야 합니다.');
@@ -118,12 +118,34 @@ export function questionToDraft(question, index) {
   };
 }
 
-export function toCSV(rows) {
+// 기본값은 기존 테스트·블루킷 호환을 위해 항상 10열입니다.
+// 퍼플킷은 이미지가 하나 이상 있는 세트만 K열을 추가합니다.
+export function imageFileName(imageUrl) {
+  const raw = String(imageUrl ?? '').trim();
+  if (!raw) return '';
+  let name = raw;
+  try {
+    if (/^https?:\/\//i.test(raw)) {
+      name = new URL(raw).pathname.split('/').pop() || raw;
+    } else if (raw.startsWith('images/questions/')) {
+      name = raw.slice('images/questions/'.length);
+    }
+    return decodeURIComponent(name);
+  } catch { return name; }
+}
+
+export function toCSV(rows, { format = 'blooket' } = {}) {
+  if (!['blooket', 'purplekit'].includes(format)) throw new Error('CSV 내보내기 형식이 올바르지 않습니다.');
+  const includeImages = format === 'purplekit' && rows.some(row => Boolean(String(row.imageUrl || '').trim()));
   const escape = val => {
     const s = String(val ?? '');
     return /[",\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
   };
-  return '\uFEFF' + rows.map(row => row.fields.map(escape).join(',')).join('\r\n') + '\r\n';
+  return '\uFEFF' + rows.map(row => {
+    const fields = row.fields.slice(0, 10);
+    if (includeImages) fields.push(imageFileName(row.imageUrl));
+    return fields.map(escape).join(',');
+  }).join('\r\n') + '\r\n';
 }
 
 export async function decodeFile(file) {

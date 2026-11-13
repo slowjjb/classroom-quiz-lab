@@ -4,13 +4,13 @@ const root=new URL('../',import.meta.url);
 const get=f=>fs.readFileSync(new URL(f,root),'utf8');
 const join=get('join.html'),rooms=get('rooms.html'),idx=get('index.html'),sets=get('sets.html'),layout=get('responsive-v3.4.css'),audio=get('js/arcade-ui.js');
 for(const html of [join,rooms,idx]){
- assert.match(html,/(?:v3\.(4|5|6|7|8|9|11|12|13|14)|v4\.[0123])/);
+ assert.match(html,/(?:v3\.(4|5|6|7|8|9|11|12|13|14)|v4\.[01234])/);
  assert.match(html,/styles\.css\?v=3\.(4|6|8|11|12|13|14)/);
  assert.match(html,/arcade\.css\?v=3\.(4|6|8|11|12|13|14)/);
 }
-assert.match(sets,/(?:v3\.(4|5|6|7|8|9|11|12|13|14)|v4\.[0123])/);
-assert.match(sets,/styles\.css\?v=3\.(4|6|8|11|12|13|14)/);
-assert.match(sets,/js\/sets\.js\?v=3\.(4|8|11|12|13|14)/);
+assert.match(sets,/(?:v3\.(4|5|6|7|8|9|11|12|13|14)|v4\.[01234])/);
+assert.match(sets,/styles\.css\?v=(?:3\.(4|6|8|11|12|13|14)|4\.4)/);
+assert.match(sets,/js\/sets\.js\?v=(?:3\.(4|8|11|12|13|14)|4\.4)/);
 for(const html of [join,rooms]){
  assert.match(html,/responsive-v3\.(4|5|6|7|8|9)\.css\?v=3\.(4|5|6|7|8|9|11|12|13|14)/);
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);

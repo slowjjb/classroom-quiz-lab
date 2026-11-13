@@ -1,13 +1,14 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { onValue, ref, push, set, remove } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV } from './csv.js?v=3.2';
+import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV } from './csv.js?v=4.4';
 import { makeRulesV4 } from './rules-v4.js';
-import { normalizeQuestionImage, siteRootFromPage } from './image-utils.js?v=3.2';
+import { normalizeQuestionImage, siteRootFromPage, scanQuestionImages } from './image-utils.js?v=4.4';
 
 const $ = id => document.getElementById(id);
 let user = null, unsubscribe = null, authorized = false, savedSets = {};
 let draftRows = [], draftId = null, createdAt = null, sourceName = '', dirty = false;
+let imageAuditSeq = 0;
 const q = sel => document.querySelector(sel);
 function text(id, value, kind = '') { $(id).textContent = value; $(id).dataset.kind = kind; }
 function badge(textValue, kind = 'neutral') { $('sets-auth-badge').textContent = textValue; $('sets-auth-badge').className = `pill pill-${kind}`; }
@@ -52,7 +53,7 @@ function setWorkspace(enabled) {
   $('sets-workspace').setAttribute('aria-disabled', String(!enabled));
   refreshSaveState();
 }
-function refreshSaveState() { $('save-set').disabled = !authorized || draftRows.length === 0; $('download-draft').disabled = draftRows.length === 0; }
+function refreshSaveState() { $('save-set').disabled = !authorized || draftRows.length === 0; $('download-draft').disabled = draftRows.length === 0; $('check-images').disabled = draftRows.length === 0; }
 function handleAuth(next) {
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
   user = next?.providerData?.some(v => v.providerId === 'google.com') ? next : null;
@@ -100,16 +101,21 @@ function renderSaved() {
     label.append(title, meta);
     const actions = document.createElement('div'); actions.className='button-row';
     actions.append(makeButton('불러오기', () => loadSet(id)));
-    actions.append(makeButton('CSV', () => {
-      const rec = savedSets[id]; const qs = Object.values(rec.questions || {}).sort((a,b)=>a.number-b.number);
-      if(confirmImageLoss(qs))downloadText(safeFileName(rec.title)+'.csv', toCSV(qs.map(questionToDraft)), 'text/csv;charset=utf-8');
-    }));
+    actions.append(makeButton('퍼플킷 CSV', () => downloadSavedCSV(id, 'purplekit')));
+    actions.append(makeButton('블루킷 CSV', () => downloadSavedCSV(id, 'blooket')));
     actions.append(makeButton('삭제', () => deleteSet(id), 'btn btn-danger btn-small'));
     row.append(label, actions); list.append(row);
   }
 }
+function downloadSavedCSV(id, format) {
+  const rec = savedSets[id]; if (!rec) return;
+  const questions = Object.values(rec.questions || {}).sort((a,b)=>a.number-b.number);
+  if (format === 'blooket' && !confirmImageLoss(questions)) return;
+  const basename = safeFileName(rec.title);
+  downloadText(basename + (format === 'blooket' ? '_블루킷' : '_퍼플킷') + '.csv', toCSV(questions.map(questionToDraft), { format }), 'text/csv;charset=utf-8');
+}
 function confirmImageLoss(rows){
-  return !rows.some(q=>Boolean(q.imageUrl)) || confirm('블루킷 CSV에는 이미지 열이 없어 이미지 연결이 내보내지지 않습니다. 이미지는 Firebase 문제 세트에만 보존됩니다. CSV를 저장할까요?');
+  return !rows.some(q=>Boolean(q.imageUrl)) || confirm('블루킷 CSV는 10열이므로 K열 이미지 파일명이 제외됩니다. 이미지 연결은 Firebase와 퍼플킷 CSV에 보존됩니다. 블루킷용으로 내보낼까요?');
 }
 function safeFileName(name) { return String(name || 'quiz-questions').replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0, 70); }
 function loadSet(id) {
@@ -118,7 +124,8 @@ function loadSet(id) {
   draftId = id; createdAt = record.createdAt || Date.now(); sourceName = record.sourceName || '';
   draftRows = Object.values(record.questions || {}).sort((a,b)=>a.number-b.number).map(questionToDraft);
   $('set-title').value = record.title; dirty = false;
-  renderEditor(); validateAndDisplay();
+  invalidateImageAudit(); renderEditor(); validateAndDisplay();
+  void auditImages();
   text('editor-status', `저장된 '${record.title}' 문제 세트를 불러왔습니다.`);
   q('#questions-editor')?.scrollIntoView({behavior:'smooth', block:'start'});
 }
@@ -131,7 +138,7 @@ async function deleteSet(id) {
 function newDraft() {
   if (!warnDiscard()) return;
   draftRows=[]; draftId=null; createdAt=null; sourceName=''; dirty=false; $('set-title').value=''; $('csv-file').value='';
-  renderEditor(); validateAndDisplay(); text('editor-status', '새 세트입니다. CSV를 업로드해 주세요.');
+  invalidateImageAudit(); renderEditor(); validateAndDisplay(); text('editor-status', '새 세트입니다. CSV를 업로드해 주세요.');
 }
 function markEdited() { dirty = true; draftBadge(draftId ? '수정 중' : '미저장 초안'); }
 function changeField(row, pos, value) { row.fields[pos] = value; markEdited(); }
@@ -191,7 +198,9 @@ function renderEditor(expandIndex = null) {
     imageDetails.append(imageSummary);
     const imageField=formBlock('input', 'GitHub images/questions 폴더의 파일명 또는 주소',row.imageUrl||'',value=>{
       imageSummary.textContent=value.trim()?'문제 이미지 · 등록됨':'문제 이미지 추가 (선택 사항)';
-      row.imageUrl=value;markEdited();
+      row.imageUrl=value;markEdited();invalidateImageAudit();
+      const auditStatus=card.querySelector('.question-image-check');
+      if(auditStatus)auditStatus.textContent=value.trim()?'이미지를 수정했습니다. 「이미지 파일 다시 확인」을 눌러주세요.':'이미지 없음';
       const warning=card.querySelector('.question-image-warning');
       const preview=card.querySelector('.question-image-preview');
       try{
@@ -207,16 +216,79 @@ function renderEditor(expandIndex = null) {
     imagePreview.addEventListener('error',()=>{imageWarning.textContent='이미지를 불러오지 못했습니다. GitHub에 파일을 올렸는지, 파일 이름과 대소문자가 일치하는지 확인하세요.';});
     try{const safe=normalizeQuestionImage(row.imageUrl,rootUrl);imagePreview.hidden=!safe;if(safe)imagePreview.src=new URL(safe,rootUrl).href;}
     catch(e){imagePreview.hidden=true;imageWarning.textContent=e.message;}
-    imageDetails.append(imagePreview,imageWarning);
+    const imageCheck=document.createElement('p'); imageCheck.className='helper question-image-check'; imageCheck.textContent=row.imageUrl?'CSV 이미지 연결 · 존재 여부 확인 전':'이미지 없음';
+    imageDetails.append(imagePreview,imageWarning,imageCheck);
     card.append(imageDetails);
     if (row.columnCount !== 10 && !row.acknowledged && row.columnCount < 10) {
       card.append(makeButton(`${row.columnCount}열 → 10열 보정 승인`,()=>{row.acknowledged=true;markEdited();validateAndDisplay();}));
     }
-    if (row.columnCount > 10) { const note=document.createElement('p');note.className='helper';note.textContent='원본이 10열을 초과했습니다. 데이터 유실을 방지하려면 CSV 파일을 수정하여 다시 업로드하세요.';card.append(note); }
+    if (row.columnCount > 11) { const note=document.createElement('p');note.className='helper';note.textContent='원본이 11열을 초과했습니다. A~K열만 사용하므로 원본 CSV를 확인해 주세요.';card.append(note); }
     list.append(card);
     if (card.open) activateAutoSize(card);
     else card.addEventListener('toggle', () => { if (card.open) activateAutoSize(card); }, {once:true});
   });
+}
+// 파일 존재 확인은 저장 가능 여부(문항 검증)와 별개로 안내합니다.
+// 파일 누락은 경고로 표시하고, 오프라인/403/시간 초과는 '확인 불가'로 구별합니다.
+function invalidateImageAudit() {
+  imageAuditSeq++;
+  const holder = $('image-check-results');
+  holder.hidden = true;
+  holder.replaceChildren();
+  refreshSaveState();
+}
+function setImageAuditLine(index, status, reason = '') {
+  const card = $('questions-editor').querySelector(`.question-card[data-question-number="${index + 1}"]`);
+  if (!card) return;
+  const line = card.querySelector('.question-image-check');
+  const summary = card.querySelector('.question-image-details > summary');
+  const label = { exists: '이미지 연결 성공', missing: '이미지 파일 없음', unverified: '이미지 확인 불가', invalid: '이미지 주소 오류', none: '이미지 없음' }[status] || '이미지 확인 전';
+  if (line) {line.dataset.kind=status;line.textContent=reason ? `${label} · ${reason}` : label;}
+  if (summary) summary.textContent=status==='none'?'문제 이미지 추가 (선택 사항)':`문제 이미지 · ${label}`;
+}
+function imageAuditReport(scan) {
+  const holder = $('image-check-results');
+  holder.hidden = false; holder.replaceChildren();
+  const {counts, checked, total, results} = scan;
+  const strong = document.createElement('strong');
+  strong.textContent = checked
+    ? `이미지 검사 완료 · 연결 성공 ${counts.exists}개 / 파일 없음 ${counts.missing}개 / 확인 불가 ${counts.unverified}개 / 형식 오류 ${counts.invalid}개 / 이미지 없는 문제 ${counts.none}개`
+    : `${total}문항 · 이미지 없는 문제 ${counts.none}개 (정상)`;
+  holder.append(strong);
+  const problemRows = results.filter(x => ['missing','unverified','invalid'].includes(x.status));
+  if (problemRows.length) {
+    const list = document.createElement('ul');list.className='image-check-list';
+    for(const entry of problemRows.slice(0,60)) {
+      const li=document.createElement('li');
+      const kind=entry.status==='missing'?'파일 없음':entry.status==='invalid'?'주소 오류':'확인 불가';
+      li.textContent=`${entry.index+1}번 · ${entry.input} — ${kind}${entry.reason?' ('+entry.reason+')':''}`;
+      list.append(li);
+    }
+    holder.append(list);
+    const note=document.createElement('p');note.className='helper';
+    note.textContent='파일 없음은 GitHub 업로드·파일명·대소문자를 확인하세요. 확인 불가는 네트워크 문제일 수 있습니다. 이미지 누락 경고만으로 문제 저장을 막지는 않습니다.';
+    holder.append(note);
+  } else if(checked) {
+    const note=document.createElement('p');note.className='helper';note.textContent='이미지가 지정된 문항의 공개 파일을 모두 확인했습니다. 이 검사 결과는 Firebase에 저장되지 않습니다.';holder.append(note);
+  }
+  for(const entry of results) setImageAuditLine(entry.index,entry.status,entry.reason);
+}
+async function auditImages() {
+  const sequence=++imageAuditSeq;
+  const snapshot=draftRows.map(row=>({line:row.line,imageUrl:row.imageUrl||''}));
+  const holder=$('image-check-results'); holder.replaceChildren();
+  holder.hidden=!snapshot.length;
+  if (!snapshot.length) return;
+  holder.textContent=snapshot.some(row=>row.imageUrl.trim())?'GitHub Pages의 이미지 파일을 확인하는 중입니다…':'이미지 없는 문제입니다. 확인할 파일이 없습니다.';
+  $('check-images').disabled=true;
+  try {
+    const scan=await scanQuestionImages(snapshot,rootUrl);
+    if(sequence!==imageAuditSeq)return;
+    imageAuditReport(scan);
+  } catch(error) {
+    if(sequence!==imageAuditSeq)return;
+    holder.textContent='이미지 검사 실패: '+error.message+' · 다시 확인 버튼을 이용하세요.';
+  } finally {if(sequence===imageAuditSeq) refreshSaveState();}
 }
 function validateAndDisplay() {
   const result=validateRows(draftRows);const holder=$('validation-results');holder.replaceChildren();
@@ -252,8 +324,10 @@ async function importFile(file) {
     const parsed=parseCSV(content);
     draftRows=makeDraftRows(parsed); draftId=null; createdAt=null; sourceName=file.name; dirty=true;
     $('set-title').value=file.name.replace(/\.csv$/i,'').slice(0,80);
-    renderEditor(); const result=validateAndDisplay();
-    text('editor-status',`${file.name} · ${encoding} · ${draftRows.length}문항 파싱 완료 · 검증 오류 ${result.issues.length}개`,result.issues.length?'error':'success');
+    invalidateImageAudit();renderEditor(); const result=validateAndDisplay();
+    const imageCount=draftRows.filter(row=>Boolean(row.imageUrl.trim())).length;
+    text('editor-status',`${file.name} · ${encoding} · ${draftRows.length}문항 파싱 완료 · K열 이미지 ${imageCount}개 · 검증 오류 ${result.issues.length}개`,result.issues.length?'error':'success');
+    void auditImages();
   } catch(error) {
     text('editor-status',`CSV 분석 실패: ${error.message}`, 'error');
   }
@@ -280,8 +354,14 @@ $('set-title').addEventListener('input',()=>{markEdited();});
 $('csv-file').addEventListener('change',e=>importFile(e.target.files?.[0]));
 $('new-draft').addEventListener('click',newDraft);
 $('check-draft').addEventListener('click',()=>{const r=validateAndDisplay();text('editor-status',r.issues.length?`수정할 오류 ${r.issues.length}개가 있습니다.`:'모든 문항 검증을 통과했습니다.',r.issues.length?'error':'success');});
+$('check-images').addEventListener('click',()=>{void auditImages();});
 $('save-set').addEventListener('click',saveSet);
-$('download-draft').addEventListener('click',()=>{if(confirmImageLoss(draftRows))downloadText(safeFileName($('set-title').value || 'quiz-v1-draft')+'.csv',toCSV(draftRows),'text/csv;charset=utf-8');});
+$('download-draft').addEventListener('click',()=>{
+  const format=$('export-format').value === 'blooket'?'blooket':'purplekit';
+  if(format==='blooket'&&!confirmImageLoss(draftRows))return;
+  const basename=safeFileName($('set-title').value || 'quiz-v1-draft');
+  downloadText(basename+(format==='blooket'?'_블루킷':'_퍼플킷')+'.csv',toCSV(draftRows,{format}),'text/csv;charset=utf-8');
+});
 $('sets-retry').addEventListener('click',listenSets);
 $('rules-copy').addEventListener('click',async()=>{
   if(!user)return;

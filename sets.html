@@ -2,14 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>문제 관리 | 퍼플킷 v4.3</title>
-  <link rel="stylesheet" href="styles.css?v=3.12"><script type="module" src="js/sets.js?v=3.12"></script>
+  <meta name="theme-color" content="#234dd0"><title>문제 관리 | 퍼플킷 v4.4</title>
+  <link rel="stylesheet" href="styles.css?v=4.4"><script type="module" src="js/sets.js?v=4.4"></script>
 </head>
 <body>
 <div class="shell">
-  <header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">문제 세트 관리 · v4.3</span></header>
+  <header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">문제 세트 관리 · v4.4</span></header>
   <main class="page-content sets-page">
-    <div class="page-heading page-heading-wide"><span class="eyebrow">QUESTION SET STUDIO</span><h1>문제 세트 관리</h1><p>블루킷 CSV를 불러와 검증·수정하고 교사용 비공개 데이터베이스에 저장합니다. v4.3에서는 인증·저장된 세트 영역을 고정하고, 편집 영역을 넓혀 <strong>한 화면에서 더 많이 보고, 더 크게 편집</strong>할 수 있도록 다듬었습니다.</p></div>
+    <div class="page-heading page-heading-wide"><span class="eyebrow">QUESTION SET STUDIO</span><h1>문제 세트 관리</h1><p>블루킷 10열·퍼플킷 11열 CSV를 모두 불러옵니다. <strong>K열에 파일명이 있으면 문제 이미지를 자동으로 연결하고, GitHub에 실제 파일이 있는지도 검사</strong>합니다.</p></div>
 
     <div id="sets-workspace" class="sets-dashboard workspace-locked" aria-disabled="true">
       <aside class="sets-sidebar">
@@ -35,17 +35,27 @@
       </aside>
 
       <section class="panel sets-main-panel">
-        <div class="panel-header sets-main-header"><div><h2>CSV 가져오기 및 문항 편집</h2><p class="helper">가로 공간을 넓게 사용해 문제/답/이미지를 한눈에 편집합니다.</p></div><span id="draft-badge" class="pill pill-neutral">초안 없음</span></div>
+        <div class="panel-header sets-main-header"><div><h2>CSV 가져오기 및 문항 편집</h2><p class="helper">기존 10열 CSV도 그대로 사용 가능하며, 이미지가 있는 세트만 K열을 사용합니다.</p></div><span id="draft-badge" class="pill pill-neutral">초안 없음</span></div>
         <div class="two-col-form sets-import-grid">
           <div><label for="set-title" class="field-label">문제 세트 이름</label><input id="set-title" type="text" maxlength="80" placeholder="예: 기능 검증용 20문항"></div>
-          <div><label for="csv-file" class="field-label">블루킷 CSV 선택</label><input id="csv-file" type="file" accept=".csv,text/csv" aria-describedby="csv-help"></div>
+          <div><label for="csv-file" class="field-label">블루킷 / 퍼플킷 CSV 선택</label><input id="csv-file" type="file" accept=".csv,text/csv" aria-describedby="csv-help"></div>
         </div>
-        <p id="csv-help" class="helper">A 번호 · B 문제 · C~F 보기/주관식 허용 답 · G 시간 · H 객관식 정답 번호 · I 공란 · J typing · 이미지 주소는 별도 입력</p>
+        <p id="csv-help" class="helper">A 번호 · B 문제 · C~F 보기/주관식 허용 답 · G 시간 · H 객관식 정답 번호 · I 공란 · J typing(주관식만) · <strong>선택 K: 이미지 파일명</strong>. 이미지가 없으면 10열만 사용합니다.</p>
 
-        <div class="button-row sets-action-row"><button type="button" id="new-draft" class="btn btn-outline">새 CSV 준비</button><button type="button" id="check-draft" class="btn btn-outline">문항 오류 다시 검사</button><button type="button" id="save-set" class="btn btn-primary" disabled>Firebase에 저장</button><button type="button" id="download-draft" class="btn btn-quiet" disabled>편집본 CSV 내보내기</button></div>
-        <p id="editor-status" class="helper" role="status" aria-live="polite">테스트 CSV를 업로드하여 시작해 보세요.</p>
+        <div class="button-row sets-action-row"><button type="button" id="new-draft" class="btn btn-outline">새 CSV 준비</button><button type="button" id="check-draft" class="btn btn-outline">문항 오류 다시 검사</button><button type="button" id="check-images" class="btn btn-outline" disabled>이미지 파일 다시 확인</button><button type="button" id="save-set" class="btn btn-primary" disabled>Firebase에 저장</button></div>
+        <div class="csv-export-tools">
+          <label for="export-format" class="field-label">CSV 내보내기 형식</label>
+          <select id="export-format" class="edit-input" aria-describedby="export-help">
+            <option value="purplekit">퍼플킷용 · 이미지가 있는 경우에만 K열 추가</option>
+            <option value="blooket">블루킷용 · 항상 A~J 10열</option>
+          </select>
+          <button type="button" id="download-draft" class="btn btn-quiet" disabled>편집본 CSV 내보내기</button>
+        </div>
+        <p id="export-help" class="helper">퍼플킷용은 이미지가 하나도 없으면 10열로 저장합니다. 블루킷용으로 내보내면 이미지 파일명은 제외됩니다.</p>
+        <p id="editor-status" class="helper" role="status" aria-live="polite">CSV를 업로드하여 시작해 보세요.</p>
         <div id="validation-results" class="issues" aria-live="polite"></div>
-        <p class="helper image-help">이미지는 <a href="https://github.com/slowjjb/classroom-quiz-lab/tree/main/images/questions" target="_blank" rel="noopener noreferrer">GitHub의 images/questions 폴더</a>에 먼저 업로드한 뒤, 각 문항의 이미지 파일명을 입력하세요. PNG/JPG/WebP를 지원합니다. <strong>CSV 10열 형식은 변경하지 않으며 이미지 연결은 Firebase 세트에만 보존</strong>됩니다.</p>
+        <div id="image-check-results" class="image-check-panel" role="status" aria-live="polite" hidden></div>
+        <p class="helper image-help">이미지 파일은 <a href="https://github.com/slowjjb/classroom-quiz-lab/tree/main/images/questions" target="_blank" rel="noopener noreferrer">GitHub의 images/questions 폴더</a>에 먼저 여러 개 업로드하세요. 퍼플킷 CSV의 K열에 <strong>파일명만</strong> 기입하면 자동 연결합니다. 한글 이름·PNG/JPG/WebP를 지원합니다. 파일 확인은 GitHub Pages 배포가 끝난 뒤 실행하세요. <strong>파일 없음/네트워크 확인 불가 경고는 구별하며, 파일 누락 경고만으로 저장을 막지 않습니다.</strong></p>
         <div id="questions-editor" class="question-editor"></div>
       </section>
     </div>
