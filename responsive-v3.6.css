@@ -372,3 +372,92 @@
     max-height: min(14dvh, 120px);
   }
 }
+
+/* v3.7: 주관식은 보기용 2열 그리드에 들어가지 않고 전체 폭을 차지합니다. */
+#quiz-panel.arcade-enhanced #quiz-options:has(#quiz-typing){
+  grid-template-columns:minmax(0,1fr);
+  width:100%;
+}
+#quiz-panel.arcade-enhanced #quiz-options #quiz-typing{
+  grid-column:1 / -1;
+  display:block;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  min-height:clamp(70px,10dvh,94px);
+  padding:14px clamp(16px,2.2vw,28px);
+  border-radius:17px;
+  font-size:clamp(20px,2vw,28px);
+}
+
+/* v3.7: 짧은 문제의 정답을 카드 맨 아래가 아닌 남는 공간의 중앙에 표시합니다.
+   긴 지문은 문서 흐름대로 확장되므로 정답 카드와 겹치지 않습니다. */
+@media (min-width:760px) and (min-height:540px){
+  #quiz-panel.arcade-enhanced #quiz-reveal-view .quiz-reveal-question-card:not(:has(#quiz-reveal-image-wrap:not([hidden]))){
+    justify-content:flex-start;
+  }
+  #quiz-panel.arcade-enhanced #quiz-reveal-view .quiz-reveal-question-card:not(:has(#quiz-reveal-image-wrap:not([hidden]))) .quiz-answer-spotlight{
+    margin-block:auto;
+    min-height:clamp(120px,19dvh,176px);
+    padding:clamp(15px,2.2vh,26px) 20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border:3px solid #aeb6f8;
+    box-shadow:0 7px 0 #1b296a21,0 12px 24px #10194720;
+  }
+  #quiz-panel.arcade-enhanced #quiz-reveal-view .quiz-reveal-question-card:not(:has(#quiz-reveal-image-wrap:not([hidden]))) #quiz-correct-answer-big{
+    font-size:clamp(28px,3vw,44px);
+  }
+}
+
+/* Purplekit v3.13: 교사 정답이 문제 카드 중앙에 크게 나타나도록 */
+@media(min-width:760px) and (min-height:540px){
+  #classic-focus.arcade-enhanced #classic-focus-question-view .quiz-question-card.teacher-answer-visible{
+    justify-content:flex-start;display:flex;flex-direction:column;gap:10px;
+  }
+  #classic-focus.arcade-enhanced .quiz-question-card.teacher-answer-visible .teacher-answer-spotlight{
+    flex:0 1 auto;min-height:clamp(160px,33dvh,260px);max-width:100%;margin-block:auto;
+  }
+  #classic-focus.arcade-enhanced .quiz-question-card.teacher-answer-visible:has(#classic-focus-image-wrap:not([hidden])){
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);
+    grid-template-rows:auto minmax(0,1fr);align-items:stretch;column-gap:18px;row-gap:12px;
+  }
+  #classic-focus.arcade-enhanced .quiz-question-card.teacher-answer-visible:has(#classic-focus-image-wrap:not([hidden])) .quiz-question-heading{
+    grid-column:1/-1;grid-row:1;
+  }
+  #classic-focus.arcade-enhanced .quiz-question-card.teacher-answer-visible:has(#classic-focus-image-wrap:not([hidden])) #classic-focus-image-wrap{
+    grid-column:1;grid-row:2;display:flex;justify-content:center;align-items:center;
+    min-width:0;min-height:0;margin:0;padding:8px;
+  }
+  #classic-focus.arcade-enhanced .quiz-question-card.teacher-answer-visible:has(#classic-focus-image-wrap:not([hidden])) #classic-focus-image-wrap img{
+    max-height:min(38dvh,300px);max-width:100%;object-fit:contain;
+  }
+  #classic-focus.arcade-enhanced .quiz-question-card.teacher-answer-visible:has(#classic-focus-image-wrap:not([hidden])) .teacher-answer-spotlight{
+    grid-column:2;grid-row:2;margin:0;min-height:0;height:100%;
+  }
+  /* 3열 결과는 화면 높이에 맞추되 개별 표만 내부 스크롤 */
+  #classic-focus.arcade-enhanced #classic-focus-results-view .teacher-analytics-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;
+  }
+}
+@media (max-width:1150px){
+  #classic-focus .teacher-analytics-grid{gap:10px}
+  #classic-focus .teacher-analytics-grid .quiz-results-card{padding:13px 10px}
+  #classic-focus .analytics-rate-row{padding:9px 8px}
+  #classic-focus .analytics-rate-copy strong{font-size:12px}
+  #classic-focus .analytics-rate-value{font-size:18px}
+}
+@media (max-width:900px){
+  #classic-focus .teacher-analytics-grid,
+  #classic-focus.arcade-enhanced #classic-focus-results-view .teacher-analytics-grid{grid-template-columns:1fr}
+  #classic-focus .teacher-analytics-grid .quiz-results-card{min-height:0}
+  #classic-focus .teacher-analytics-grid .quiz-results-list{max-height:350px}
+}
+@media (max-width:759px){
+  #classic-focus .teacher-answer-spotlight{padding:17px 14px;min-height:130px}
+  #classic-focus .teacher-answer-spotlight #classic-focus-answer-big{font-size:clamp(30px,7vw,48px)}
+  #classic-focus .teacher-analytics-grid{grid-template-columns:1fr}
+}

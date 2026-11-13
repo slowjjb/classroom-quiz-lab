@@ -43,7 +43,17 @@ class OriginalAudio {
     else if(name==='wrong'){n('E4',0,.17,.13,'triangle');n('D4',.17,.19,.12,'triangle');n('C4',.37,.25,.1,'triangle');}
     else if(name==='reveal'){n('G4',0,.11,.09);n('C5',.13,.2,.10);}
     else if(name==='tick')n('C5',0,.06,.055,'triangle');
-    else if(name==='finish'){['C5','E5','G5','A5','G5','C5'].forEach((key,i)=>n(key,i*.14,i===5?.52:.18,.15));}
+    else if(name==='finish'){['C5','E5','G5','C5'].forEach((key,i)=>n(key,i*.11,i===3?.42:.14,.13,'triangle'));}
+    else if(name==='fanfare'){
+      // 오리지널 2.8초 승리 빵빠레: 3화음 상승 + 마지막 코드. 외부 음악 자산 없음.
+      const sequence=[['C4',0,.19],['E4',.21,.19],['G4',.42,.22],['C5',.66,.26],
+        ['D5',1.02,.16],['E5',1.20,.17],['G5',1.40,.25],['A5',1.70,.18],['G5',1.90,.26]];
+      for(const [key,delay,duration] of sequence){
+        n(key,delay,duration,.18,'sawtooth');n(key,delay+.012,duration,.1,'triangle');
+      }
+      for(const key of ['C4','E4','G4','C5'])n(key,2.2,.68,.13,'sawtooth');
+      n('C5',2.26,.58,.13,'triangle');
+    }
   }
   schedule(){
     if(!this.on||!this.ctx)return;
@@ -95,8 +105,8 @@ export function renderPodium(target,ranked){
 }
 export function createArcadeUi(stageId,{role='student'}={}){
   const stage=document.getElementById(stageId);
-  if(!stage)return {sync:noop,updateTime:noop,choice:noop,submit:noop,showResults:noop,reset:noop,destroy:noop};
-  const audio=new OriginalAudio();let phase='',roundId='',gradedKey='',lastTick=-1,enabled=false,toastTimer=null;
+  if(!stage)return {sync:noop,updateTime:noop,choice:noop,submit:noop,showResults:noop,reset:noop,armEffects:noop,fanfare:noop,destroy:noop};
+  const audio=new OriginalAudio();let phase='',roundId='',gradedKey='',lastTick=-1,enabled=false,effectsArmed=false,toastTimer=null;
   stage.classList.add('arcade-enhanced');stage.dataset.arcadeRole=role;
   const head=stage.querySelector('.quiz-stage-head');
   const track=document.createElement('div');track.className='arcade-time-track';track.setAttribute('aria-hidden','true');
@@ -125,9 +135,9 @@ export function createArcadeUi(stageId,{role='student'}={}){
     controls.append(toggle,label);head.append(controls);
     volumeControl.addEventListener('input',()=>{audio.setMusicVolume(volumeControl.value);text.textContent=`BGM 음량 ${volumeControl.value}%`;});
     toggle.addEventListener('click',async()=>{
-      if(enabled){enabled=false;audio.disable();toggle.textContent='🔇 BGM 켜기';toggle.setAttribute('aria-pressed','false');return;}
+      if(enabled){enabled=false;audio.stopMusic();toggle.textContent='🔇 BGM 켜기';toggle.setAttribute('aria-pressed','false');return;}
       if(!await audio.enable()){toggle.textContent='이 기기는 오디오를 지원하지 않아요';toggle.disabled=true;return;}
-      enabled=true;audio.setMusicVolume(volumeControl.value);toggle.textContent='🔊 BGM 끄기';toggle.setAttribute('aria-pressed','true');
+      enabled=true;effectsArmed=true;audio.setMusicVolume(volumeControl.value);toggle.textContent='🔊 BGM 끄기';toggle.setAttribute('aria-pressed','true');
       audio.fx('select');if(phase==='question')audio.startMusic();
     });
   }
@@ -151,7 +161,7 @@ export function createArcadeUi(stageId,{role='student'}={}){
     if(role==='student'&&!enabled){
       // 버튼을 누른 최초 조작도 오디오 활성화 제스처입니다.
       audio.enable().then(ok=>{if(ok){enabled=true;audio.fx(name);}}).catch(()=>{});
-    }else if(enabled)audio.fx(name);
+    }else if(role==='teacher'?effectsArmed:enabled)audio.fx(name);
   }
   function sync({state='',questionId='',grade=null}={}){
     if(state===phase&&questionId===roundId&&!(state==='reveal'&&grade!=null))return;
@@ -171,7 +181,8 @@ export function createArcadeUi(stageId,{role='student'}={}){
       else if(grade===false){playEffect('wrong');showToast('다음 문제는 꼭!');}
     }
     if(newPhase&&state==='finished'){
-      playEffect('finish');burst();showToast('🏆 게임 종료!');
+      if(role==='teacher')playEffect('fanfare');else playEffect('finish');
+      burst();showToast('🏆 게임 종료!');
     }
   }
   function updateTime(seconds,total){
@@ -188,8 +199,12 @@ export function createArcadeUi(stageId,{role='student'}={}){
     stage.dataset.arcadePhase='';stage.classList.remove('arcade-paused');
     if(toastTimer){clearTimeout(toastTimer);toastTimer=null;}toast.classList.remove('arcade-toast-visible');
   }
+  // 교사가 게임 준비/다음 문제 버튼을 누를 때 효과음만 활성화합니다.
+  // BGM은 별도 버튼을 눌러야 켜지며, BGM을 꺼도 빵빠레 등 효과음은 남습니다.
+  const armEffects=async()=>{if(role!=='teacher')return false;try{effectsArmed=await audio.enable();return effectsArmed;}catch{return false;}};
+  const fanfare=async()=>{if(role!=='teacher')return;if(await armEffects())audio.fx('fanfare');};
   return {
-    sync,updateTime,reset,
+    sync,updateTime,reset,armEffects,fanfare,
     choice(){playEffect('select');},
     submit(){playEffect('submit');},
     showResults(){playEffect('select');},

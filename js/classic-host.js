@@ -5,7 +5,8 @@ import { makeRulesV3 } from './rules-v3.js';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.8';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.13';
+import { buildClassAccuracy } from './classic-analytics.js?v=3.13';
 
 const $ = x => document.getElementById(x);
 const arcade = createArcadeUi('classic-focus',{role:'teacher'});
@@ -13,6 +14,7 @@ let teacher=null, code='', ready=false, room=null, run=null, publicRound=null, a
 let unsub=[], operation=false, scorePublished='', grading=new Set(), clockOffset=0, autoRevealPending=false, checkToken=0;
 let focusOpen=false, focusResults=false, reportPublished='', reportTimer=null;
 let autoRevealPreference=true, completeSince=0, completeRound='';
+let hideStudentAccuracyNames=false, podiumCollapsed=false;
 const times = {};
 function msg(str,kind=''){$('classic-message').textContent=str;$('classic-message').dataset.kind=kind;}
 function badge(str,kind='neutral'){$('classic-badge').textContent=str;$('classic-badge').className=`pill pill-${kind}`;}
@@ -20,7 +22,7 @@ function getQuestions(r=run){
   const qs=r?.questions;return Array.isArray(qs)?qs:Object.keys(qs||{}).sort((a,b)=>Number(a)-Number(b)).map(k=>qs[k]);
 }
 function serverNow(){return Date.now()+clockOffset;}
-function detach(){arcade.reset();checkToken++;for(const stop of unsub)stop();unsub=[];room=null;run=null;publicRound=null;answers={};grades={};savedSet=null;scorePublished='';reportPublished='';if(reportTimer)clearTimeout(reportTimer);reportTimer=null;grading.clear();focusOpen=false;focusResults=false;autoRevealPreference=true;completeSince=0;completeRound='';setVisibleFocus(false);}
+function detach(){arcade.reset();checkToken++;for(const stop of unsub)stop();unsub=[];room=null;run=null;publicRound=null;answers={};grades={};savedSet=null;scorePublished='';reportPublished='';if(reportTimer)clearTimeout(reportTimer);reportTimer=null;grading.clear();focusOpen=false;focusResults=false;autoRevealPreference=true;completeSince=0;completeRound='';podiumCollapsed=false;setVisibleFocus(false);}
 function resetUi(){
   $('classic-panel').hidden=!code;
   $('classic-rules').hidden=true;
@@ -121,7 +123,7 @@ async function mutate(fn){
   try{await fn();}catch(e){msg('실행 오류: '+formatError(e),'error');}
   finally{operation=false;render();}
 }
-async function prepareGame(){await mutate(async()=>{
+async function prepareGame(){arcade.armEffects();await mutate(async()=>{
   if(!teacher||!room||run||room.meta?.mode!=='classic'||!room.meta?.setId)throw Error('클래식 방과 문제 세트를 먼저 선택하세요.');
   const setSnap=await get(ref(db,`v1/questionSets/${room.meta.setId}`));
   if(!setSnap.exists())throw Error('선택한 문제 세트가 삭제되었습니다.');
@@ -134,7 +136,7 @@ async function prepareGame(){await mutate(async()=>{
   await update(ref(db,`v2/rooms/${code}/meta`),{state:'locked'});
   msg(`문제 ${qs.length}개가 준비됐습니다. '다음 문제 출제'를 누르세요.`,'success');
 });}
-async function nextQuestion(){await mutate(async()=>{
+async function nextQuestion(){arcade.armEffects();await mutate(async()=>{
   const questions=getQuestions();if(!run||!questions.length)throw Error('게임 준비가 필요합니다.');
   const state=publicRound?.state;if(!(state==='ready'||state==='reveal'))throw Error('진행 중인 문제를 먼저 마감하세요.');
   const index=(Number(publicRound?.index??-1)+1);
@@ -304,6 +306,42 @@ function focusRow(entry,index,kind){
     ['correct','wrong'].includes(entry.status)?`${(Number(entry.responseMs||0)/1000).toFixed(2)}초`:'—';
   metrics.append(points,speed);row.append(rank,createAvatarImage(entry.avatarId,{size:'sm',decorative:true}),info,metrics);return row;
 }
+function analyticsRateCard({label,subtitle,rate,tier,avatarId,showAvatar=false}){
+  const row=document.createElement('div');row.className=`analytics-rate-row analytics-tier-${tier}`;
+  const top=document.createElement('div');top.className='analytics-rate-top';
+  const identity=document.createElement('div');identity.className='analytics-rate-label';
+  if(showAvatar&&avatarId)identity.append(createAvatarImage(avatarId,{size:'sm',decorative:true}));
+  const copy=document.createElement('div');copy.className='analytics-rate-copy';
+  const title=document.createElement('strong');title.textContent=label;title.title=label;
+  const desc=document.createElement('small');desc.textContent=subtitle;
+  copy.append(title,desc);identity.append(copy);
+  const value=document.createElement('strong');value.className='analytics-rate-value';value.textContent=rate===null?'—':`${rate}%`;
+  top.append(identity,value);
+  const track=document.createElement('div');track.className='analytics-rate-track';
+  track.setAttribute('role','meter');track.setAttribute('aria-label',`${label} 정답률`);
+  track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');
+  if(rate!==null)track.setAttribute('aria-valuenow',String(rate));
+  const fill=document.createElement('span');fill.className='analytics-rate-fill';fill.style.width=`${rate??0}%`;track.append(fill);
+  row.append(top,track);return row;
+}
+function renderAnalytics(gradesForGame, roster, state){
+  const total=['reveal','finished'].includes(state)?Math.max(0,Number(publicRound?.index??-1)+1):Math.max(0,Number(publicRound?.index??-1));
+  const stats=buildClassAccuracy({grades:gradesForGame,roster,questions:getQuestions(),completedCount:total});
+  const individuals=$('classic-focus-student-accuracy');individuals.replaceChildren();
+  stats.participants.forEach((person,index)=>{
+    const label=hideStudentAccuracyNames?'학생 '+String(index+1).padStart(2,'0'):person.name;
+    const avatar=hideStudentAccuracyNames?'':(room?.members?.[person.uid]?.profile?.avatarId||'');
+    individuals.append(analyticsRateCard({label,subtitle:`${person.correct}/${person.total}문항 정답${person.answered<person.total?` · 미제출 ${person.total-person.answered}`:''}`,rate:person.rate,tier:person.tier,avatarId:avatar,showAvatar:!hideStudentAccuracyNames}));
+  });
+  if(!stats.participants.length)individuals.textContent='학급 참가자가 없습니다.';
+  const questions=$('classic-focus-question-accuracy');questions.replaceChildren();
+  for(const item of stats.questions){
+    questions.append(analyticsRateCard({label:`${item.originalNumber}번 · ${item.prompt}`,subtitle:`${item.correct}/${item.total}명 정답${item.graded<item.total?` · ${item.graded}명 채점`:''}`,rate:item.rate,tier:item.tier}));
+  }
+  if(!stats.questions.length)questions.textContent='정답 공개된 문항이 없습니다.';
+  $('classic-focus-student-legend').textContent=`${stats.totalQuestions}문항 기준 · 미제출은 정답에서 제외`;
+}
+
 function showFocusImage(path){
   const wrap=$('classic-focus-image-wrap'),img=$('classic-focus-image'),error=$('classic-focus-image-error');
   let url='';try{url=fullQuestionImageUrl(path||'',location.href);}catch{ /* invalid URL must not load */ }
@@ -337,8 +375,19 @@ function renderFocus(){
   $('classic-focus-question-view').hidden=viewingResults;
   $('classic-focus-results-view').hidden=!viewingResults;
   const q=getQuestions()[publicRound?.index??-1];
+  const isReveal=Boolean(q&&['reveal','finished'].includes(state));
   $('classic-focus-question').textContent=q?`[${q.number}번] ${q.prompt}`:'문제를 준비 중입니다.';
   showFocusImage(q?.imageUrl);
+  const spotlight=$('classic-focus-answer-spotlight');
+  spotlight.hidden=!isReveal;
+  $('classic-focus-question-card').classList.toggle('teacher-answer-visible',isReveal);
+  if(isReveal){
+    $('classic-focus-answer-big').textContent=correctDisplay(q);
+    const values=Object.values(grades?.[publicRound?.roundId]||{});
+    const correctCount=values.filter(v=>v.correct===true).length;
+    const allStudents=Object.keys(run?.roster||{}).length;
+    $('classic-focus-answer-rate').textContent=allStudents?`우리 반 ${correctCount}/${allStudents}명 정답 · ${Math.round(100*correctCount/allStudents)}%`:'정답이 공개됐습니다.';
+  }
   const choices=$('classic-focus-options');choices.replaceChildren();
   if(q){
     const reveal=state==='reveal'||state==='finished';
@@ -355,24 +404,20 @@ function renderFocus(){
       });
     }
   }
-  const answerNode=$('classic-focus-answer');
-  answerNode.hidden=!(q&&['reveal','finished'].includes(state));
-  if(!answerNode.hidden)answerNode.textContent=`정답: ${correctDisplay(q)}`;
   if(!viewingResults)return;
   const report=buildRoundReport(id||'',grades?.[id]||{},answers?.[id]||{},run?.roster||{},totalScores(grades,rosterMembers()));
   $('classic-focus-summary').textContent=`${report.submittedCount}/${report.participantCount}명 제출 · ${report.correctCount}명 정답 · ${report.gradedCount}명 채점 완료`;
-  const rows=$('classic-focus-round-list');rows.replaceChildren();
-  const arr=Object.entries(report.entries).map(([userId,e])=>({uid:userId,...e}));
-  const statusOrder={correct:0,wrong:1,pending:2,missing:3};
-  arr.sort((a,b)=>(statusOrder[a.status]??4)-(statusOrder[b.status]??4)||b.points-a.points||a.responseMs-b.responseMs||a.name.localeCompare(b.name,'ko'));
-  arr.forEach((r,i)=>rows.append(focusRow(r,i+1,'round')));
-  if(!arr.length)rows.textContent='참가 학생이 없습니다.';
   const totals=$('classic-focus-total-list');totals.replaceChildren();
   const ranked=ranking(totalScores(grades,rosterMembers()));
-  const podium=$('classic-focus-podium');podium.hidden=state!=='finished';
-  if(state==='finished')renderPodium(podium,ranked);else podium.replaceChildren();
+  const podium=$('classic-focus-podium');podium.hidden=state!=='finished'||podiumCollapsed;
+  if(state==='finished'&&!podiumCollapsed)renderPodium(podium,ranked);else podium.replaceChildren();
+  $('classic-focus-podium-toggle').hidden=state!=='finished';
+  $('classic-focus-podium-toggle').textContent=podiumCollapsed?'시상대 펼치기':'시상대 접기';
+  $('classic-focus-fanfare').hidden=state!=='finished';
+  $('classic-focus-results-title').textContent=state==='finished'?'최종 학습 결과':'이번 문제와 누적 학습 결과';
   ranked.forEach((r,i)=>totals.append(focusRow(r,i+1,'total')));
   if(!totals.childElementCount)totals.textContent='아직 결과가 없습니다.';
+  renderAnalytics(grades,run?.roster||{},state);
 }
 $('classic-auto-reveal').addEventListener('change',event=>setAutoReveal(event.target.checked));
 $('classic-focus-auto-reveal').addEventListener('change',event=>setAutoReveal(event.target.checked));
@@ -383,6 +428,9 @@ $('classic-focus-pause').addEventListener('click',pauseResume);
 $('classic-focus-extend').addEventListener('click',extendTime);
 $('classic-focus-reveal').addEventListener('click',revealQuestion);
 $('classic-focus-result').addEventListener('click',()=>{arcade.showResults();focusResults=!focusResults;renderFocus();});
+$('classic-focus-fanfare').addEventListener('click',()=>arcade.fanfare());
+$('classic-focus-podium-toggle').addEventListener('click',()=>{podiumCollapsed=!podiumCollapsed;renderFocus();});
+$('classic-focus-hide-names').addEventListener('change',event=>{hideStudentAccuracyNames=event.target.checked;renderFocus();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)closeFocus();});
 
 // 교사 인증과 rooms.js의 방 선택 이벤트가 각각 비동기로 도착합니다.
