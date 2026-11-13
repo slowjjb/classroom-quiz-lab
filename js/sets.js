@@ -22,6 +22,21 @@ function formBlock(tag, label, value, onChange, attrs = {}) {
   input.addEventListener('input', () => onChange(input.value));
   box.append(heading, input); return box;
 }
+// 내용이 짧을 때는 빈 공간을 줄이고, 긴 지문은 입력 중 자연스럽게 확장합니다.
+function autoSizeTextarea(input) {
+  const minHeight = input.classList.contains('question-textarea') ? 58 : 54;
+  const maxHeight = input.classList.contains('question-textarea') ? 460 : 230;
+  input.style.height = 'auto';
+  const wanted = Math.max(minHeight, Math.min(maxHeight, input.scrollHeight + 2));
+  input.style.height = wanted + 'px';
+  input.style.overflowY = input.scrollHeight + 2 > maxHeight ? 'auto' : 'hidden';
+}
+function activateAutoSize(card) {
+  card.querySelectorAll('textarea.question-textarea, textarea.answer-textarea').forEach(input => {
+    autoSizeTextarea(input);
+    input.addEventListener('input', () => autoSizeTextarea(input));
+  });
+}
 function makeButton(label, fn, className = 'btn btn-outline btn-small') {
   const button = document.createElement('button'); button.type = 'button'; button.className = className; button.textContent = label;
   button.addEventListener('click', fn); return button;
@@ -120,34 +135,42 @@ function newDraft() {
 }
 function markEdited() { dirty = true; draftBadge(draftId ? '수정 중' : '미저장 초안'); }
 function changeField(row, pos, value) { row.fields[pos] = value; markEdited(); }
-function renderEditor() {
+function renderEditor(expandIndex = null) {
   const list = $('questions-editor'); list.replaceChildren(); refreshSaveState();
   draftBadge(draftRows.length ? (draftId ? '저장본 편집 중' : 'CSV 불러옴') : '초안 없음');
   draftRows.forEach((row, idx) => {
     const card = document.createElement('details');
     card.className='question-card';
     card.dataset.questionNumber = String(idx + 1);
-    if (idx < 3) card.open=true;
+    if (idx < 3 || idx === expandIndex) card.open=true;
     const summary = document.createElement('summary'); summary.textContent=`${idx+1}번 · ${row.fields[1]?.trim().slice(0, 75) || '문제 입력 필요'}`;
     card.append(summary);
     const grid = document.createElement('div'); grid.className='editor-grid editor-grid-meta';
     grid.append(formBlock('input', 'A · 원본 문항 번호',row.fields[0], v=>changeField(row,0,v),{inputMode:'numeric'}));
-    grid.append(formBlock('input', 'G · 제한 시간(초)',row.fields[6], v=>changeField(row,6,v),{inputMode:'numeric'}));
-    card.append(grid);
-    const questionField = formBlock('textarea','B · 문제',row.fields[1],v=>{changeField(row,1,v);summary.textContent=`${idx+1}번 · ${v.slice(0,75)}`;},{rows:4});
-    questionField.classList.add('edit-field-wide');
-    questionField.querySelector('.edit-input')?.classList.add('question-textarea');
-    card.append(questionField);
     const typeWrap = document.createElement('label'); typeWrap.className='edit-field';
     const label = document.createElement('span'); label.className='field-mini'; label.textContent='문제 유형 (J열)';
     const selector = document.createElement('select'); selector.className='edit-input';
     [['','객관식'],['typing','주관식 (typing)']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;selector.append(o);});
     selector.value=row.fields[9].trim() === 'typing' ? 'typing' : '';
-    selector.addEventListener('change',()=>{row.fields[9]=selector.value;row.fields[7]=selector.value ? '' : '1';markEdited();renderEditor();validateAndDisplay();});
-    typeWrap.append(label,selector);card.append(typeWrap);
+    selector.addEventListener('change',()=>{
+      row.fields[9]=selector.value;
+      row.fields[7]=selector.value ? '' : '1';
+      markEdited();renderEditor(idx);validateAndDisplay();
+    });
+    typeWrap.append(label,selector);
+    grid.append(typeWrap);
+    grid.append(formBlock('input', 'G · 제한 시간(초)',row.fields[6], v=>changeField(row,6,v),{inputMode:'numeric'}));
+    card.append(grid);
+    const questionField = formBlock('textarea','B · 문제',row.fields[1],v=>{
+      changeField(row,1,v);
+      summary.textContent=`${idx+1}번 · ${v.slice(0,75)}`;
+    },{rows:1});
+    questionField.classList.add('edit-field-wide');
+    questionField.querySelector('.edit-input')?.classList.add('question-textarea');
+    card.append(questionField);
     const answers = document.createElement('div'); answers.className='answer-grid';
     for (let i=0;i<4;i++) {
-      const answerField = formBlock('textarea',`${'CDEF'[i]} · ${row.fields[9] === 'typing' ? '허용 정답 '+(i+1) : '보기 '+(i+1)}`,row.fields[i+2],v=>changeField(row,i+2,v),{rows:3});
+      const answerField = formBlock('textarea',`${'CDEF'[i]} · ${row.fields[9] === 'typing' ? '허용 정답 '+(i+1) : '보기 '+(i+1)}`,row.fields[i+2],v=>changeField(row,i+2,v),{rows:1});
       answerField.querySelector('.edit-input')?.classList.add('answer-textarea');
       answers.append(answerField);
     }
@@ -157,10 +180,17 @@ function renderEditor() {
       const lab = document.createElement('span');lab.className='field-mini';lab.textContent='H · 정답 보기 번호';
       const pick = document.createElement('select');pick.className='edit-input';
       [['','정답 번호 선택'],['1','1'],['2','2'],['3','3'],['4','4']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;pick.append(o);});
-      pick.value=row.fields[7].trim(); pick.addEventListener('change',()=>changeField(row,7,pick.value));correct.append(lab,pick);card.append(correct);
+      pick.value=row.fields[7].trim(); pick.addEventListener('change',()=>changeField(row,7,pick.value));correct.classList.add('correct-field');correct.append(lab,pick);card.append(correct);
     }
     // 이미지 정보는 블루킷 10열 CSV가 아닌 문제 세트의 부가 정보로 관리합니다.
-    const imageField=formBlock('input', '문제 이미지 (GitHub images/questions 폴더의 파일명 또는 주소)',row.imageUrl||'',value=>{
+    const imageDetails=document.createElement('details');
+    imageDetails.className='question-image-details';
+    imageDetails.open=Boolean(row.imageUrl);
+    const imageSummary=document.createElement('summary');
+    imageSummary.textContent=row.imageUrl?'문제 이미지 · 등록됨':'문제 이미지 추가 (선택 사항)';
+    imageDetails.append(imageSummary);
+    const imageField=formBlock('input', 'GitHub images/questions 폴더의 파일명 또는 주소',row.imageUrl||'',value=>{
+      imageSummary.textContent=value.trim()?'문제 이미지 · 등록됨':'문제 이미지 추가 (선택 사항)';
       row.imageUrl=value;markEdited();
       const warning=card.querySelector('.question-image-warning');
       const preview=card.querySelector('.question-image-preview');
@@ -171,18 +201,21 @@ function renderEditor() {
         if(safe)preview.src=new URL(safe,rootUrl).href;
       }catch(e){warning.textContent=e.message;preview.hidden=true;}
     },{placeholder:'예: 도형_05.png 또는 images/questions/도형_05.png'});
-    card.append(imageField);
+    imageDetails.append(imageField);
     const imagePreview=document.createElement('img');imagePreview.className='question-image-preview';imagePreview.alt=`${idx+1}번 문제 이미지 미리보기`;imagePreview.loading='lazy';
     const imageWarning=document.createElement('p');imageWarning.className='helper question-image-warning';
     imagePreview.addEventListener('error',()=>{imageWarning.textContent='이미지를 불러오지 못했습니다. GitHub에 파일을 올렸는지, 파일 이름과 대소문자가 일치하는지 확인하세요.';});
     try{const safe=normalizeQuestionImage(row.imageUrl,rootUrl);imagePreview.hidden=!safe;if(safe)imagePreview.src=new URL(safe,rootUrl).href;}
     catch(e){imagePreview.hidden=true;imageWarning.textContent=e.message;}
-    card.append(imagePreview,imageWarning);
+    imageDetails.append(imagePreview,imageWarning);
+    card.append(imageDetails);
     if (row.columnCount !== 10 && !row.acknowledged && row.columnCount < 10) {
       card.append(makeButton(`${row.columnCount}열 → 10열 보정 승인`,()=>{row.acknowledged=true;markEdited();validateAndDisplay();}));
     }
     if (row.columnCount > 10) { const note=document.createElement('p');note.className='helper';note.textContent='원본이 10열을 초과했습니다. 데이터 유실을 방지하려면 CSV 파일을 수정하여 다시 업로드하세요.';card.append(note); }
     list.append(card);
+    if (card.open) activateAutoSize(card);
+    else card.addEventListener('toggle', () => { if (card.open) activateAutoSize(card); }, {once:true});
   });
 }
 function validateAndDisplay() {
