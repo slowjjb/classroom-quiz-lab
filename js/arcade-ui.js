@@ -2,7 +2,7 @@ import { createAvatarImage } from './avatars.js';
 /**
  * QUIZ LAB v3.4: 시각 효과와 오리지널 Web Audio 배경 음악.
  * Firebase, 채점, 정답, 점수 데이터에는 접근하지 않는 순수 표시 계층입니다.
- * 외부 음원·이미지·라이브러리 사용 없음. 소리는 사용자 클릭 후에만 실행됩니다.
+ * 외부 음원·이미지·라이브러리 사용 없음. 게임 시작 버튼 클릭으로 교사 BGM을 활성화합니다.
  */
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 // v3.14: 세 곡 모두 Purplekit용으로 직접 구성한 오리지널 선율입니다.
@@ -188,9 +188,10 @@ export function renderPodium(target,ranked){
 }
 export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
   const stage=document.getElementById(stageId);
-  if(!stage)return {sync:noop,updateTime:noop,choice:noop,submit:noop,showResults:noop,reset:noop,armEffects:noop,fanfare:noop,destroy:noop};
+  if(!stage)return {sync:noop,updateTime:noop,choice:noop,submit:noop,showResults:noop,reset:noop,armEffects:noop,fanfare:noop,autoStartGameMusic:noop,destroy:noop};
   const tracks=mode==='gold'?GOLD_TRACKS:CALM_TRACKS;
   const audio=new OriginalAudio(role,tracks);let phase='',roundId='',gradedKey='',lastTick=-1,enabled=false,effectsArmed=false,toastTimer=null;
+  let musicRequestId=0,musicAutoStarting=false;
   stage.classList.add('arcade-enhanced');stage.dataset.arcadeRole=role;
   const head=stage.querySelector('.quiz-stage-head');
   const track=document.createElement('div');track.className='arcade-time-track';track.setAttribute('aria-hidden','true');
@@ -242,19 +243,45 @@ export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
       }else trackCurrent.textContent='자동 선택 · 다음 게임 시작 시 변경';
     });
     toggle.addEventListener('click',async()=>{
-      if(enabled){enabled=false;audio.stopMusic();toggle.textContent='🔇 BGM 켜기';toggle.setAttribute('aria-pressed','false');return;}
-      if(!await audio.enable()){toggle.textContent='이 기기는 오디오를 지원하지 않아요';toggle.disabled=true;return;}
-      enabled=true;effectsArmed=true;
-      if(trackControl.value==='auto'&&trackCurrent.textContent.includes('게임 준비 시')){
-        // 교사가 준비 전에 미리 듣는 경우 임시로 기본 트랙을 사용합니다.
-        trackCurrent.textContent=`재생곡: ${tracks.find(t=>t.id===audio.currentTrackId)?.name}`;
+      // A teacher's manual OFF choice stays OFF through later questions.
+      if(enabled||musicAutoStarting){
+        ++musicRequestId;musicAutoStarting=false;enabled=false;audio.stopMusic();
+        toggle.textContent='🔇 BGM 켜기';toggle.setAttribute('aria-pressed','false');return;
       }
-      audio.setMusicVolume(volumeControl.value);audio.setFxVolume(fxControl.value);
-      toggle.textContent='🔊 BGM 끄기';toggle.setAttribute('aria-pressed','true');
-      audio.fx('select');if(phase!=='finished')audio.startMusic();
+      return await enableTeacherMusic({startInLobby:true});
     });
     head.append(controls);
   }
+  // Called synchronously from a teacher's Start/First Question button click.
+  // This preserves browser audio-gesture permission even though Firebase writes
+  // finish asynchronously. The track begins when the playing state arrives.
+  const enableTeacherMusic=async({startInLobby=false}={})=>{
+    if(role!=='teacher'||enabled)return enabled;
+    const requestId=++musicRequestId;
+    musicAutoStarting=true;
+    let allowed=false;
+    try{allowed=await audio.enable();}catch{}
+    if(requestId!==musicRequestId)return false; // e.g. teacher muted while resuming
+    musicAutoStarting=false;
+    if(!allowed){
+      if(toggle){toggle.textContent='🔇 BGM 켜기';toggle.setAttribute('aria-pressed','false');}
+      return false; // manual toggle remains available as browser-policy fallback
+    }
+    enabled=true;effectsArmed=true;
+    audio.setMusicVolume(volumeControl?.value??65);
+    audio.setFxVolume(fxControl?.value??75);
+    if(trackControl?.value==='auto'&&trackCurrent?.textContent.includes('게임 준비 시'))
+      trackCurrent.textContent=`재생곡: ${tracks.find(t=>t.id===audio.currentTrackId)?.name}`;
+    if(toggle){toggle.textContent='🔊 BGM 끄기';toggle.setAttribute('aria-pressed','true');}
+    if(startInLobby)audio.fx('select');
+    if(startInLobby||['question','paused','reveal'].includes(phase))audio.startMusic();
+    return true;
+  };
+  const autoStartGameMusic=()=>{
+    if(role!=='teacher')return;
+    // Start is a trusted user gesture: request audio activation BEFORE awaits.
+    if(!enabled)void enableTeacherMusic();
+  };
   const newGameMusic=()=>{
     if(role!=='teacher')return;
     if(trackControl?.value!=='auto')return;
@@ -299,7 +326,11 @@ export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
       if(newQuestion){playEffect('start');showToast('⚡ 문제 시작!');}
     }
     if(role==='teacher'&&enabled){
-      if(state==='finished')audio.stopMusic();else audio.startMusic();
+      if(state==='finished'){
+        audio.stopMusic();enabled=false;
+        ++musicRequestId;musicAutoStarting=false;
+        if(toggle){toggle.textContent='🔇 BGM 켜기';toggle.setAttribute('aria-pressed','false');}
+      }else if(['question','paused','reveal'].includes(state))audio.startMusic();
     }
     if(newPhase&&state==='reveal'&&role==='teacher')playEffect('reveal');
     if(state==='reveal'&&role==='student'&&grade!==null&&gradedKey!==roundId){
@@ -322,16 +353,18 @@ export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
     lastTick=rem;
   }
   function reset(){
-    phase='';roundId='';gradedKey='';lastTick=-1;audio.stopMusic();track.hidden=true;
+    phase='';roundId='';gradedKey='';lastTick=-1;
+    ++musicRequestId;musicAutoStarting=false;enabled=false;audio.stopMusic();track.hidden=true;
+    if(toggle){toggle.textContent='🔇 BGM 켜기';toggle.setAttribute('aria-pressed','false');}
     stage.dataset.arcadePhase='';stage.classList.remove('arcade-paused');
     if(toastTimer){clearTimeout(toastTimer);toastTimer=null;}toast.classList.remove('arcade-toast-visible');
   }
-  // 교사가 게임 준비/다음 문제 버튼을 누를 때 효과음만 활성화합니다.
-  // BGM은 별도 버튼을 눌러야 켜지며, BGM을 꺼도 빵빠레 등 효과음은 남습니다.
+  // 교사가 게임 시작/첫 문제 출제를 누르면 BGM도 자동 활성화합니다.
+  // 직접 끄면 다음 문제에서도 꺼진 상태를 유지하며, 효과음은 독립적으로 재생합니다.
   const armEffects=async()=>{if(role!=='teacher')return false;try{effectsArmed=await audio.enable();return effectsArmed;}catch{return false;}};
   const fanfare=async()=>{if(role!=='teacher')return;if(await armEffects())audio.fx('fanfare');};
   return {
-    sync,updateTime,reset,armEffects,fanfare,newGameMusic,
+    sync,updateTime,reset,armEffects,fanfare,newGameMusic,autoStartGameMusic,
     choice(){playEffect('select');},
     submit(){playEffect('submit');},
     showResults(){playEffect('select');},

@@ -27,5 +27,5 @@ for(const id of ['classic-focus-answer-spotlight','classic-focus-answer-big','cl
 assert.match(host,/renderAnalytics\(/);assert.match(host,/buildClassAccuracy/);assert.match(host,/arcade\.fanfare\(\)/);
 assert.match(ui,/name==='fanfare'/);assert.match(ui,/effectsArmed/);assert.match(ui,/armEffects/);
 assert.match(css,/teacher-analytics-grid/);assert.match(css,/teacher-answer-spotlight/);
-assert.match(html,/classic-host\.js\?v=3\.(13|14)/);
+assert.match(html,/classic-host\.js\?v=(?:3\.(13|14)|4\.[0-3])/);
 console.log('v3.13 accuracy thresholds, absent answer, visual IDs, audio controls: PASS');

@@ -5,7 +5,7 @@ import { makeRulesV4 } from './rules-v4.js';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.14';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
 import { buildClassAccuracy } from './classic-analytics.js?v=3.13';
 
 const $ = x => document.getElementById(x);
@@ -139,7 +139,12 @@ async function prepareGame(){arcade.armEffects();await mutate(async()=>{
   await update(ref(db,`v2/rooms/${code}/meta`),{state:'locked'});
   msg(`문제 ${qs.length}개가 준비됐습니다. '다음 문제 출제'를 누르세요.`,'success');
 });}
-async function nextQuestion(){arcade.armEffects();await mutate(async()=>{
+async function nextQuestion(){
+  arcade.armEffects();
+  // 클래식의 첫 '다음 문제 출제' 버튼이 실제 게임 시작 제스처입니다.
+  // 첫 문제에만 자동 켜짐을 요청하며, 이후 교사의 수동 끄기 설정은 존중합니다.
+  if(run&&publicRound?.state==='ready'&&Number(publicRound?.index??-1)<0)arcade.autoStartGameMusic();
+  await mutate(async()=>{
   const questions=getQuestions();if(!run||!questions.length)throw Error('게임 준비가 필요합니다.');
   const state=publicRound?.state;if(!(state==='ready'||state==='reveal'))throw Error('진행 중인 문제를 먼저 마감하세요.');
   const index=(Number(publicRound?.index??-1)+1);

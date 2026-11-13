@@ -6,7 +6,7 @@ import { optionsArray, escapeCsv } from './classic-core.js';
 import { buildGoldAccuracy } from './gold-analytics.js';
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
-import { createArcadeUi, renderPodium } from './arcade-ui.js';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
 import { makeRulesV4 } from './rules-v4.js';
 
 const $=id=>document.getElementById(id);
@@ -247,6 +247,9 @@ async function prepare(){
 async function start(){
   if(operation||!run||pub?.state!=='ready')return;
   operation=true;arcade.armEffects();
+  // Select a new adventure track and request audio within the Start click.
+  // Actual playback begins when Firebase confirms the playing state.
+  arcade.newGameMusic();arcade.autoStartGameMusic();
   try{
     const now=Date.now()+offset;
     const changes={
@@ -260,7 +263,7 @@ async function start(){
       changes[`v4/memberState/${code}/${uid}`]=messageForState({index:idx,...q},uid,0,{answered:0,correct:0});
     }
     await update(ref(db),changes);
-    arcade.newGameMusic();focus(true);notify('게임을 시작했습니다! 교사 브라우저를 열어 두세요.','success');
+    focus(true);notify('게임을 시작했습니다! 교사 브라우저를 열어 두세요.','success');
   }catch(err){notify('시작 오류: '+formatError(err),'error');}finally{operation=false;render();}
 }
 async function finish(){

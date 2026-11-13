@@ -21,6 +21,6 @@ assert.match(styles,/nth-child\(4n\+2\)/);
 assert.match(styles,/\.sets-page \.question-card textarea\.question-textarea/);
 assert.match(styles,/\.sets-page \.question-card textarea\.answer-textarea/);
 assert.match(original,/export function parseCSV/);
-for(const h of ['index','join','rooms','sets','teacher','student','loadtest']) assert.match(read(h+'.html'),/(?:v3\.(12|13|14)|v4\.[012])/i);
+for(const h of ['index','join','rooms','sets','teacher','student','loadtest']) assert.match(read(h+'.html'),/(?:v3\.(12|13|14)|v4\.[0123])/i);
 assert.ok(fs.existsSync(new URL('../images/avatars/a01.png',import.meta.url)));
 console.log('v3.12 편집 레이아웃·문항 높이·버전 표기·캐릭터 보존: PASS');
