@@ -1,8 +1,9 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
-import { ref, get, onValue, update, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeShuffleBag, verifyGoldAnswer, chooseGoldOutcome, applyGoldOutcome, goldRanking } from './gold-core.js';
 import { optionsArray, escapeCsv } from './classic-core.js';
+import { buildGoldAccuracy } from './gold-analytics.js';
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
 import { createArcadeUi, renderPodium } from './arcade-ui.js';
@@ -13,6 +14,7 @@ const arcade=createArcadeUi('gold-focus',{role:'teacher',mode:'gold'});
 let teacher=null,code='',room=null,run=null,pub=null,states={},answers={},picks={};
 let ready=false,unsubs=[],metaUnsub=null,modeHint='',rightsState='idle',processLock=false,operation=false,offset=0,focusOpen=false,checkToken=0;
 let processingKeys=new Set(),previousRankSignature='',lastFinished=false;
+let podiumCollapsed=false,resultsMode='first',hideResultsNames=false;
 const roomCode=()=>code;
 function notify(text,type=''){$('gold-message').textContent=text;$('gold-message').dataset.kind=type;}
 function stop(){
@@ -21,7 +23,7 @@ function stop(){
   for(const unsubscribe of unsubs)unsubscribe();
   unsubs=[];room=null;run=null;pub=null;states={};answers={};picks={};ready=false;
   rightsState='idle';processLock=false;processingKeys.clear();previousRankSignature='';
-  lastFinished=false;focusOpen=false;$('gold-focus').hidden=true;
+  lastFinished=false;focusOpen=false;podiumCollapsed=false;$('gold-focus').hidden=true;
   document.body.classList.remove('quiz-stage-active');arcade.reset();
 }
 // v2 room metadata is already readable with the existing classroom rules.
@@ -123,22 +125,77 @@ function renderFocus(){
   if(!focusOpen)return;
   $('gold-focus').hidden=false;document.body.classList.add('quiz-stage-active');
   const state=pub?.state||'ready';
+  $('gold-focus').classList.toggle('gold-is-finished',state==='finished');
   arcade.sync({state:state==='playing'?'question':state==='finished'?'finished':'ready',questionId:'gold-'+(pub?.startedAt||'')});
   $('gold-focus-state').textContent=state==='playing'?'보물 찾는 중!':state==='finished'?'게임 종료':'시작 준비';
   const time=state==='playing'?Math.max(0,Math.ceil((Number(pub.endsAt||0)-(Date.now()+offset))/1000)):0;
   $('gold-focus-clock').textContent=state==='playing'?`${Math.floor(time/60)}:${String(time%60).padStart(2,'0')}`:'—';
-  $('gold-focus-lead').textContent=rankSummary()||'친구들의 도전을 기다리고 있습니다.';
+  const names=Object.keys(run?.roster||{}).sort();
+  const alias=uid=>`참가자 ${Math.max(0,names.indexOf(uid))+1}`;
+  $('gold-focus-lead').textContent=state==='finished'&&hideResultsNames
+    ?goldRanking(pub?.scores||{}).slice(0,3).map((r,i)=>`${i+1}위 ${alias(r.uid)}: ${r.gold}G`).join(' · ')
+    :rankSummary()||'친구들의 도전을 기다리고 있습니다.';
   $('gold-focus-prepare').disabled=$('gold-prepare').disabled;
   $('gold-focus-start').disabled=$('gold-start').disabled;
   $('gold-focus-end').disabled=$('gold-end').disabled;
   rankRows($('gold-focus-ranking'),true);
   $('gold-focus-podium').hidden=state!=='finished';
+  $('gold-finish-stats').hidden=state!=='finished';
+  $('gold-focus-main').classList.toggle('gold-podium-collapsed',state==='finished'&&podiumCollapsed);
+  $('gold-podium-toggle').textContent=podiumCollapsed?'시상대 펼치기':'시상대 접기';
   if(state==='finished'){
-    const signature=JSON.stringify(goldRanking(pub?.scores||{}).slice(0,3));
-    if(previousRankSignature!==signature){renderPodium($('gold-focus-podium'),goldRanking(pub?.scores||{}).map(x=>({...x,score:Number(x.gold||0)})));previousRankSignature=signature;}
+    const signature=JSON.stringify({top:goldRanking(pub?.scores||{}).slice(0,3),hideResultsNames});
+    if(previousRankSignature!==signature){renderPodium($('gold-focus-podium'),goldRanking(pub?.scores||{}).map(x=>({...x,name:hideResultsNames?alias(x.uid):x.name,score:Number(x.gold||0)})));previousRankSignature=signature;}
+    renderGoldAnalytics();
   }
   if(state==='finished'&&!lastFinished){lastFinished=true;arcade.fanfare();}
 }
+
+function analyticsBar({rate,tier}){
+  const wrap=document.createElement('div');wrap.className='gold-accuracy-bar';
+  const fill=document.createElement('span');fill.className='gold-accuracy-fill tier-'+tier;
+  fill.style.width=rate===null?'0%':`${Math.max(0,Math.min(100,rate))}%`;
+  wrap.append(fill);return wrap;
+}
+function renderGoldAnalytics(){
+  if(!run || pub?.state!=='finished')return;
+  const results=buildGoldAccuracy({roster:run.roster||{},scores:pub?.scores||{},questions:run.questions||[],
+    answersLog:run.answersLog||{},mode:resultsMode});
+  const firstLabel=resultsMode==='first'?'첫 시도':'전체 시도';
+  $('gold-stats-summary').textContent=`${results.participantCount}명 참여 · ${firstLabel} ${results.summary.correct}/${results.summary.total}회 정답 · ${results.summary.rate===null?'정답률 계산 중':results.summary.rate+'%'}`;
+  $('gold-students-caption').textContent=resultsMode==='first'?'학생별 서로 다른 문항의 첫 시도 기준':'학생별 모든 응답(반복 풀이 포함) 기준';
+  $('gold-questions-caption').textContent=resultsMode==='first'?'문항별 학생의 첫 시도 기준':'문항별 모든 응답(반복 풀이 포함) 기준';
+  const identifiers=Object.keys(run?.roster||{}).sort();
+  const nameOf=(name,uid)=>hideResultsNames?`참가자 ${Math.max(0,identifiers.indexOf(uid))+1}`:name;
+  const makeRow=(label,meta,rate,tier)=>{
+    const row=document.createElement('div');row.className='gold-accuracy-row';
+    const header=document.createElement('div');header.className='gold-accuracy-head';
+    const name=document.createElement('strong');name.textContent=label;name.title=label;
+    const percent=document.createElement('b');percent.className='tier-text-'+tier;percent.textContent=rate===null?'—':`${rate}%`;
+    header.append(name,percent);
+    const detail=document.createElement('small');detail.textContent=meta;
+    row.append(header,analyticsBar({rate,tier}),detail);return row;
+  };
+  const rank=$('gold-stats-ranking');rank.replaceChildren();
+  goldRanking(pub?.scores||{}).forEach((entry,i)=>{
+    const row=document.createElement('div');row.className='gold-analytics-rank';
+    const place=document.createElement('b');place.textContent=i<3?['🥇','🥈','🥉'][i]:`${i+1}위`;
+    const icon=createAvatarImage(entry.avatarId,{size:'sm',decorative:true});
+    const name=document.createElement('span');name.textContent=nameOf(entry.name||'참가자',entry.uid);
+    const gold=document.createElement('strong');gold.textContent=`${Number(entry.gold||0).toLocaleString('ko-KR')}G`;
+    row.append(place,icon,name,gold);rank.append(row);
+  });
+  const students=$('gold-stats-students');students.replaceChildren();
+  results.students.forEach(entry=>students.append(makeRow(nameOf(entry.name,entry.uid),
+    `${entry.correct}/${entry.total}회 정답 · 고유 ${entry.uniqueQuestions}문항 · 전체 ${entry.attempts}회`,entry.rate,entry.tier)));
+  const questions=$('gold-stats-questions');questions.replaceChildren();
+  results.questions.forEach(q=>{
+    const label=`${q.number}번 · ${q.prompt}`;
+    questions.append(makeRow(label,
+      q.total?`${q.correct}/${q.total}회 정답 · ${q.students}명 도전`:'아직 이 문항을 푼 학생이 없습니다.',q.rate,q.tier));
+  });
+}
+
 function focus(open){focusOpen=open;$('gold-focus').hidden=!open;document.body.classList.toggle('quiz-stage-active',open);if(open)renderFocus();}
 function shuffledQuestions(source){
   return Object.values(source?.questions||{}).sort((a,b)=>a.number-b.number).map(q=>({
@@ -224,54 +281,98 @@ function pickTarget(actorUid){
 }
 function newNonce(){return `a${crypto.randomUUID().replace(/-/g,'').slice(0,15)}`;}
 async function processAnswer(uid,state,submission){
-  const key=`answer/${uid}/${state.nonce}`;if(processingKeys.has(key))return;
+  if(pub?.state!=='playing'||!run||!submission?.value||!run.questions?.[state.questionIndex]||!pub?.scores?.[uid])return;
+  const key=`answer/${uid}/${state.nonce}`;
+  if(processingKeys.has(key))return;
   processingKeys.add(key);
   try{
     if(pub?.state!=='playing'||!run||!submission?.value)return;
     const q=run.questions?.[state.questionIndex];if(!q)return;
     const correct=verifyGoldAnswer(q,submission.value);
-    const old=pub?.scores?.[uid];if(!old)return;
-    const nextScore={...old,answered:Number(old.answered||0)+1,correct:Number(old.correct||0)+(correct?1:0)};
-    const oldState={...state,answered:nextScore.answered,correct:nextScore.correct,
+    // Update only this student's answered/correct counters via a transaction.
+    // Cloning an old score object here would overwrite gold moved by a chest.
+    const scoreRef=ref(db,`v4/public/${code}/scores/${uid}`);
+    const nonce=state.nonce;
+    const tx=await runTransaction(scoreRef,current=>{
+      if(!current||current.lastAnswerNonce===nonce)return;
+      return {...current,
+        answered:Number(current.answered||0)+1,
+        correct:Number(current.correct||0)+(correct?1:0),
+        lastAnswerNonce:nonce};
+    },{applyLocally:false});
+    let saved=tx.snapshot.val();
+    if(!saved||saved.lastAnswerNonce!==nonce)saved=(await get(scoreRef)).val();
+    if(!saved||saved.lastAnswerNonce!==nonce)throw Error('채점 트랜잭션을 확인하지 못했습니다.');
+    const oldState={...state,answered:Number(saved.answered||0),correct:Number(saved.correct||0),
       lastMessage:correct?'✨ 정답입니다! 보물상자를 골라 주세요.':`다음 문제에 도전하세요! 정답: ${q.type==='typing'?q.options.filter(Boolean).join(' / '):q.options[Number(q.correctIndex)-1]}`,
       lastCorrect:correct?'yes':'no'};
     const next=correct?{...oldState,phase:'treasure'}:nextQuestionFor(uid,Number(state.sequence||0)+1,oldState);
-    // Wrong answer gets a fresh question, correct answer needs a treasure pick.
     await update(ref(db),{
       [`v4/memberState/${code}/${uid}`]:next,
-      [`v4/public/${code}/scores/${uid}`]:nextScore,
-      [`v4/privateRuns/${code}/answersLog/${uid}/${state.nonce}`]:{
+      [`v4/privateRuns/${code}/answersLog/${uid}/${nonce}`]:{
         questionNumber:q.number,questionIndex:state.questionIndex,correct,
         value:String(submission.value),at:Number(submission.at)||Date.now()
       }
     });
-    states[uid]=next;pub.scores[uid]=nextScore;
+    states[uid]=next;
   }catch(err){processingKeys.delete(key);notify('채점 처리 오류: '+formatError(err),'error');}
 }
 async function processTreasure(uid,state,pick){
-  const key=`pick/${uid}/${state.nonce}`;if(processingKeys.has(key))return;
+  if(pub?.state!=='playing'||!run||!pick?.choice||!pub?.scores?.[uid])return;
+  const key=`pick/${uid}/${state.nonce}`;
+  if(processingKeys.has(key))return;
   processingKeys.add(key);
   try{
     if(pub?.state!=='playing'||!run||!pick?.choice)return;
-    const current=pub?.scores||{};
-    if(!current[uid])return;
-    const outcome=chooseGoldOutcome(Math.random,{allowInteractions:run.allowInteractions!==false,playerCount:Object.keys(current).length});
+    if(!pub?.scores?.[uid])return;
+    // Fixed draw for this attempt. Firebase transactions serialize overlapping
+    // steals, swaps, multipliers and losses across the entire scoreboard.
+    const outcome=chooseGoldOutcome(Math.random,{
+      allowInteractions:run.allowInteractions!==false,
+      playerCount:Object.keys(pub.scores).length
+    });
     const target=['steal','swap'].includes(outcome.type)?pickTarget(uid):'';
-    const result=applyGoldOutcome(current,uid,outcome,target);
-    const after={...state,lastMessage:`🎁 ${result.message}`,lastCorrect:'reward'};
+    const scoreRef=ref(db,`v4/public/${code}/scores`);
+    const nonce=state.nonce;
+    const tx=await runTransaction(scoreRef,current=>{
+      if(!current?.[uid])return;
+      if(current[uid].lastRewardNonce===nonce)return; // already paid, never twice
+      const result=applyGoldOutcome(current,uid,outcome,target);
+      result.scores[uid].lastRewardNonce=nonce;
+      result.scores[uid].lastReward={type:outcome.type,targetUid:target||'',
+        description:result.message,gained:result.gained,choice:Number(pick.choice),
+        ...(outcome.fraction?{fraction:outcome.fraction}:{}),
+        ...(outcome.factor?{factor:outcome.factor}:{}),
+        ...(outcome.amount?{amount:outcome.amount}:{})};
+      return result.scores;
+    },{applyLocally:false});
+    // A retry after score commit but before state/log commit is safe: recover
+    // the persisted reward detail and complete the state transition.
+    let actor=tx.snapshot.val()?.[uid];
+    if(!actor || actor.lastRewardNonce!==nonce){
+      actor=(await get(ref(db,`v4/public/${code}/scores/${uid}`))).val();
+    }
+    if(!actor || actor.lastRewardNonce!==nonce)throw Error('보상 트랜잭션 결과를 확인하지 못했습니다.');
+    const saved=actor.lastReward;
+    const after={...state,lastMessage:`🎁 ${saved.description}`,lastCorrect:'reward'};
     const next=nextQuestionFor(uid,Number(state.sequence||0)+1,after);
     const changes={
       [`v4/memberState/${code}/${uid}`]:next,
-      [`v4/privateRuns/${code}/treasuresLog/${uid}/${state.nonce}`]:{choice:Number(pick.choice),type:outcome.type,targetUid:target||'',gained:result.gained,description:result.message}
-    };
-    for(const changed of result.affected)changes[`v4/public/${code}/scores/${changed}`]=result.scores[changed];
-    changes[`v4/public/${code}/lastEvent`]={
-      at:serverTimestamp(),type:outcome.type,actorUid:uid,targetUid:target||'',message:result.message
+      [`v4/privateRuns/${code}/treasuresLog/${uid}/${nonce}`]:{
+        choice:Number(saved.choice),type:saved.type,targetUid:saved.targetUid||'',
+        gained:Number(saved.gained||0),description:saved.description
+      },
+      [`v4/public/${code}/lastEvent`]:{
+        at:serverTimestamp(),type:saved.type,actorUid:uid,
+        targetUid:saved.targetUid||'',message:saved.description
+      }
     };
     await update(ref(db),changes);
     states[uid]=next;
-    for(const changed of result.affected)pub.scores[changed]=result.scores[changed];
-  }catch(err){processingKeys.delete(key);notify('보물 처리 오류: '+formatError(err),'error');}
+  }catch(err){
+    processingKeys.delete(key);
+    notify('보물 처리 오류: '+formatError(err),'error');
+  }
 }
 async function pump(){
   if(processLock||!ready||!run||pub?.state!=='playing'||!code)return;
@@ -328,6 +429,9 @@ $('gold-end').addEventListener('click',()=>{if(confirm('골드 퀘스트를 지�
 $('gold-export').addEventListener('click',downloadCsv);
 $('gold-focus-open').addEventListener('click',()=>focus(true));
 $('gold-focus-close').addEventListener('click',()=>focus(false));
+$('gold-stats-mode').addEventListener('change',event=>{resultsMode=event.target.value==='all'?'all':'first';renderGoldAnalytics();});
+$('gold-stats-hide-names').addEventListener('change',event=>{hideResultsNames=Boolean(event.target.checked);renderFocus();});
+$('gold-podium-toggle').addEventListener('click',()=>{podiumCollapsed=!podiumCollapsed;renderFocus();});
 $('gold-focus-prepare').addEventListener('click',()=>void prepare());
 $('gold-focus-start').addEventListener('click',()=>void start());
 $('gold-focus-end').addEventListener('click',()=>{if(confirm('골드 퀘스트를 종료할까요?'))void finish();});

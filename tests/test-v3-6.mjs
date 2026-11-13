@@ -7,7 +7,7 @@ for(const id of ['quiz-correct-answer-big','quiz-my-choice-summary','quiz-reveal
  assert.match(join,new RegExp(`id="${id}"`),id);
 }
 assert.match(join,/responsive-v3\.(6|8)\.css\?v=3\.(6|7|8|9|11|12|13|14)/);
-assert.match(join,/js\/join\.js\?v=3\.(6|8|11|12|13|14)/);
+assert.match(join,/js\/join\.js\?v=(?:3\.(6|8|11|12|13|14)|4\.[012])/);
 assert.match(source('js/join.js'),/classic-student\.js\?v=3\.(6|8|14)/);
 assert.match(styles,/quiz-large-option:has\(input:checked\)::after/);
 assert.match(styles,/quiz-answer-spotlight/);
@@ -20,7 +20,7 @@ assert.match(student,/\$\('quiz-my-choice-summary'\)\.textContent=ownAnswer/);
 assert.match(student,/answer\.hidden=round\?\.type!=='typing'/);
 assert.match(student,/\$\('quiz-my-score'\)\.textContent/);
 assert.doesNotMatch(student,/set\(ref\(db,`v3\/grades/);
-for(const name of ['index.html','rooms.html','sets.html','join.html'])assert.match(source(name),/v3\.(6|7|8|9|11|12|13|14)/);
+for(const name of ['index.html','rooms.html','sets.html','join.html'])assert.match(source(name),/(?:v3\.(6|7|8|9|11|12|13|14)|v4\.[012])/);
 assert.match(source('js/classic-core.js'),/export function gradeAnswer\(/);
 assert.match(source('js/classic-host.js'),/gradeAnswer\(q,s\.value,s\.at,timing\.startedAt,timing\.deadline\)/);
 console.log('v3.6 결과 카드/정답 강조/선택 강조/제출 버튼/가로 화면/채점 로직 보존: PASS');

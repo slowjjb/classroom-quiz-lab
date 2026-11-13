@@ -89,3 +89,57 @@
 .gold-host-panel #gold-rules:not([hidden]) p{color:#624e36;line-height:1.6;margin:9px 0}
 .gold-jump{background:#f1eaff;border:1px solid #c7aef6;color:#4d3894;border-radius:14px;padding:14px 16px;margin:14px 0;font-size:14px;line-height:1.6}
 .gold-jump a{color:#4730ad;font-weight:900;text-decoration:underline}
+
+/* v4.2 · Gold result analytics: podium + three simultaneous learning panels */
+.gold-focus.gold-is-finished .gold-focus-main{grid-template-columns:minmax(0,1fr);margin:0 auto 16px;max-width:1100px}
+.gold-focus.gold-is-finished .gold-focus-main.gold-podium-collapsed{display:none}
+.gold-focus.gold-is-finished .gold-stage-leaders{min-height:220px;padding:16px 24px}
+.gold-focus.gold-is-finished .gold-stage-leaders h2{font-size:clamp(25px,3vw,38px);margin:3px 0}
+.gold-focus.gold-is-finished .gold-stage-leaders p{font-size:15px;margin:5px 0}
+.gold-focus.gold-is-finished .gold-stage-board{display:none}
+.gold-focus.gold-is-finished #gold-focus-podium .arcade-podium{transform:scale(.76);transform-origin:center bottom;margin:-22px auto -16px}
+.gold-finish-stats{padding:20px 22px 18px;border-radius:25px;background:linear-gradient(130deg,#f6f5ff,#eef6ff);color:#193365;border:2px solid #d5caff;box-shadow:0 12px 35px #0c113859}
+.gold-stats-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:16px}
+.gold-stats-toolbar h2{margin:7px 0 5px;font-size:clamp(20px,2.3vw,30px);line-height:1.25;letter-spacing:-.035em;color:#202d73}
+.gold-stats-toolbar p{margin:0;font-size:13px;color:#5e6990;font-weight:750;line-height:1.5}
+.gold-stats-tools{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.gold-stats-tools .btn{min-height:39px;font-size:13px;padding:8px 12px}
+.gold-stats-filter{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#465d91;white-space:nowrap}
+.gold-stats-filter select{min-height:38px;border-radius:10px;padding:7px 9px;font:inherit;border:1px solid #c6c4eb;background:#fff;color:#304278}
+.gold-stats-names{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#465d91;white-space:nowrap}
+.gold-stats-names input{width:17px;height:17px;min-height:0;accent-color:#6450dd}
+.gold-analytics-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;align-items:stretch}
+.gold-analytics-card{padding:16px 14px 13px;border-radius:18px;border:1px solid #dbe4fc;background:#fff;min-width:0;box-shadow:0 7px 20px #1a328210}
+.gold-analytics-card h3{color:#263c80;margin:0 0 5px;font-size:clamp(16px,1.45vw,20px);letter-spacing:-.025em}
+.gold-analytics-card>p{color:#637397;font-size:12px;line-height:1.35;min-height:2em;margin:0 0 12px}
+.gold-analytics-list{display:flex;flex-direction:column;gap:7px;max-height:56dvh;overflow-y:auto;overscroll-behavior:contain;padding:2px 4px 3px 0}
+.gold-analytics-list::-webkit-scrollbar{width:7px}.gold-analytics-list::-webkit-scrollbar-thumb{background:#cbd5ed;border-radius:999px}
+.gold-analytics-rank{display:flex;align-items:center;gap:7px;min-width:0;background:#f7f8ff;border:1px solid #e5e9fc;padding:8px;border-radius:10px;color:#304477;font-size:13px}
+.gold-analytics-rank>b{flex:0 0 34px;text-align:center}
+.gold-analytics-rank .avatar-image{width:28px;height:28px;object-fit:contain}
+.gold-analytics-rank>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+.gold-analytics-rank>strong{white-space:nowrap;color:#ae652b;font-variant-numeric:tabular-nums}
+.gold-accuracy-row{border:1px solid #e5e9fa;background:#f8faff;padding:9px 10px;border-radius:12px;min-width:0;display:flex;flex-direction:column;gap:5px}
+.gold-accuracy-head{display:flex;justify-content:space-between;gap:7px;align-items:center;min-width:0}
+.gold-accuracy-head strong{font-size:13px;color:#2b4176;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gold-accuracy-head b{font-size:15px;min-width:43px;text-align:right;font-variant-numeric:tabular-nums}
+.gold-accuracy-row small{font-size:11px;color:#7382a1;line-height:1.25}
+.gold-accuracy-bar{height:11px;border-radius:999px;background:#e2e8f2;overflow:hidden}
+.gold-accuracy-fill{display:block;height:100%;border-radius:999px;transition:width .22s ease}
+.gold-accuracy-fill.tier-high{background:linear-gradient(90deg,#13a76c,#42d59e)}
+.gold-accuracy-fill.tier-mid{background:linear-gradient(90deg,#e6ad26,#ffda63)}
+.gold-accuracy-fill.tier-low{background:linear-gradient(90deg,#dc5260,#f68b80)}
+.gold-accuracy-fill.tier-none{background:#c8d2e4}
+.tier-text-high{color:#15905b}.tier-text-mid{color:#b47b09}.tier-text-low{color:#c33e4b}.tier-text-none{color:#8493ab}
+.gold-analytics-note{margin:13px 0 0;color:#66769b;font-size:12px;font-weight:700;line-height:1.6}
+@media(max-width:1100px){.gold-analytics-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.gold-analytics-card:last-child{grid-column:1/-1}.gold-analytics-list{max-height:38dvh}}
+@media(max-width:690px){.gold-finish-stats{padding:14px 12px}.gold-analytics-columns{grid-template-columns:1fr}.gold-analytics-card:last-child{grid-column:auto}.gold-analytics-list{max-height:44dvh}.gold-stats-tools{width:100%}}
+@media(prefers-reduced-motion:reduce){.gold-accuracy-fill{transition:none}}
+.gold-odds-disclosure{flex:1 1 100%;border:1px solid #dcd4ff;border-radius:13px;background:#faf8ff;padding:12px 16px;color:#42457d}
+.gold-odds-disclosure summary{cursor:pointer;font-weight:900;font-size:14px}
+.gold-odds-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.gold-odds-columns>div{background:#fff;border:1px solid #e7e0ff;border-radius:10px;padding:9px 11px}
+.gold-odds-columns strong{font-size:13px;color:#433594}
+.gold-odds-columns p{font-size:12px;line-height:1.65;margin:5px 0 0}
+.gold-odds-disclosure>.helper{font-size:12px;margin:12px 0 0}
+@media(max-width:690px){.gold-odds-columns{grid-template-columns:1fr}}
