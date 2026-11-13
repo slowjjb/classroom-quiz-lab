@@ -2,15 +2,15 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퍼플킷 v4.0</title>
-  <link rel="stylesheet" href="styles.css?v=3.14"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.14"><link rel="stylesheet" href="gold.css?v=4.0">
+  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퍼플킷 v4.1</title>
+  <link rel="stylesheet" href="styles.css?v=3.14"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.14"><link rel="stylesheet" href="gold.css?v=4.1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
-  <script type="module" src="js/rooms.js?v=4.0"></script>
+  <script type="module" src="js/rooms.js?v=4.1"></script>
   <script type="module" src="js/classic-host.js?v=4.0"></script>
-  <script type="module" src="js/gold-host.js?v=4.0"></script>
+  <script type="module" src="js/gold-host.js?v=4.1"></script>
 </head>
 <body class="arcade-theme">
-  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">실시간 게임 방 · v4.0</span></header>
+  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">실시간 게임 방 · v4.1</span></header>
   <main class="page-content rooms-page">
     <div class="page-heading rooms-heading"><span class="eyebrow">PURPLEKIT · TEACHER STUDIO</span><h1>게임 방 만들기</h1><p>문제 세트를 선택하고 학생들이 입장하면, 한 화면에서 출제·채점·순위까지 진행할 수 있습니다.</p></div>
     <div class="rooms-dashboard">
@@ -21,8 +21,8 @@
       <div class="button-row"><button id="room-login" class="btn btn-primary" disabled>교사 Google 로그인</button><button id="room-retry" class="btn btn-outline" hidden>권한 다시 확인</button><button id="room-logout" class="btn btn-quiet" hidden>로그아웃</button></div>
       <details class="avatar-rules-help">
         <summary>v4 골드 퀘스트 포함 보안 규칙 설정 <span class="pill pill-neutral">최초 1회 필요</span></summary>
-        <p>캐릭터 선택을 Firebase에 저장하려면 기존의 v0~v3 규칙을 보존한 <strong>v4 전체 통합 규칙</strong>으로 갱신해야 합니다. 교사 로그인 후 아래 버튼으로 생성한 규칙을 Firebase Realtime Database → 규칙에 게시하세요. 이후 GitHub의 보안 규칙 파일도 동일하게 보관하는 것을 권장합니다.</p>
-        <button type="button" id="avatar-copy-rules" class="btn btn-outline btn-small">v3.8 전체 보안 규칙 복사</button>
+        <p>골드 퀘스트 사용을 위해 기존의 클래식·캐릭터 권한을 보존한 <strong>v4 전체 통합 규칙</strong>으로 갱신해야 합니다. 교사 로그인 후 아래 버튼으로 생성한 규칙을 Firebase Realtime Database → 규칙에 게시하세요. 이후 GitHub의 보안 규칙 파일도 동일하게 보관하는 것을 권장합니다.</p>
+        <button type="button" id="avatar-copy-rules" class="btn btn-outline btn-small">v4 전체 통합 보안 규칙 복사</button>
         <p id="avatar-rules-message" class="helper" role="status"></p>
       </details>
       <div id="room-rules-guide" class="setup-guide" hidden>
@@ -69,10 +69,11 @@
         <p id="room-live-message" class="helper" role="status"></p>
         <div id="room-members" class="student-grid"><div class="empty-state">가상 학생의 입장을 기다리고 있습니다.</div></div>
         <div class="button-row"><button class="btn btn-outline" id="room-toggle-lock">입장 마감</button><button class="btn btn-danger" id="room-end">방 종료</button><button class="btn btn-quiet" id="room-delete">종료한 방 기록 삭제</button></div>
+        <p id="room-gold-jump" class="gold-jump" hidden>💎 <strong>골드 퀘스트 방입니다.</strong> <a href="#gold-panel">아래에서 v4 보안 규칙 확인 → 보물찾기 준비 → 게임 시작</a></p>
         <p class="helper">입장 마감 후 기존 학생은 재접속 가능하며, 새로운 학생은 참여할 수 없습니다. 게임 결과 CSV를 저장한 뒤 방을 종료하세요.</p>
       </section>
       <section class="panel" id="classic-panel" hidden>
-        <div class="panel-header"><h2>v4.0 · 클래식 퀴즈 진행</h2><span class="pill pill-neutral" id="classic-badge">확인 중</span></div>
+        <div class="panel-header"><h2>v4.1 · 클래식 퀴즈 진행</h2><span class="pill pill-neutral" id="classic-badge">확인 중</span></div>
         <p class="helper" id="classic-room-label"></p>
         <div id="classic-rules" class="setup-guide" hidden>
           <strong>v3 통합 보안 규칙이 필요합니다.</strong>
@@ -153,14 +154,18 @@
         </div>
       </section>
       <section class="panel gold-host-panel" id="gold-panel" hidden>
-        <div class="panel-header"><h2>💎 v4.0 골드 퀘스트</h2><span id="gold-status" class="pill pill-neutral">대기실</span></div>
+        <div class="panel-header"><h2>💎 v4.1 골드 퀘스트</h2><span id="gold-status" class="pill pill-neutral">대기실</span></div>
         <p id="gold-room-label" class="helper"></p>
         <p class="gold-host-notice">학생들이 서로 다른 문제를 풀고, 정답을 맞히면 보물상자를 열어 골드를 모읍니다. <strong>게임 중 교사 화면을 닫지 마세요.</strong></p>
         <div id="gold-rules" class="setup-guide" hidden>
           <strong>v4 골드 퀘스트 권한 설정이 필요합니다.</strong>
-          <p>기존 v0~v3.8의 기능을 보존하는 v4 전체 Firebase 규칙을 게시해 주세요.</p>
-          <button id="gold-copy-rules" class="btn btn-primary" type="button">v4 전체 보안 규칙 복사</button>
-          <button id="gold-download-rules" class="btn btn-outline" type="button">v4 규칙 JSON 다운로드</button>
+          <p id="gold-rules-state" role="status" aria-live="polite">권한 확인 중입니다…</p>
+          <p>기존 클래식·대기실·캐릭터 권한까지 포함한 <strong>v4 전체 통합 보안 규칙</strong>을 Firebase Realtime Database → 규칙에 붙여넣고 게시해야 합니다. 현재 방과 학생 명단은 유지됩니다.</p>
+          <div class="button-row">
+            <button id="gold-copy-rules" class="btn btn-primary" type="button">v4 전체 보안 규칙 복사</button>
+            <button id="gold-download-rules" class="btn btn-outline" type="button">v4 규칙 JSON 다운로드</button>
+            <button id="gold-retry-rights" class="btn btn-outline" type="button">권한 다시 확인</button>
+          </div>
         </div>
         <div id="gold-settings" class="gold-settings">
           <label>게임 시간
@@ -204,6 +209,6 @@
     <div class="tip">테스트에서는 가상 학생 이름만 사용하세요. 기존 참가자 명단과 참여 코드를 유지합니다. v3 정답은 교사용 경로에만 저장됩니다.</div>
     <p class="notice"><strong>v2.2 동시 접속 검증:</strong> 자동으로 별도 가상 학생 5·15·30명을 입장시키려면 <a href="loadtest.html">동시 접속 테스트 도구 열기 →</a></p>
     <a class="back-link" href="teacher.html">← 기존 교사 접속 현황</a>
-  </main><footer>PURPLEKIT · v4.0</footer></div>
+  </main><footer>PURPLEKIT · v4.1</footer></div>
 </body>
 </html>

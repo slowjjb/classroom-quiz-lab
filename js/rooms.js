@@ -23,7 +23,7 @@ function downloadRules() {
   if (!teacher) return;
   const b = new Blob([makeRulesV4(teacher.uid)], {type:'application/json;charset=utf-8'});
   const url = URL.createObjectURL(b); const a = document.createElement('a');
-  a.href = url; a.download = 'database.rules.v3.json'; document.body.append(a); a.click(); a.remove();
+  a.href = url; a.download = 'database.rules.json'; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function stopListeners() {
@@ -124,18 +124,20 @@ function renderRoom(record) {
   $('room-code').textContent=selectedCode;
   $('room-state').textContent=stateText(meta.state);
   $('room-state').className=`pill pill-${meta.state==='ended'?'error':meta.state==='lobby'?'success':'neutral'}`;
-  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'&&meta.setId?'v3.2 클래식':'v2 대기실'})`;
+  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'?'클래식':meta.mode==='gold'?'골드 퀘스트 v4':'대기실'})`;
   $('room-toggle-lock').disabled = meta.state==='ended';
   $('room-toggle-lock').textContent = meta.state==='locked'?'입장 다시 허용':'입장 마감';
   $('room-end').disabled = meta.state==='ended';
   $('room-delete').disabled = meta.state!=='ended';
   renderMembers(record);
+  $('room-gold-jump').hidden=meta.mode!=='gold';
+  window.dispatchEvent(new CustomEvent('quizlab-room-meta',{detail:{code:selectedCode,meta}}));
 }
-function openRoom(code) {
+function openRoom(code, knownMode="") {
   if (!authorized || !teacher || !/^\d{6}$/.test(code)) return;
   if (unsubscribeRoom) unsubscribeRoom();
   selectedCode=code;window.__purplekitOpenRoomCode=code;localStorage.setItem(LAST_ROOM_KEY,code);
-  window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code}}));
+  window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code,mode:knownMode||hostRooms[code]?.mode||''}}));
   $('room-detail').hidden=false;$('room-code').textContent=code;
   makeQR(joinLink(code));
   unsubscribeRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),error=>{
@@ -160,7 +162,7 @@ async function createRoom() {
       const result=await runTransaction(ref(db,`v2/rooms/${code}`),current=>current === null?{meta}:undefined,{applyLocally:false});
       if (!result.committed) continue;
       await set(ref(db,`v2/hostRooms/${teacher.uid}/${code}`),{createdAt:now,title,state:'lobby'});
-      openRoom(code);
+      openRoom(code,mode);
       info('room-create-message',`방을 만들었습니다. 참여 코드: ${code}`,'success');return;
     }
     throw new Error('참여 코드가 중복되었습니다. 다시 시도해 주세요.');

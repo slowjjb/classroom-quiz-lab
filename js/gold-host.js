@@ -11,12 +11,41 @@ import { makeRulesV4 } from './rules-v4.js';
 const $=id=>document.getElementById(id);
 const arcade=createArcadeUi('gold-focus',{role:'teacher',mode:'gold'});
 let teacher=null,code='',room=null,run=null,pub=null,states={},answers={},picks={};
-let ready=false,unsubs=[],processLock=false,operation=false,offset=0,focusOpen=false,checkToken=0;
+let ready=false,unsubs=[],metaUnsub=null,modeHint='',rightsState='idle',processLock=false,operation=false,offset=0,focusOpen=false,checkToken=0;
 let processingKeys=new Set(),previousRankSignature='',lastFinished=false;
 const roomCode=()=>code;
 function notify(text,type=''){$('gold-message').textContent=text;$('gold-message').dataset.kind=type;}
-function stop(){for(const unsubscribe of unsubs)unsubscribe();unsubs=[];room=null;run=null;pub=null;states={};answers={};picks={};ready=false;processLock=false;processingKeys.clear();previousRankSignature='';lastFinished=false;focusOpen=false;$('gold-focus').hidden=true;document.body.classList.remove('quiz-stage-active');arcade.reset();}
-function bindRoom(next){if(code===next&&ready)return;stop();code=next;render();if(code&&teacher)checkRights();}
+function stop(){
+  ++checkToken;
+  if(metaUnsub){metaUnsub();metaUnsub=null;}
+  for(const unsubscribe of unsubs)unsubscribe();
+  unsubs=[];room=null;run=null;pub=null;states={};answers={};picks={};ready=false;
+  rightsState='idle';processLock=false;processingKeys.clear();previousRankSignature='';
+  lastFinished=false;focusOpen=false;$('gold-focus').hidden=true;
+  document.body.classList.remove('quiz-stage-active');arcade.reset();
+}
+// v2 room metadata is already readable with the existing classroom rules.
+// Always watch it BEFORE checking v4 permissions: otherwise, if v4 access is denied,
+// the gold panel itself stays hidden and no rule-installation instructions can be seen.
+function watchRoomMeta(){
+  if(!code||!teacher||metaUnsub)return;
+  const activeCode=code;
+  metaUnsub=onValue(ref(db,`v2/rooms/${activeCode}/meta`),snap=>{
+    if(activeCode!==code)return;
+    const meta=snap.val();
+    if(meta){modeHint=meta.mode||modeHint;room={...(room||{}),meta};}
+    else room=null;
+    render();
+  },err=>{
+    if(activeCode===code)notify('방 정보 읽기 실패: '+formatError(err),'error');
+  });
+}
+function bindRoom(next,hint=''){
+  if(code===next&&ready)return;
+  stop();code=next;modeHint=hint||'';
+  if(code&&teacher){watchRoomMeta();void checkRights();}
+  render();
+}
 function watch(){
   if(!ready||!teacher||!code)return;
   const c=code;
@@ -31,9 +60,20 @@ function watch(){
   },err=>notify('골드 퀘스트 읽기 실패: '+formatError(err),'error')));
 }
 async function checkRights(){
+  if(!teacher||!code)return;
   const token=++checkToken;
-  try{await get(ref(db,'v4/versionCheck'));if(token!==checkToken||!teacher||!code)return;ready=true;$('gold-rules').hidden=true;watch();}
-  catch(err){if(token!==checkToken)return;notify('v4 보안 규칙을 Firebase에 게시해 주세요. ('+formatError(err)+')','error');$('gold-rules').hidden=false;}
+  ready=false;rightsState='checking';render();
+  notify('v4 골드 퀘스트 권한을 확인하고 있습니다.');
+  try{
+    await get(ref(db,'v4/versionCheck'));
+    if(token!==checkToken||!teacher||!code)return;
+    ready=true;rightsState='ready';render();watch();
+    notify('v4 골드 퀘스트 권한 확인 완료! 「보물찾기 준비」를 눌러 주세요.','success');
+  }catch(err){
+    if(token!==checkToken)return;
+    ready=false;rightsState='denied';render();
+    notify('v4 보안 규칙이 아직 적용되지 않았습니다. 위에서 전체 규칙을 복사해 Firebase에 게시한 뒤 「권한 다시 확인」을 눌러 주세요. ('+formatError(err)+')','error');
+  }
 }
 function rankRows(container,full=false){
   container.replaceChildren();
@@ -52,14 +92,22 @@ function rankRows(container,full=false){
   });
 }
 function render(){
-  const isGold=Boolean(code&&room?.meta?.mode==='gold');
+  const isGold=Boolean(code&&(room?.meta?.mode==='gold'||modeHint==='gold'));
   $('gold-panel').hidden=!isGold;
   if(!isGold){$('gold-focus').hidden=true;document.body.classList.remove('quiz-stage-active');return;}
-  $('gold-room-label').textContent=`${code} · ${room?.meta?.title||''} · ${room?.meta?.setTitle||'문제 미선택'}`;
+  // Never hide the installation instructions merely because v4 access failed.
+  $('gold-rules').hidden=ready;
+  $('gold-retry-rights').disabled=rightsState==='checking'||!teacher;
+  $('gold-rules-state').textContent=rightsState==='checking'
+    ?'Firebase 보안 권한 확인 중입니다…'
+    :rightsState==='denied'
+      ?'v4 보안 규칙을 게시해야 골드 퀘스트를 준비할 수 있습니다.'
+      :'Firebase 규칙을 처음 설치하는 경우 아래 버튼으로 통합 규칙을 복사해 주세요.';
+  $('gold-room-label').textContent=`${code} · ${room?.meta?.title||'방 정보 확인 중'} · ${room?.meta?.setTitle||'문제 미선택'}`;
   const state=pub?.state||'lobby';
   $('gold-status').textContent=({lobby:'대기실',ready:'게임 준비 완료',playing:'진행 중',finished:'게임 종료'})[state]||'대기 중';
   $('gold-status').className=`pill pill-${state==='playing'?'success':state==='finished'?'error':'neutral'}`;
-  $('gold-prepare').disabled=!ready||operation||Boolean(run)||room.meta.state==='ended'||!room.meta.setId;
+  $('gold-prepare').disabled=!ready||operation||Boolean(run)||room?.meta?.state==='ended'||!room?.meta?.setId;
   $('gold-start').disabled=!ready||operation||!run||state!=='ready';
   $('gold-end').disabled=!ready||operation||state!=='playing';
   $('gold-export').disabled=!run;
@@ -259,12 +307,21 @@ function downloadCsv(){
 function applyTeacher(user){
   const next=user?.providerData?.some(x=>x.providerId==='google.com')?user:null;
   if(teacher?.uid===next?.uid)return;
-  teacher=next;stop();if(teacher&&code)checkRights();
+  teacher=next;stop();
+  if(teacher&&code){watchRoomMeta();void checkRights();}
 }
-window.addEventListener('quizlab-room-open',event=>bindRoom(event.detail?.code||''));
+window.addEventListener('quizlab-room-open',event=>bindRoom(event.detail?.code||'',event.detail?.mode||''));
+// rooms.js broadcasts the metadata as soon as the existing v2 listener receives it.
+window.addEventListener('quizlab-room-meta',event=>{
+  const info=event.detail;
+  if(!info||info.code!==code||!info.meta)return;
+  room={...(room||{}),meta:info.meta};modeHint=info.meta.mode||modeHint;
+  render();
+});
 if(window.__purplekitOpenRoomCode)bindRoom(window.__purplekitOpenRoomCode);
 if(auth)onAuthStateChanged(auth,applyTeacher);
 if(db)onValue(ref(db,'.info/serverTimeOffset'),snap=>offset=Number(snap.val()||0));
+$('gold-retry-rights').addEventListener('click',()=>void checkRights());
 $('gold-prepare').addEventListener('click',()=>void prepare());
 $('gold-start').addEventListener('click',()=>void start());
 $('gold-end').addEventListener('click',()=>{if(confirm('골드 퀘스트를 지금 종료할까요?'))void finish();});

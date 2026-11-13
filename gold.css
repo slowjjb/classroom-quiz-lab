@@ -82,3 +82,10 @@
 @media(max-width:980px){.gold-focus-main{grid-template-columns:1fr}.gold-stage-leaders{min-height:230px;padding:18px}.gold-stage-board .gold-rank-list{max-height:45dvh}.gold-student-leaderboard .gold-rank-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:620px){.gold-student-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.gold-student-summary>div:last-child{grid-column:1/-1}.gold-choice-grid{grid-template-columns:1fr}.gold-choice{min-height:70px}.gold-question-card{min-height:135px}.gold-chest-grid{gap:7px}.gold-chest{border-width:2px}.gold-treasure-wrap{padding:15px}.gold-student-leaderboard .gold-rank-list{grid-template-columns:1fr 1fr}.gold-focus-actions button{flex:1}.gold-stage-leaders h2{font-size:29px}}
 @media(prefers-reduced-motion:reduce){.gold-choice{transition:none}}
+
+/* v4.1: permissions setup must be unmistakable even before the v4 paths are readable */
+.gold-host-panel #gold-rules:not([hidden]){background:#fff9e7;border:2px solid #efca73;border-radius:16px;padding:18px 20px;margin:16px 0;box-shadow:0 10px 25px #9c6b2415}
+.gold-host-panel #gold-rules:not([hidden]) strong{display:block;color:#7c4e13;font-size:17px;margin-bottom:8px}
+.gold-host-panel #gold-rules:not([hidden]) p{color:#624e36;line-height:1.6;margin:9px 0}
+.gold-jump{background:#f1eaff;border:1px solid #c7aef6;color:#4d3894;border-radius:14px;padding:14px 16px;margin:14px 0;font-size:14px;line-height:1.6}
+.gold-jump a{color:#4730ad;font-weight:900;text-decoration:underline}

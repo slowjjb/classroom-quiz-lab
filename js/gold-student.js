@@ -11,7 +11,14 @@ const sound=createArcadeUi('gold-student',{role:'student',mode:'gold'});
 let code='',uid='',stopListeners=[],pub=null,own=null,ownAnswer=null,ownPick=null;
 let selected='',selectedNonce='',submitting=false,picking=false,clockOffset=0,finishedShown=false;
 const clientTime=()=>Date.now()+clockOffset;
-function message(text,type=''){$('gold-student-message').textContent=text;$('gold-student-message').dataset.kind=type;}
+function message(text,type=''){
+  $('gold-student-message').textContent=text;
+  $('gold-student-message').dataset.kind=type;
+  if(type==='error'&&stage.hidden){
+    const lobby=$('join-feedback');
+    if(lobby){lobby.textContent='골드 퀘스트 데이터를 읽지 못했습니다. 선생님께 v4 Firebase 보안 규칙을 확인해 달라고 말씀해 주세요. ('+text+')';lobby.dataset.kind='error';}
+  }
+}
 function element(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!=null)el.textContent=String(text);return el;}
 function ranked(){return goldRanking(pub?.scores||{});}
 function show(on){stage.hidden=!on;document.body.classList.toggle('quiz-stage-active',on);if(on)$('student-room').hidden=true;}

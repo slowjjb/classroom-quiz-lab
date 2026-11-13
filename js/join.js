@@ -1,5 +1,5 @@
 import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
-import { startGoldView, stopGoldView } from './gold-student.js?v=4.0';
+import { startGoldView, stopGoldView } from './gold-student.js?v=4.1';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
