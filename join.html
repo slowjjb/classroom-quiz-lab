@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v3.14</title>
-  <link rel="stylesheet" href="styles.css?v=3.12"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.11"><script type="module" src="js/join.js?v=3.14"></script>
+  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v4.0</title>
+  <link rel="stylesheet" href="styles.css?v=3.12"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.11"><link rel="stylesheet" href="gold.css?v=4.0"><script type="module" src="js/join.js?v=4.0"></script>
 </head>
 <body class="arcade-theme">
-<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">학생 게임 입장 · v3.14</span></header>
+<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">학생 게임 입장 · v4.0</span></header>
 <main class="page-content student-page join-page">
   <div class="join-layout"><div class="join-entry-column">
   <div class="page-heading"><span class="eyebrow">PURPLEKIT · LET'S PLAY!</span><h1>퀴즈 방에 입장하기 <span class="join-heading-star" aria-hidden="true">✦</span></h1><p>참여 코드를 입력하고 친구들과 함께 실시간 퀴즈에 도전해 보세요!</p></div>
@@ -43,7 +43,7 @@
       <p id="avatar-feedback" class="feedback" role="status" aria-live="polite"></p>
     </div>
   </dialog>
-  <!-- v3.14: 가로 화면은 좌우 배치 / 모바일은 세로 배치 -->
+  <!-- v4.0: 가로 화면은 좌우 배치 / 모바일은 세로 배치 -->
   <section id="quiz-panel" class="quiz-stage" hidden aria-label="클래식 퀴즈 전용 화면">
     <div class="quiz-stage-inner">
       <div class="quiz-stage-head">
@@ -95,8 +95,47 @@
       <p id="quiz-stage-error" class="quiz-stage-error" role="alert" hidden></p>
     </div>
   </section>
+  <section id="gold-student" class="quiz-stage gold-student" hidden aria-label="골드 퀘스트 학생 게임 화면">
+    <div class="quiz-stage-inner">
+      <div class="quiz-stage-head">
+        <div><span class="quiz-stage-kicker">PURPLEKIT · GOLD QUEST</span><strong id="gold-student-state">골드 퀘스트</strong></div>
+        <div class="quiz-stage-meta"><strong id="gold-student-clock">5:00</strong></div>
+      </div>
+      <div class="gold-student-summary">
+        <div><span>내 골드</span><strong id="gold-my-coins">0 G</strong></div>
+        <div><span>내 순위</span><strong id="gold-my-place">—</strong></div>
+        <div><span>풀이 기록</span><strong id="gold-my-progress">정답 0 / 풀이 0</strong></div>
+      </div>
+      <p id="gold-my-last" class="gold-message-bubble">문제를 풀고 보물을 찾아보세요!</p>
+      <section id="gold-student-question-view" class="gold-question-wrap" hidden>
+        <div class="gold-question-card">
+          <span class="gold-question-tag" id="gold-question-n">첫 번째 도전</span>
+          <h2 id="gold-question">문제를 준비하고 있습니다.</h2>
+          <figure id="gold-question-image-wrap" class="quiz-image-wrap" hidden><img id="gold-question-image" alt="문제 그림"></figure>
+        </div>
+        <div id="gold-answer-choices" class="gold-choice-grid"></div>
+        <button id="gold-submit" class="btn btn-primary gold-submit">정답 제출하고 보물 찾기</button>
+      </section>
+      <section id="gold-student-treasure-view" class="gold-treasure-wrap" hidden>
+        <div class="gold-treasure-heading">✨ 정답이에요! 🎉<h2>보물상자 하나를 골라요!</h2><p>어떤 상자에 더 많은 골드가 있을까요?</p></div>
+        <div id="gold-chest-buttons" class="gold-chest-grid">
+          <button type="button" class="gold-chest" data-chest="1"><span aria-hidden="true">🎁</span><strong>1번 상자</strong></button>
+          <button type="button" class="gold-chest" data-chest="2"><span aria-hidden="true">🎁</span><strong>2번 상자</strong></button>
+          <button type="button" class="gold-chest" data-chest="3"><span aria-hidden="true">🎁</span><strong>3번 상자</strong></button>
+        </div>
+        <p id="gold-chest-feedback" class="gold-status-note">상자를 선택해 주세요.</p>
+      </section>
+      <div id="gold-student-wait-view" class="gold-wait-view" hidden>선생님이 게임을 준비하고 있습니다.</div>
+      <section id="gold-student-finish-view" class="gold-finish-view" hidden>
+        <h2>🏆 골드 퀘스트 종료!</h2><p>누가 가장 많은 보물을 모았을까요?</p>
+        <div id="gold-student-podium"></div><div id="gold-student-final-ranking" class="gold-rank-list"></div>
+      </section>
+      <section class="gold-student-leaderboard"><h3>🔥 실시간 TOP 5</h3><div id="gold-student-leaders" class="gold-rank-list"></div></section>
+      <p id="gold-student-message" class="gold-status-note" role="status" aria-live="polite"></p>
+    </div>
+  </section>
   <p class="notice centered join-bottom-notice"><strong>게임 TIP</strong> · 문제를 선택한 뒤 반드시 <strong>정답 제출하기</strong>를 눌러 주세요!</p>
   <a class="back-link" href="./">← 처음 화면으로</a>
-</main><footer>PURPLEKIT · v3.14</footer></div>
+</main><footer>PURPLEKIT · v4.0</footer></div>
 </body>
 </html>

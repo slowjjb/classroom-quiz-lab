@@ -1,0 +1,84 @@
+/* Purplekit v4.0 Gold Quest: independent mode styling */
+[hidden]{display:none!important}
+.gold-host-panel{border:2px solid #d6c5fc;background:linear-gradient(150deg,#ffffff,#fbf8ff)}
+.gold-host-notice{font-size:14px;line-height:1.65;color:#536b97;background:#f1edff;border-radius:14px;padding:14px 16px}
+.gold-settings{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:16px 0}
+.gold-settings label{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:800;color:#28406e}
+.gold-settings select{border:1px solid #bfb6f8;background:#fff;padding:9px 12px;border-radius:10px;font:inherit;color:#25447b}
+.gold-settings .gold-interactions{font-size:13px}
+.gold-settings input[type=checkbox]{width:19px;height:19px;min-height:0;accent-color:#7459e9}
+.gold-host-buttons{gap:9px;justify-content:flex-start}
+.gold-host-summary{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:20px 0 10px;padding:13px 16px;background:#f5f4ff;border:1px solid #e1dcff;border-radius:14px;color:#424f88;font-weight:800}
+.gold-rank-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding:3px}
+.gold-rank-row{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid #dbe4ff;border-radius:14px;background:linear-gradient(130deg,#fdfdff,#f3f6ff);min-width:0;color:#223c75}
+.gold-rank-place{min-width:37px;text-align:center;font-size:14px}
+.gold-rank-name{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.gold-rank-name strong,.gold-rank-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.gold-rank-name small{font-size:11px;color:#6d7e9f}
+.gold-rank-gold{color:#bb7023;font-size:17px;font-weight:950;white-space:nowrap;margin-left:auto;font-variant-numeric:tabular-nums}
+.gold-rank-self{border-color:#9d7bff;background:#f3eaff}
+.gold-focus,.gold-student{background:radial-gradient(circle at 75% 18%,rgba(248,173,52,.19),transparent 32%),radial-gradient(circle at 12% 89%,rgba(115,82,229,.45),transparent 42%),linear-gradient(145deg,#20144c 0%,#283369 58%,#14588d 100%);color:#fff}
+.gold-focus .quiz-stage-head,.gold-student .quiz-stage-head{background:linear-gradient(115deg,#3a257c,#6941af);border:2px solid #a68cde;box-shadow:0 9px 0 #120d3433}
+.gold-focus .quiz-stage-inner,.gold-student .quiz-stage-inner{max-width:1550px;margin:0 auto}
+.gold-focus-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0 16px}
+.gold-focus-actions button{min-height:42px}
+.gold-focus-main{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);gap:18px;align-items:stretch}
+.gold-stage-leaders{display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;min-height:420px;padding:32px;border:2px solid #ae90f8;border-radius:26px;background:linear-gradient(145deg,#47308cbf,#2a3169b8);box-shadow:0 18px 48px #0d0c283e}
+.gold-title-eyebrow{color:#ffdf79;font-size:12px;font-weight:900;letter-spacing:.17em}
+.gold-stage-leaders h2{font-size:clamp(31px,4.2vw,60px);margin:12px 0;line-height:1.15;letter-spacing:-.06em}
+.gold-stage-leaders p{font-size:clamp(16px,1.6vw,22px);line-height:1.6;color:#ffedb7;max-width:90%}
+.gold-stage-board{border-radius:26px;padding:20px;background:#f8faff;color:#243b71;box-shadow:0 16px 40px #09123d41;min-height:450px}
+.gold-stage-board h3{margin:0 0 15px;font-size:22px}
+.gold-stage-board .gold-rank-list{max-height:min(72dvh,620px)}
+.gold-stage-board .gold-rank-row{padding:10px}
+#gold-focus-podium{width:100%}
+#gold-focus-podium .arcade-podium{transform:scale(.92);transform-origin:center bottom}
+.gold-student .quiz-stage-inner{display:flex;flex-direction:column;gap:11px}
+.gold-student-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gold-student-summary>div{display:flex;flex-direction:column;gap:4px;padding:12px 15px;background:rgba(255,255,255,.96);border-radius:16px;box-shadow:0 5px 0 #0c17443a;color:#3a4c87}
+.gold-student-summary span{font-size:12px;font-weight:850;color:#7681a5}
+.gold-student-summary strong{font-size:clamp(16px,2vw,23px);line-height:1.35;color:#5339bb;font-weight:950}
+.gold-message-bubble{padding:12px 16px;margin:0;border-radius:14px;color:#324785;background:#eaf0ff;font-size:clamp(13px,1.25vw,17px);font-weight:800}
+.gold-message-bubble.gold-notice-win{color:#086749;background:#dff9ed}
+.gold-question-wrap{display:flex;flex-direction:column;gap:12px}
+.gold-question-card{padding:16px 22px;min-height:155px;border-radius:20px;border:3px solid #b9b2fe;background:#fff;color:#142d63;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-shadow:0 7px 0 #0b0e4033}
+.gold-question-card h2{font-size:clamp(24px,3vw,40px);line-height:1.34;margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.gold-question-tag{font-size:13px;font-weight:900;letter-spacing:.03em;color:#6f58d5}
+.gold-question-card .quiz-image-wrap{padding:6px;margin:6px 0;max-width:100%}
+.gold-question-card .quiz-image-wrap img{max-height:23dvh}
+.gold-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gold-choice{display:flex;align-items:center;gap:13px;min-height:83px;padding:12px 18px;border:3px solid #b0c9fd;border-radius:18px;background:#e5ecff;color:#1b3874;text-align:left;font:inherit;cursor:pointer;box-shadow:0 5px 0 #0f1f5340;transition:transform .12s,border-color .12s,background .12s}
+.gold-choice-2{background:#efe3ff;border-color:#cab3fb}.gold-choice-3{background:#fff1ca;border-color:#f6d279}.gold-choice-4{background:#def4ff;border-color:#a7dffa}
+.gold-choice-number{display:grid;place-items:center;flex:0 0 37px;width:37px;height:37px;border-radius:11px;background:#c4d5ff;font-weight:950;font-size:21px}
+.gold-choice-2 .gold-choice-number{background:#d6c0fa}.gold-choice-3 .gold-choice-number{background:#ffe19d}.gold-choice-4 .gold-choice-number{background:#bce9ff}
+.gold-choice-text{font-size:clamp(17px,1.7vw,23px);line-height:1.25;overflow-wrap:anywhere}
+.gold-choice.selected{transform:translateY(-2px);background:#baa9ff;border-color:#4735c6;box-shadow:0 5px 0 #231277,0 0 0 2px #ffffffb0}
+.gold-choice.selected .gold-choice-number{background:#4532bd;color:#fff}
+.gold-choice:disabled{cursor:default;opacity:.72}
+.gold-answer-input{min-height:82px;width:100%;grid-column:1/-1;padding:14px 20px;background:#fff;color:#18386a;border:3px solid #bcb9ff;border-radius:18px;font-size:clamp(22px,2.1vw,30px)}
+.gold-submit{align-self:center;width:min(100%,640px);min-height:68px;font-size:clamp(19px,2vw,26px);border:2px solid #e1d2ff;border-radius:18px;background:linear-gradient(115deg,#566af0,#9654e7);box-shadow:0 7px 0 #191b65}
+.gold-treasure-wrap{background:linear-gradient(140deg,#f4eeff,#fff8e6);color:#2a3974;border-radius:26px;border:3px solid #d6b5f8;padding:20px 26px;text-align:center;box-shadow:0 8px 0 #131b5030}
+.gold-treasure-heading{font-weight:950;font-size:18px;color:#7950cf}
+.gold-treasure-heading h2{font-size:clamp(25px,3.2vw,44px);color:#293374;margin:7px 0 8px}
+.gold-treasure-heading p{font-size:15px;font-weight:700;color:#697da0;margin:6px}
+.gold-chest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.gold-chest{background:linear-gradient(150deg,#ffefb4,#f6c97c);border:4px solid #d9a453;border-radius:22px;padding:15px 9px;color:#81491a;cursor:pointer;font:inherit;font-weight:950;box-shadow:0 7px 0 #835126;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.gold-chest span{font-size:clamp(46px,6vw,84px);filter:drop-shadow(0 5px 4px #9c531a45)}
+.gold-chest strong{font-size:clamp(16px,1.7vw,22px)}
+.gold-chest:disabled{opacity:.55;cursor:default}
+.gold-status-note{margin:5px 0;font-size:14px;font-weight:800;color:#ceddff;text-align:center}
+.gold-treasure-wrap .gold-status-note{color:#6475a5}
+.gold-student-leaderboard{background:rgba(249,250,255,.95);border:2px solid #d6d6ff;border-radius:17px;color:#223968;padding:10px 16px}
+.gold-student-leaderboard h3{margin:0 0 10px;font-size:16px}
+.gold-student-leaderboard .gold-rank-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;max-height:none}
+.gold-student-leaderboard .gold-rank-row{flex-wrap:wrap;gap:5px;padding:7px 9px}
+.gold-student-leaderboard .gold-rank-row .avatar-image{width:26px;height:26px}
+.gold-student-leaderboard .gold-rank-label{font-size:12px;max-width:110px}
+.gold-student-leaderboard .gold-rank-gold{font-size:13px}
+.gold-finish-view{text-align:center;padding:14px;background:#f9f7ff;border-radius:26px;color:#24326d}
+.gold-finish-view h2{font-size:clamp(27px,3.5vw,44px);margin:10px;color:#6a48d4}
+.gold-finish-view .gold-rank-list{max-height:33dvh;max-width:850px;margin:auto;text-align:left}
+.gold-wait-view{text-align:center;border-radius:20px;padding:30px;background:#fff;color:#42349f;font-size:24px;font-weight:900}
+@media(max-width:980px){.gold-focus-main{grid-template-columns:1fr}.gold-stage-leaders{min-height:230px;padding:18px}.gold-stage-board .gold-rank-list{max-height:45dvh}.gold-student-leaderboard .gold-rank-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.gold-student-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.gold-student-summary>div:last-child{grid-column:1/-1}.gold-choice-grid{grid-template-columns:1fr}.gold-choice{min-height:70px}.gold-question-card{min-height:135px}.gold-chest-grid{gap:7px}.gold-chest{border-width:2px}.gold-treasure-wrap{padding:15px}.gold-student-leaderboard .gold-rank-list{grid-template-columns:1fr 1fr}.gold-focus-actions button{flex:1}.gold-stage-leaders h2{font-size:29px}}
+@media(prefers-reduced-motion:reduce){.gold-choice{transition:none}}

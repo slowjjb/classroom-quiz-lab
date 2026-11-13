@@ -1,7 +1,7 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV3 } from './rules-v3.js';
+import { makeRulesV4 } from './rules-v4.js';
 import { createAvatarImage } from './avatars.js';
 
 const $ = id => document.getElementById(id);
@@ -21,7 +21,7 @@ async function copyText(value) {
 }
 function downloadRules() {
   if (!teacher) return;
-  const b = new Blob([makeRulesV3(teacher.uid)], {type:'application/json;charset=utf-8'});
+  const b = new Blob([makeRulesV4(teacher.uid)], {type:'application/json;charset=utf-8'});
   const url = URL.createObjectURL(b); const a = document.createElement('a');
   a.href = url; a.download = 'database.rules.v3.json'; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -134,7 +134,7 @@ function renderRoom(record) {
 function openRoom(code) {
   if (!authorized || !teacher || !/^\d{6}$/.test(code)) return;
   if (unsubscribeRoom) unsubscribeRoom();
-  selectedCode=code;localStorage.setItem(LAST_ROOM_KEY,code);
+  selectedCode=code;window.__purplekitOpenRoomCode=code;localStorage.setItem(LAST_ROOM_KEY,code);
   window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code}}));
   $('room-detail').hidden=false;$('room-code').textContent=code;
   makeQR(joinLink(code));
@@ -148,6 +148,8 @@ async function createRoom() {
   const target=Number($('room-target').value);if(!Number.isInteger(target)||target<1||target>200){info('room-create-message','운영 인원 기준을 1~200명으로 입력해 주세요.','error');return;}
   creating=true;$('room-create').disabled=true;
   const mode=$('room-mode').value,setId=$('room-set').value;
+  if(!['classic','gold'].includes(mode)){creating=false;$('room-create').disabled=false;info('room-create-message','선택한 게임 모드는 아직 개발 중입니다.','error');return;}
+  if(mode==='gold'&&!setId){creating=false;$('room-create').disabled=false;info('room-create-message','골드 퀘스트용 문제 세트를 먼저 선택해 주세요.','error');return;}
   try {
     info('room-create-message','사용할 수 있는 6자리 코드를 생성하고 있습니다.');
     for (let attempt=0;attempt<12;attempt++) {
@@ -177,7 +179,14 @@ async function deleteRoom() {
   if(!confirm(`종료한 ${selectedCode}번 방을 완전히 삭제할까요? 대기실 테스트 기록이 사라집니다.`))return;
   const code=selectedCode;
   try {
-    await remove(ref(db,`v2/rooms/${code}`));await remove(ref(db,`v2/hostRooms/${teacher.uid}/${code}`));
+    const cleanup={
+      [`v2/rooms/${code}`]:null,
+      [`v2/hostRooms/${teacher.uid}/${code}`]:null
+    };
+    if(currentRoom?.meta?.mode==='gold'){
+      for(const bucket of ['privateRuns','public','memberState','answers','picks'])cleanup[`v4/${bucket}/${code}`]=null;
+    }
+    await update(ref(db),cleanup);
     if(unsubscribeRoom){unsubscribeRoom();unsubscribeRoom=null;}
     selectedCode='';currentRoom=null;$('room-detail').hidden=true;localStorage.removeItem(LAST_ROOM_KEY);window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code:''}}));
     info('room-create-message','종료한 게임 방 기록을 삭제했습니다.','success');
@@ -236,17 +245,17 @@ else {
   $('avatar-copy-rules').addEventListener('click',async()=>{
     if(!teacher){info('avatar-rules-message','교사 Google 계정으로 로그인한 다음 다시 눌러 주세요.','error');return;}
     try{
-      const ok=await copyText(makeRulesV3(teacher.uid));
+      const ok=await copyText(makeRulesV4(teacher.uid));
       info('avatar-rules-message',ok
-        ?'v3.8 전체 규칙을 복사했습니다. Firebase Realtime Database → 규칙에 붙여넣고 게시하세요.'
+        ?'v4 전체 규칙을 복사했습니다. Firebase Realtime Database → 규칙에 붙여넣고 게시하세요.'
         :'자동 복사에 실패했습니다. 아래 기존 「규칙 JSON 다운로드」 기능을 이용하거나 브라우저 클립보드 권한을 확인해 주세요.',
         ok?'success':'error');
     }catch(error){info('avatar-rules-message',formatError(error),'error');}
   });
   $('room-copy-rules').addEventListener('click',async()=>{
     if(!teacher)return;
-    const ok=await copyText(makeRulesV3(teacher.uid));
-    info('room-rules-status',ok?'전체 v0~v3 통합 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
+    const ok=await copyText(makeRulesV4(teacher.uid));
+    info('room-rules-status',ok?'전체 v0~v4 통합 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
   });
   $('room-download-rules').addEventListener('click',downloadRules);
   $('room-create').addEventListener('click',createRoom);

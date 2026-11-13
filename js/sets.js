@@ -2,7 +2,7 @@ import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { onValue, ref, push, set, remove } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV } from './csv.js?v=3.2';
-import { makeRulesV3 } from './rules-v3.js';
+import { makeRulesV4 } from './rules-v4.js';
 import { normalizeQuestionImage, siteRootFromPage } from './image-utils.js?v=3.2';
 
 const $ = id => document.getElementById(id);
@@ -285,10 +285,10 @@ $('download-draft').addEventListener('click',()=>{if(confirmImageLoss(draftRows)
 $('sets-retry').addEventListener('click',listenSets);
 $('rules-copy').addEventListener('click',async()=>{
   if(!user)return;
-  try {await navigator.clipboard.writeText(makeRulesV3(user.uid));text('rules-status','v0~v3 통합 규칙을 복사했습니다. Firebase Realtime Database > 규칙에 붙여넣고 게시하세요. GitHub database.rules.json도 같은 내용으로 변경해야 합니다.','success');}
+  try {await navigator.clipboard.writeText(makeRulesV4(user.uid));text('rules-status','v0~v4 통합 규칙을 복사했습니다. Firebase Realtime Database > 규칙에 붙여넣고 게시하세요. GitHub database.rules.json도 같은 내용으로 변경해야 합니다.','success');}
   catch(error){text('rules-status','복사에 실패했습니다. JSON 파일 다운로드를 이용하세요. '+error.message,'error');}
 });
-$('rules-download').addEventListener('click',()=>{if(user)downloadText('database.rules.json',makeRulesV3(user.uid),'application/json;charset=utf-8');});
+$('rules-download').addEventListener('click',()=>{if(user)downloadText('database.rules.json',makeRulesV4(user.uid),'application/json;charset=utf-8');});
 if(!isConfigured){badge('Firebase 설정 필요','error');text('sets-auth-message','firebase-config.js 설정을 확인해 주세요.','error');}
 else {
   $('sets-login').disabled=false;

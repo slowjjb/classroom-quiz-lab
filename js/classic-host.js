@@ -1,7 +1,7 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV3 } from './rules-v3.js';
+import { makeRulesV4 } from './rules-v4.js';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
@@ -37,7 +37,7 @@ async function checkRights(){
   const token=++checkToken;
   try{await get(ref(db,'v3/versionCheck'));if(token!==checkToken)return;ready=true;$('classic-rules').hidden=true;
     badge('v3 권한 확인','success');msg('채점은 교사 브라우저에서 수행됩니다. 게임 중 이 화면을 열어 두세요.');watch();}
-  catch(e){if(token!==checkToken)return;ready=false;badge('v3 규칙 필요','error');$('classic-rules').hidden=false;msg('v3 통합 보안 규칙을 Firebase에 게시해야 클래식 퀴즈를 시작할 수 있습니다.','error');}
+  catch(e){if(token!==checkToken)return;ready=false;badge('v3 규칙 필요','error');$('classic-rules').hidden=false;msg('v4 통합 보안 규칙을 Firebase에 게시해야 클래식 퀴즈를 시작할 수 있습니다.','error');}
 }
 function bindRoom(nextCode){
   if(code===nextCode && (ready||unsub.length))return;
@@ -57,6 +57,8 @@ function roomTitle(){return room?.meta?.title||'게임 방';}
 function stateName(state){return ({ready:'게임 준비',question:'문제 진행',paused:'일시 정지',reveal:'정답 공개',finished:'게임 종료'})[state]||'시작 전';}
 function render(){
   if(!ready||!code)return;
+  $('classic-panel').hidden=room?.meta?.mode==='gold';
+  if(room?.meta?.mode==='gold')return;
   $('classic-controls').hidden=false;
   const state=publicRound?.state||'';
   $('classic-room-label').textContent=`${code} · ${roomTitle()} · ${room?.meta?.setTitle||'문제 미선택'}`;
@@ -254,8 +256,8 @@ function csvExport(){
 }
 async function copyRules(){
   if(!teacher)return;
-  const json=makeRulesV3(teacher.uid);
-  try{await navigator.clipboard.writeText(json);msg('v0~v3 통합 규칙 복사 완료. Firebase에 게시하고 GitHub 규칙 파일도 교체하세요.','success');}
+  const json=makeRulesV4(teacher.uid);
+  try{await navigator.clipboard.writeText(json);msg('v0~v4 통합 규칙 복사 완료. Firebase에 게시하고 GitHub 규칙 파일도 교체하세요.','success');}
   catch{const b=new Blob([json],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='database.rules.v3.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);msg('복사가 차단되어 규칙 JSON 파일을 다운로드했습니다.');}
 }
 function tick(){

@@ -29,6 +29,19 @@ export const CALM_TRACKS = Object.freeze([
     bass:['G3','G3','E3','E3','C3','C3','D3','D3'],
     chords:[['G3','B3','D4'],['E3','G3','B3'],['C3','E3','G3'],['D3','F4','A3']] })
 ]);
+// v4 Gold Quest 전용 오리지널 모험 음악. 클래식의 편안한 곡은 그대로 유지합니다.
+export const GOLD_TRACKS=Object.freeze([
+  Object.freeze({id:'gold-venture',name:'보물의 비밀',beat:.235,wave:'triangle',
+    melody:['E5',null,'G5','A5','G5',null,'E5','D5','C5',null,'E5','G5','D5',null,'C5',null,
+            'D5','E5','G5',null,'A5','G5','E5',null,'D5',null,'E5','G5','E5',null,'D5',null],
+    bass:['A3','A3','F3','F3','D3','D3','E3','E3'],
+    chords:[['A3','C4','E4'],['F3','A3','C4'],['D3','F3','A3'],['E3','G3','B3']] }),
+  Object.freeze({id:'gold-run',name:'황금 상자 추격전',beat:.215,wave:'triangle',
+    melody:['G4','C5','E5','G5','E5','C5','D5','E5','F5',null,'A5','G5','F5','E5','D5',null,
+            'E5','G5','A5',null,'G5','E5','D5','C5','D5','E5','G5','E5','D5','C5','G4',null],
+    bass:['C3','C3','G3','G3','A3','A3','F3','F3'],
+    chords:[['C3','E4','G4'],['G3','B3','D4'],['A3','C4','E4'],['F3','A3','C4']] })
+]);
 const noop=()=>{};
 const MUSIC_MAX_GAIN=2.55; // 기존 v3.13의 100% BGM 대비 1음 출력 약 5배 목표
 const TRACK_STORAGE_KEY='purplekit-last-calm-bgm-v314';
@@ -46,10 +59,10 @@ function soundGainParam(param,value,ctx){
   else param.value=value;
 }
 class OriginalAudio{
-  constructor(role='student'){
-    this.role=role;this.on=false;this.ctx=null;this.musicTimer=null;this.nextAt=0;this.step=0;
+  constructor(role='student',tracks=CALM_TRACKS){
+    this.role=role;this.tracks=tracks;this.on=false;this.ctx=null;this.musicTimer=null;this.nextAt=0;this.step=0;
     this.master=null;this.compressor=null;this.musicBus=null;this.fxBus=null;
-    this.musicPercent=65;this.fxPercent=75;this.currentTrackId=CALM_TRACKS[0].id;
+    this.musicPercent=65;this.fxPercent=75;this.currentTrackId=this.tracks[0].id;
   }
   ensure(){
     const Ctor=window.AudioContext||window.webkitAudioContext;
@@ -113,7 +126,7 @@ class OriginalAudio{
   }
   schedule(){
     if(!this.on||!this.ctx)return;
-    const track=CALM_TRACKS.find(x=>x.id===this.currentTrackId)||CALM_TRACKS[0];
+    const track=this.tracks.find(x=>x.id===this.currentTrackId)||this.tracks[0];
     const ahead=this.ctx.currentTime+.55;
     while(this.nextAt<ahead){
       const i=this.step%track.melody.length;
@@ -140,7 +153,7 @@ class OriginalAudio{
     if(this.ctx&&this.fxBus)soundGainParam(this.fxBus.gain,1.45*(this.role==='student'?.75:this.fxPercent/100),this.ctx);
   }
   setTrack(id){
-    if(!CALM_TRACKS.some(x=>x.id===id))return;
+    if(!this.tracks.some(x=>x.id===id))return;
     if(this.currentTrackId===id)return;
     const running=Boolean(this.musicTimer);
     this.stopMusic();this.currentTrackId=id;this.step=0;
@@ -173,10 +186,11 @@ export function renderPodium(target,ranked){
   }
   target.append(podium);
 }
-export function createArcadeUi(stageId,{role='student'}={}){
+export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
   const stage=document.getElementById(stageId);
   if(!stage)return {sync:noop,updateTime:noop,choice:noop,submit:noop,showResults:noop,reset:noop,armEffects:noop,fanfare:noop,destroy:noop};
-  const audio=new OriginalAudio(role);let phase='',roundId='',gradedKey='',lastTick=-1,enabled=false,effectsArmed=false,toastTimer=null;
+  const tracks=mode==='gold'?GOLD_TRACKS:CALM_TRACKS;
+  const audio=new OriginalAudio(role,tracks);let phase='',roundId='',gradedKey='',lastTick=-1,enabled=false,effectsArmed=false,toastTimer=null;
   stage.classList.add('arcade-enhanced');stage.dataset.arcadeRole=role;
   const head=stage.querySelector('.quiz-stage-head');
   const track=document.createElement('div');track.className='arcade-time-track';track.setAttribute('aria-hidden','true');
@@ -199,10 +213,10 @@ export function createArcadeUi(stageId,{role='student'}={}){
     toggle.title='교사 기기에서만 BGM을 재생합니다. 게임이 끝나면 자동 정지합니다.';
     controls.append(toggle);
     const trackWrap=document.createElement('label');trackWrap.className='arcade-audio-track-label';
-    const trackLabel=document.createElement('span');trackLabel.textContent='편안한 BGM';
+    const trackLabel=document.createElement('span');trackLabel.textContent=mode==='gold'?'모험 BGM':'편안한 BGM';
     trackControl=document.createElement('select');trackControl.className='arcade-audio-track';
     trackControl.id='arcade-teacher-track';trackControl.setAttribute('aria-label','배경 음악 선택');
-    for(const [id,name] of [['auto','자동 · 게임마다 변경'],...CALM_TRACKS.map(x=>[x.id,x.name])]){
+    for(const [id,name] of [['auto','자동 · 게임마다 변경'],...tracks.map(x=>[x.id,x.name])]){
       const option=document.createElement('option');option.value=id;option.textContent=name;trackControl.append(option);
     }
     trackControl.value='auto';trackWrap.append(trackLabel,trackControl);controls.append(trackWrap);
@@ -224,7 +238,7 @@ export function createArcadeUi(stageId,{role='student'}={}){
       const selected=trackControl.value;
       if(selected!=='auto'){
         audio.setTrack(selected);
-        trackCurrent.textContent=`재생곡: ${CALM_TRACKS.find(t=>t.id===selected)?.name||'선택한 곡'}`;
+        trackCurrent.textContent=`재생곡: ${tracks.find(t=>t.id===selected)?.name||'선택한 곡'}`;
       }else trackCurrent.textContent='자동 선택 · 다음 게임 시작 시 변경';
     });
     toggle.addEventListener('click',async()=>{
@@ -233,7 +247,7 @@ export function createArcadeUi(stageId,{role='student'}={}){
       enabled=true;effectsArmed=true;
       if(trackControl.value==='auto'&&trackCurrent.textContent.includes('게임 준비 시')){
         // 교사가 준비 전에 미리 듣는 경우 임시로 기본 트랙을 사용합니다.
-        trackCurrent.textContent=`재생곡: ${CALM_TRACKS.find(t=>t.id===audio.currentTrackId)?.name}`;
+        trackCurrent.textContent=`재생곡: ${tracks.find(t=>t.id===audio.currentTrackId)?.name}`;
       }
       audio.setMusicVolume(volumeControl.value);audio.setFxVolume(fxControl.value);
       toggle.textContent='🔊 BGM 끄기';toggle.setAttribute('aria-pressed','true');
@@ -245,11 +259,12 @@ export function createArcadeUi(stageId,{role='student'}={}){
     if(role!=='teacher')return;
     if(trackControl?.value!=='auto')return;
     let previous='';
-    try{previous=localStorage.getItem(TRACK_STORAGE_KEY)||'';}catch{}
-    const next=chooseNextCalmTrack(previous);
+    const key=mode==='gold'?'purplekit-last-gold-bgm-v4':TRACK_STORAGE_KEY;
+    try{previous=localStorage.getItem(key)||'';}catch{}
+    const next=mode==='gold'?tracks.filter(t=>t.id!==previous)[0]?.id||tracks[0].id:chooseNextCalmTrack(previous);
     audio.setTrack(next);
-    try{localStorage.setItem(TRACK_STORAGE_KEY,next);}catch{}
-    if(trackCurrent)trackCurrent.textContent=`재생곡: ${CALM_TRACKS.find(x=>x.id===next)?.name}`;
+    try{localStorage.setItem(key,next);}catch{}
+    if(trackCurrent)trackCurrent.textContent=`재생곡: ${tracks.find(x=>x.id===next)?.name}`;
   };
   head.append(track);
   const showToast=(message)=>{
