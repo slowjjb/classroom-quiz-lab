@@ -1,4 +1,4 @@
-import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.8';
+import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';

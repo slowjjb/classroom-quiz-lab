@@ -4,7 +4,7 @@ import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { ranking } from './classic-core.js?v=3.8';
 import { fullQuestionImageUrl } from './image-utils.js?v=3.4';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.8';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.14';
 import { createAvatarImage } from './avatars.js';
 
 const $ = id => document.getElementById(id);

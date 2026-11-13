@@ -4,8 +4,8 @@ const text=f=>fs.readFileSync(new URL('../'+f,import.meta.url),'utf8');
 const css=text('responsive-v3.5.css');
 for(const f of ['join.html','rooms.html']){
  const html=text(f);
- assert.match(html,/responsive-v3\.(5|6)\.css\?v=3\.(5|6|7|8|11|12|13)/);
- assert.match(html,/v3\.(5|6|7|8|11|12|13)/);
+ assert.match(html,/responsive-v3\.(5|6)\.css\?v=3\.(5|6|7|8|11|12|13|14)/);
+ assert.match(html,/v3\.(5|6|7|8|11|12|13|14)/);
  assert.doesNotMatch(html,/firebase-config\.js\?v=3\.5/);
 }
 for(const pattern of [

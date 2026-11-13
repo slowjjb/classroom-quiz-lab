@@ -2,14 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퍼플킷 v3.13</title>
-  <link rel="stylesheet" href="styles.css?v=3.13"><link rel="stylesheet" href="arcade.css?v=3.13"><link rel="stylesheet" href="responsive-v3.6.css?v=3.13"><link rel="stylesheet" href="avatars.css?v=3.13">
+  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퍼플킷 v3.14</title>
+  <link rel="stylesheet" href="styles.css?v=3.14"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.14">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
-  <script type="module" src="js/rooms.js?v=3.13"></script>
-  <script type="module" src="js/classic-host.js?v=3.13"></script>
+  <script type="module" src="js/rooms.js?v=3.14"></script>
+  <script type="module" src="js/classic-host.js?v=3.14"></script>
 </head>
 <body class="arcade-theme">
-  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">실시간 게임 방 · v3.13</span></header>
+  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">실시간 게임 방 · v3.14</span></header>
   <main class="page-content rooms-page">
     <div class="page-heading rooms-heading"><span class="eyebrow">PURPLEKIT · TEACHER STUDIO</span><h1>게임 방 만들기</h1><p>문제 세트를 선택하고 학생들이 입장하면, 한 화면에서 출제·채점·순위까지 진행할 수 있습니다.</p></div>
     <div class="rooms-dashboard">
@@ -71,7 +71,7 @@
         <p class="helper">입장 마감 후 기존 학생은 재접속 가능하며, 새로운 학생은 참여할 수 없습니다. 게임 결과 CSV를 저장한 뒤 방을 종료하세요.</p>
       </section>
       <section class="panel" id="classic-panel" hidden>
-        <div class="panel-header"><h2>v3.13 · 클래식 퀴즈 진행</h2><span class="pill pill-neutral" id="classic-badge">확인 중</span></div>
+        <div class="panel-header"><h2>v3.14 · 클래식 퀴즈 진행</h2><span class="pill pill-neutral" id="classic-badge">확인 중</span></div>
         <p class="helper" id="classic-room-label"></p>
         <div id="classic-rules" class="setup-guide" hidden>
           <strong>v3 통합 보안 규칙이 필요합니다.</strong>
@@ -138,8 +138,8 @@
               <p id="classic-focus-summary"></p>
               <div class="analytics-actions">
                 <label class="analytics-name-setting"><input id="classic-focus-hide-names" type="checkbox"> 학생별 정답률 이름 가리기 <span>(전체 화면 공개 시 권장)</span></label>
+                <button id="classic-focus-podium-toggle" type="button" class="btn btn-outline" hidden>시상대 접기</button>
                 <button id="classic-focus-fanfare" type="button" class="btn btn-outline analytics-fanfare" hidden>🎺 빵빠레 다시 재생</button>
-                <button id="classic-focus-podium-toggle" type="button" class="btn btn-outline analytics-podium-toggle" hidden>시상대 접기</button>
               </div>
             </div>
             <div class="quiz-results-columns teacher-analytics-grid">
@@ -154,6 +154,6 @@
     <div class="tip">테스트에서는 가상 학생 이름만 사용하세요. 기존 참가자 명단과 참여 코드를 유지합니다. v3 정답은 교사용 경로에만 저장됩니다.</div>
     <p class="notice"><strong>v2.2 동시 접속 검증:</strong> 자동으로 별도 가상 학생 5·15·30명을 입장시키려면 <a href="loadtest.html">동시 접속 테스트 도구 열기 →</a></p>
     <a class="back-link" href="teacher.html">← 기존 교사 접속 현황</a>
-  </main><footer>PURPLEKIT · v3.13</footer></div>
+  </main><footer>PURPLEKIT · v3.14</footer></div>
 </body>
 </html>

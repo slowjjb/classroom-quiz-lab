@@ -32,9 +32,10 @@ assert.equal(studentHead.children[0].children[0].style.width,'10%');
 // Teacher can adjust BGM via a visible slider; no remote Firebase writes.
 const t=createArcadeUi('classic-focus',{role:'teacher'});
 assert.equal(teacherHead.children.length,2);
-const settings=teacherHead.children[0],toggle=settings.children[0],label=settings.children[1],slider=label.children[1];
+const settings=teacherHead.children[0],toggle=settings.children[0],label=settings.children[3],slider=label.children[1];
+assert.equal(settings.children.length,5);
 assert.equal(toggle.textContent,'🔇 BGM 켜기');
-assert.equal(slider.type,'range');assert.equal(slider.value,'60');
+assert.equal(slider.type,'range');assert.equal(slider.value,'65');
 slider.value='80';slider.events.input();assert.match(label.children[0].textContent,/80%/);
 assert.equal(teacherHead.children[1].className,'arcade-time-track');
 assert.ok(!teacherInner.children.find(x=>x.className==='arcade-audio-toggle'));

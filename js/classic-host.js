@@ -5,7 +5,7 @@ import { makeRulesV3 } from './rules-v3.js';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.13';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=3.14';
 import { buildClassAccuracy } from './classic-analytics.js?v=3.13';
 
 const $ = x => document.getElementById(x);
@@ -129,6 +129,7 @@ async function prepareGame(){arcade.armEffects();await mutate(async()=>{
   if(!setSnap.exists())throw Error('선택한 문제 세트가 삭제되었습니다.');
   const qs=createSetSnapshot(setSnap.val());if(!qs.length)throw Error('문제가 없는 세트입니다.');
   if(!confirm(`${qs.length}문항으로 클래식 게임을 준비할까요? 학생들의 입장이 마감됩니다.`))return;
+  arcade.newGameMusic(); // v3.14: 새 게임마다 서로 다른 편안한 BGM 자동 선택
   const rosterSnap=await get(ref(db,`v2/rooms/${code}/members`));
   const roster=Object.fromEntries(Object.entries(rosterSnap.val()||{}).filter(([,m])=>m?.profile?.name).map(([uid,m])=>[uid,m.profile.name]));
   await set(ref(db,`v3/privateRuns/${code}`),{setId:room.meta.setId,setTitle:setSnap.val().title,questions:qs,roster,autoReveal:autoRevealPreference,createdAt:serverTimestamp()});

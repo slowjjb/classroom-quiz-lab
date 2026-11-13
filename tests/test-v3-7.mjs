@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const src = name => fs.readFileSync(new URL('../'+name, import.meta.url),'utf8');
 const css=src('responsive-v3.6.css');
 for (const html of ['join.html','rooms.html']) {
-  assert.match(src(html),/responsive-v3\.(6|8|13)\.css\?v=3\.(7|8|11|13)/);
+  assert.match(src(html),/responsive-v3\.(6|8|13|14)\.css\?v=3\.(7|8|11|13|14)/);
 }
 assert.match(css,/#quiz-panel\.arcade-enhanced #quiz-options:has\(#quiz-typing\)/);
 assert.match(css,/grid-template-columns:minmax\(0,1fr\)/);
