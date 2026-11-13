@@ -82,3 +82,29 @@ body.arcade-theme{background:radial-gradient(circle at 7% 4%,#e5ddff 0,transpare
  .arcade-podium-base{border-radius:12px 12px 4px 4px}
 }
 @media(prefers-reduced-motion:reduce){.arcade-enhanced *,.arcade-enhanced *::before,.arcade-enhanced *::after{animation:none!important;transition:none!important}.arcade-audio-toggle:hover{transform:none}}
+
+/* PurpleKit v3.11 · unified visual finish for the play/reveal/ranking stage */
+.quiz-stage.arcade-enhanced{
+  background:
+    radial-gradient(ellipse at 10% 9%,rgba(101,105,241,.47),transparent 42%),
+    radial-gradient(ellipse at 89% 88%,rgba(31,174,231,.36),transparent 40%),
+    radial-gradient(ellipse at 75% 13%,rgba(151,87,211,.27),transparent 37%),
+    linear-gradient(128deg,#181b50 0%,#28236c 54%,#123b72 100%);
+}
+.arcade-enhanced .quiz-stage-head{
+  background:linear-gradient(142deg,#3545a2 0%,#44349a 58%,#6840ac 100%);
+  border-color:#cbbdff80;box-shadow:0 12px 32px #080e342e;
+}
+.arcade-enhanced .quiz-stage-kicker{color:#ffdc88;letter-spacing:.11em}
+.arcade-enhanced .quiz-stage-kicker::before{content:'P';display:inline-grid;place-items:center;margin-right:8px;width:21px;height:21px;vertical-align:middle;border-radius:8px;background:linear-gradient(145deg,#a679ff,#6e52e1);color:white;font-weight:1000;font-size:13px;border:1px solid #ffffff63;box-shadow:0 3px 0 #1b1b6240}
+.arcade-enhanced .quiz-question-card,.arcade-enhanced .quiz-reveal-question-card{border-color:#d8d5ff;box-shadow:0 7px 0 #0b174a38,0 16px 28px #0714362e}
+.arcade-enhanced .quiz-question-heading{color:#1b3270}
+.arcade-enhanced .quiz-large-submit{background:linear-gradient(115deg,#4766ec 0%,#6e54df 58%,#9762e4 100%);box-shadow:0 7px 0 #22276f,0 16px 24px #10173c36}
+.arcade-enhanced .quiz-answer-spotlight{border-color:#c7c0ff;background:linear-gradient(125deg,#eaf7ff,#f2ebff 55%,#effbff);box-shadow:inset 0 2px 0 #fff,0 7px 0 #141b5d16}
+.arcade-enhanced #quiz-correct-answer-big{color:#493ec8;text-shadow:0 2px 0 #fff}
+.arcade-enhanced .quiz-results-card{border-color:#d9d7ff;box-shadow:0 8px 0 #0b154337,0 12px 28px #09123b24}
+.arcade-enhanced .quiz-result-row.mine{background:linear-gradient(110deg,#eae5ff,#f3ebff);border-color:#afa1ff}
+.arcade-enhanced .quiz-focus-controls{border:1px solid #d9d5ff;background:#fdfcff}
+.arcade-enhanced .quiz-score-summary>div{border-color:#d7d2ff}
+.arcade-enhanced .quiz-verdict.quiz-verdict-correct{box-shadow:0 8px 0 #104f3c35,0 13px 24px #0636211e}
+.arcade-enhanced .quiz-verdict.quiz-verdict-wrong{box-shadow:0 8px 0 #72352b32,0 13px 24px #5828201a}

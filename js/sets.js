@@ -124,14 +124,20 @@ function renderEditor() {
   const list = $('questions-editor'); list.replaceChildren(); refreshSaveState();
   draftBadge(draftRows.length ? (draftId ? '저장본 편집 중' : 'CSV 불러옴') : '초안 없음');
   draftRows.forEach((row, idx) => {
-    const card = document.createElement('details'); card.className='question-card'; if (idx < 3) card.open=true;
+    const card = document.createElement('details');
+    card.className='question-card';
+    card.dataset.questionNumber = String(idx + 1);
+    if (idx < 3) card.open=true;
     const summary = document.createElement('summary'); summary.textContent=`${idx+1}번 · ${row.fields[1]?.trim().slice(0, 75) || '문제 입력 필요'}`;
     card.append(summary);
-    const grid = document.createElement('div'); grid.className='editor-grid';
+    const grid = document.createElement('div'); grid.className='editor-grid editor-grid-meta';
     grid.append(formBlock('input', 'A · 원본 문항 번호',row.fields[0], v=>changeField(row,0,v),{inputMode:'numeric'}));
     grid.append(formBlock('input', 'G · 제한 시간(초)',row.fields[6], v=>changeField(row,6,v),{inputMode:'numeric'}));
     card.append(grid);
-    card.append(formBlock('textarea','B · 문제',row.fields[1],v=>{changeField(row,1,v);summary.textContent=`${idx+1}번 · ${v.slice(0,75)}`;},{rows:3}));
+    const questionField = formBlock('textarea','B · 문제',row.fields[1],v=>{changeField(row,1,v);summary.textContent=`${idx+1}번 · ${v.slice(0,75)}`;},{rows:4});
+    questionField.classList.add('edit-field-wide');
+    questionField.querySelector('.edit-input')?.classList.add('question-textarea');
+    card.append(questionField);
     const typeWrap = document.createElement('label'); typeWrap.className='edit-field';
     const label = document.createElement('span'); label.className='field-mini'; label.textContent='문제 유형 (J열)';
     const selector = document.createElement('select'); selector.className='edit-input';
@@ -140,7 +146,11 @@ function renderEditor() {
     selector.addEventListener('change',()=>{row.fields[9]=selector.value;row.fields[7]=selector.value ? '' : '1';markEdited();renderEditor();validateAndDisplay();});
     typeWrap.append(label,selector);card.append(typeWrap);
     const answers = document.createElement('div'); answers.className='answer-grid';
-    for (let i=0;i<4;i++) answers.append(formBlock('textarea',`${'CDEF'[i]} · ${row.fields[9] === 'typing' ? '허용 정답 '+(i+1) : '보기 '+(i+1)}`,row.fields[i+2],v=>changeField(row,i+2,v),{rows:2}));
+    for (let i=0;i<4;i++) {
+      const answerField = formBlock('textarea',`${'CDEF'[i]} · ${row.fields[9] === 'typing' ? '허용 정답 '+(i+1) : '보기 '+(i+1)}`,row.fields[i+2],v=>changeField(row,i+2,v),{rows:3});
+      answerField.querySelector('.edit-input')?.classList.add('answer-textarea');
+      answers.append(answerField);
+    }
     card.append(answers);
     if (row.fields[9] !== 'typing') {
       const correct = document.createElement('label'); correct.className='edit-field';

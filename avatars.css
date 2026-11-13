@@ -42,3 +42,16 @@
 .avatar-rules-help summary{cursor:pointer;font-weight:850;font-size:13px}
 .avatar-rules-help .pill{margin-left:8px;font-size:10px}
 .avatar-rules-help p{font-size:13px;line-height:1.6;margin:9px 0}
+
+/* PurpleKit v3.11 avatar picker: same rounded-purple visual system as rest of app */
+.avatar-self{border-color:#d6d0ff;background:linear-gradient(120deg,#f4efff,#ebf7ff);box-shadow:inset 0 2px 0 #ffffffa8}
+.avatar-self-picture{background:linear-gradient(135deg,#e2dcff,#d9f7ff)}
+.avatar-dialog{border:3px solid #c7bcff;border-radius:28px;background:linear-gradient(150deg,#f8f5ff,#eef7ff);box-shadow:0 30px 100px #100a486d}
+.avatar-dialog-header h2{color:#28216c}
+.avatar-dialog-header .eyebrow{color:#7460d7}
+.avatar-choice{border-color:#dfdbf6;background:#fff;border-radius:18px;box-shadow:0 4px 0 #4c428e0c}
+.avatar-choice:hover{background:#f9f7ff;border-color:#b7aaff;box-shadow:0 7px 0 #493bb419}
+.avatar-choice.chosen,.avatar-choice[aria-pressed=true]{background:#f1edff;border-color:#7960ea;box-shadow:0 0 0 3px #ded7ff,0 6px 0 #5941b42b}
+.avatar-choice.chosen::after{background:linear-gradient(135deg,#6652df,#9c6bec)}
+.avatar-dialog-header .btn{border-color:#b7a7fa}
+.avatar-self-text strong{color:#3a348f}

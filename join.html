@@ -2,25 +2,26 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v3.9</title>
-  <link rel="stylesheet" href="styles.css?v=3.8"><link rel="stylesheet" href="arcade.css?v=3.8"><link rel="stylesheet" href="responsive-v3.6.css?v=3.8"><link rel="stylesheet" href="avatars.css?v=3.8"><script type="module" src="js/join.js?v=3.8"></script>
+  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v3.11</title>
+  <link rel="stylesheet" href="styles.css?v=3.11"><link rel="stylesheet" href="arcade.css?v=3.11"><link rel="stylesheet" href="responsive-v3.6.css?v=3.11"><link rel="stylesheet" href="avatars.css?v=3.11"><script type="module" src="js/join.js?v=3.11"></script>
 </head>
 <body class="arcade-theme">
-<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-icon">P</span> 퍼플킷</a><span class="version">학생 게임 입장 · v3.9</span></header>
+<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">학생 게임 입장 · v3.11</span></header>
 <main class="page-content student-page join-page">
   <div class="join-layout"><div class="join-entry-column">
-  <div class="page-heading"><span class="eyebrow">JOIN QUIZ / V3.9</span><h1>퀴즈 방에 입장하기</h1><p>선생님이 알려주신 참여 코드를 입력해 주세요. 지금은 가상 이름으로 연결을 시험합니다.</p></div>
+  <div class="page-heading"><span class="eyebrow">PURPLEKIT · LET'S PLAY!</span><h1>퀴즈 방에 입장하기 <span class="join-heading-star" aria-hidden="true">✦</span></h1><p>참여 코드를 입력하고 친구들과 함께 실시간 퀴즈에 도전해 보세요!</p></div>
   <section class="panel student-panel">
+    <div class="join-panel-intro"><span class="join-panel-step">01</span><strong>참여 정보 입력</strong><span class="join-panel-desc">코드와 이름을 입력해 주세요.</span></div>
     <div class="connection"><span id="join-dot" class="connection-dot"></span><span id="join-connection">서버 연결 확인 중…</span></div>
     <label class="field-label" for="join-code">6자리 참여 코드</label><input id="join-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" placeholder="예: 482731" aria-label="6자리 참여 코드">
-    <label class="field-label" for="join-name" style="margin-top:16px">가상 이름</label><input id="join-name" maxlength="20" autocomplete="off" placeholder="예: 테스트학생01" aria-label="가상 이름">
-    <p class="helper">실제 학생 이름은 아직 입력하지 마세요.</p>
+    <label class="field-label" for="join-name" style="margin-top:16px">이름 또는 별명</label><input id="join-name" maxlength="20" autocomplete="off" placeholder="예: 테스트학생01" aria-label="가상 이름">
+    <p class="helper">선생님이 안내한 이름이나 별명을 입력하세요.</p>
     <div class="button-row button-stack"><button id="join-room-btn" class="btn btn-primary btn-big">게임 방 입장</button><button id="leave-room-btn" class="btn btn-outline btn-big" hidden>대기실 나가기</button></div>
     <p id="join-feedback" class="feedback" role="status" aria-live="polite"></p>
   </section>
   </div>
   <section id="student-room" class="panel" hidden>
-    <div class="panel-header"><h2 id="student-room-title">대기실</h2><span id="student-room-state" class="pill pill-neutral">대기 중</span></div>
+    <div class="panel-header"><div class="join-room-heading"><span class="join-panel-step">02</span><h2 id="student-room-title">대기실</h2></div><span id="student-room-state" class="pill pill-neutral">대기 중</span></div>
     <p id="student-room-meta" class="helper"></p>
     <div class="avatar-self" id="avatar-self" hidden>
       <div id="avatar-current" class="avatar-self-picture" aria-hidden="true"></div>
@@ -28,7 +29,7 @@
       <button id="avatar-choose" type="button" class="btn btn-outline btn-small">캐릭터 고르기</button>
     </div>
     <div class="room-waiting"><span aria-hidden="true">🎮</span><strong>선생님의 안내를 기다려 주세요</strong><span>게임이 시작되면 큰 문제 화면으로 자동 전환됩니다.</span></div>
-    <div class="panel-header"><h2>접속한 친구들</h2><span class="count" id="join-count">0명</span></div>
+    <div class="panel-header join-friends-header"><h2>함께하는 친구들</h2><span class="count" id="join-count">0명</span></div>
     <div id="join-members" class="student-grid"></div>
   </section>
   </div>
@@ -42,7 +43,7 @@
       <p id="avatar-feedback" class="feedback" role="status" aria-live="polite"></p>
     </div>
   </dialog>
-  <!-- v3.9: 가로 화면은 좌우 배치 / 모바일은 세로 배치 -->
+  <!-- v3.11: 가로 화면은 좌우 배치 / 모바일은 세로 배치 -->
   <section id="quiz-panel" class="quiz-stage" hidden aria-label="클래식 퀴즈 전용 화면">
     <div class="quiz-stage-inner">
       <div class="quiz-stage-head">
@@ -94,8 +95,8 @@
       <p id="quiz-stage-error" class="quiz-stage-error" role="alert" hidden></p>
     </div>
   </section>
-  <p class="notice centered">학생에게는 문제와 보기만 전달됩니다. 정답과 점수는 교사 화면에서 처리합니다.</p>
+  <p class="notice centered join-bottom-notice"><strong>게임 TIP</strong> · 문제를 선택한 뒤 반드시 <strong>정답 제출하기</strong>를 눌러 주세요!</p>
   <a class="back-link" href="./">← 처음 화면으로</a>
-</main><footer>PURPLEKIT · v3.9</footer></div>
+</main><footer>PURPLEKIT · v3.11</footer></div>
 </body>
 </html>

@@ -2,15 +2,15 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>교사 화면 | 퀴즈 실험실 v2.1</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="js/teacher.js"></script>
+  <meta name="theme-color" content="#234dd0"><title>교사 화면 | 퍼플킷 v3.11</title>
+  <link rel="stylesheet" href="styles.css?v=3.11">
+  <script type="module" src="js/teacher.js?v=3.11"></script>
 </head>
 <body>
   <div class="shell">
-    <header class="site-header"><a class="brand" href="./"><span class="brand-icon">Q</span> 퀴즈 실험실</a><span class="version">교사 · v2.1</span></header>
+    <header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">교사 콘솔 · v3.11</span></header>
     <main class="page-content">
-      <div class="page-heading"><span class="eyebrow">TEACHER CONSOLE</span><h1>교사용 접속 현황</h1><p>교사 계정으로 로그인한 뒤, 학생 기기의 실시간 연결을 확인합니다.</p></div>
+      <div class="page-heading"><span class="eyebrow">PURPLEKIT · TEACHER CONSOLE</span><h1>교사용 접속 현황</h1><p>교사 계정으로 로그인한 뒤, 학생 기기의 실시간 연결을 확인합니다.</p></div>
       <section class="panel" aria-label="교사 로그인">
         <div class="panel-header"><h2>교사 인증</h2><span id="auth-badge" class="pill pill-neutral">확인 중</span></div>
         <p id="auth-message" class="helper" aria-live="polite">Firebase 설정 상태를 확인하고 있습니다.</p>
@@ -22,11 +22,11 @@
         <p id="db-message" class="helper" aria-live="polite">로그인 및 보안 규칙 설정 후 조회할 수 있습니다.</p>
         <div id="student-list" class="student-grid" aria-live="polite"><div class="empty-state">학생 화면에서 가상 이름으로 입장하면 여기에 표시됩니다.</div></div>
       </section>
-      <div class="tip">v0에서 검증한 학생 실시간 연결 기능은 그대로 유지됩니다. 실제 학생 이름은 아직 입력하지 마세요.</div><a class="btn btn-primary" style="display:inline-flex;align-items:center;margin-top:20px" href="sets.html">문제 세트 관리 열기 (v1) →</a>
-      <a class="btn btn-primary" style="display:inline-flex;align-items:center;margin-top:20px;margin-left:8px" href="rooms.html">게임 방 만들기 (v2.1) →</a>
+      <div class="tip">v0에서 검증한 학생 실시간 연결 기능은 그대로 유지됩니다. 실제 학생 이름은 아직 입력하지 마세요.</div><a class="btn btn-primary" style="display:inline-flex;align-items:center;margin-top:20px" href="sets.html">문제 세트 관리 →</a>
+      <a class="btn btn-primary" style="display:inline-flex;align-items:center;margin-top:20px;margin-left:8px" href="rooms.html">퍼플킷 게임 방 관리 →</a>
       <a class="btn btn-outline" style="display:inline-flex;align-items:center;margin-top:20px;margin-left:8px" href="loadtest.html">동시 접속 테스트 (v2.2) →</a>
       <a class="back-link" href="./">← 처음 화면으로</a>
-    </main><footer>CLASSROOM QUIZ LAB · v2.1</footer>
+    </main><footer>PURPLEKIT · 교사 콘솔</footer>
   </div>
 </body>
 </html>
