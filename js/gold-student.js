@@ -2,14 +2,42 @@ import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { createAvatarImage } from './avatars.js';
 import { fullQuestionImageUrl } from './image-utils.js';
-import { goldRanking } from './gold-core.js';
-import { createArcadeUi, renderPodium } from './arcade-ui.js';
+import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.5';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.5';
 
 const $=id=>document.getElementById(id);
 const stage=$('gold-student');
 const sound=createArcadeUi('gold-student',{role:'student',mode:'gold'});
 let code='',uid='',stopListeners=[],pub=null,own=null,ownAnswer=null,ownPick=null;
 let selected='',selectedNonce='',submitting=false,picking=false,clockOffset=0,finishedShown=false;
+let pendingPickNonce='',showingRewardNonce='',revealedRewardNonce='',rewardTimer=null;
+const REWARD_DISPLAY_MS=3000;
+function closeReward({rerender=true}={}){
+  if(rewardTimer){clearTimeout(rewardTimer);rewardTimer=null;}
+  $('gold-reward-reveal').hidden=true;
+  if(showingRewardNonce)revealedRewardNonce=showingRewardNonce;
+  showingRewardNonce='';pendingPickNonce='';
+  if(rerender&&code&&uid)render();
+}
+function maybeRevealReward(){
+  // Await a teacher-confirmed, persisted payout for the chest THIS device chose.
+  // A stale result from an earlier session must not pop up on room entry.
+  if(!pendingPickNonce||showingRewardNonce||revealedRewardNonce===pendingPickNonce)return;
+  const me=pub?.scores?.[uid];
+  if(!me||me.lastRewardNonce!==pendingPickNonce||!me.lastReward)return;
+  const info=describeGoldReveal(me.lastReward);
+  showingRewardNonce=pendingPickNonce;
+  const panel=$('gold-reward-reveal');panel.dataset.mood=info.mood;
+  $('gold-reward-icon').textContent=info.icon;
+  $('gold-reward-title').textContent=info.heading;
+  $('gold-reward-change').textContent=info.change;
+  $('gold-reward-detail').textContent=info.description;
+  $('gold-reward-balance').textContent=`현재 보유 골드: ${Math.floor(Number(me.gold||0)).toLocaleString('ko-KR')} G`;
+  panel.hidden=false;
+  sound.reward(info.mood);
+  rewardTimer=setTimeout(()=>closeReward(),REWARD_DISPLAY_MS);
+}
+
 const clientTime=()=>Date.now()+clockOffset;
 function message(text,type=''){
   $('gold-student-message').textContent=text;
@@ -71,8 +99,10 @@ function updateSubmitButton(){
 function render(){
   if(!code||!uid)return;
   const phase=pub?.state||'ready';
-  if(phase==='ready'||!pub){show(false);return;}
+  if(phase==='ready'||!pub){if(showingRewardNonce)closeReward({rerender:false});show(false);return;}
   show(true);
+  if(phase==='finished'&&showingRewardNonce)closeReward({rerender:false});
+  if(phase==='playing')maybeRevealReward();
   $('gold-student-state').textContent=phase==='finished'?'게임 종료':'골드 퀘스트';
   const me=pub?.scores?.[uid];
   $('gold-my-coins').textContent=`${Number(me?.gold||0).toLocaleString('ko-KR')} G`;
@@ -86,7 +116,8 @@ function render(){
     if(!finishedShown){renderPodium($('gold-student-podium'),ranked().map(p=>({...p,score:Number(p.gold||0)})));finishedShown=true;}
     rankList($('gold-student-final-ranking'),100);return;
   }
-  sound.sync({state:'question',questionId:own?.nonce||'wait'});
+  // Do not announce the next question while the large reward result is visible.
+  if(!showingRewardNonce)sound.sync({state:'question',questionId:own?.nonce||'wait'});
   const event=pub?.lastEvent;
   const recentlyTargeted=event?.targetUid===uid && Number(event.at||0)>0 && clientTime()-Number(event.at)<9000;
   $('gold-my-last').textContent=recentlyTargeted
@@ -118,14 +149,15 @@ async function submit(){
 }
 async function pick(choice){
   if(!code||!uid||!own?.nonce||own.phase!=='treasure'||ownPick||picking)return;
-  const nonce=own.nonce;picking=true;sound.choice();render();
+  const nonce=own.nonce;picking=true;pendingPickNonce=nonce;sound.choice();render();
   try{await set(ref(db,`v4/picks/${code}/${uid}/${nonce}`),{choice,at:serverTimestamp()});
     $('gold-chest-feedback').textContent='보물상자를 열고 있습니다…';
-  }catch(err){message('보물상자 선택 실패: '+formatError(err),'error');}
+  }catch(err){pendingPickNonce='';message('보물상자 선택 실패: '+formatError(err),'error');}
   finally{picking=false;render();}
 }
 export function stopGoldView(){
   for(const un of stopListeners)un();stopListeners=[];
+  closeReward({rerender:false});revealedRewardNonce='';
   code='';uid='';pub=null;own=null;ownAnswer=null;ownPick=null;selected='';selectedNonce='';submitting=false;picking=false;finishedShown=false;
   $('gold-answer-choices').dataset.nonce='';sound.reset();show(false);
 }
@@ -142,6 +174,7 @@ export function startGoldView(roomCode,userUid){
   watch(`v4/picks/${c}/${u}`,value=>ownPick=value?.[own?.nonce]||null);
 }
 $('gold-submit').addEventListener('click',()=>void submit());
+$('gold-reward-next').addEventListener('click',()=>closeReward());
 $('gold-chest-buttons').querySelectorAll('[data-chest]').forEach(button=>button.addEventListener('click',()=>void pick(Number(button.dataset.chest))));
 setInterval(()=>{
   if(!code||!uid||pub?.state!=='playing')return;

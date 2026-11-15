@@ -114,6 +114,18 @@ class OriginalAudio{
     else if(name==='reveal'){n('G4',0,.11,.09);n('C5',.13,.2,.10);}
     else if(name==='tick')n('C5',0,.06,.055,'triangle');
     else if(name==='finish'){['C5','E5','G5','C5'].forEach((key,i)=>n(key,i*.11,i===3?.42:.14,.13,'triangle'));}
+    else if(name==='reward-positive'){
+      // Short, bright original reward jingle (student device only).
+      n('C5',0,.13,.13,'triangle');n('E5',.12,.15,.16,'triangle');
+      n('G5',.26,.16,.17,'triangle');n('C5',.44,.33,.12,'sine');
+    }
+    else if(name==='reward-negative'){
+      n('G4',0,.16,.14,'triangle');n('E4',.17,.19,.14,'triangle');
+      n('D4',.37,.19,.13,'triangle');n('C4',.57,.34,.12,'sine');
+    }
+    else if(name==='reward-neutral'){
+      n('D4',0,.13,.09,'sine');n('C4',.18,.23,.09,'triangle');
+    }
     else if(name==='fanfare'){
       const sequence=[['C4',0,.19],['E4',.21,.19],['G4',.42,.22],['C5',.66,.26],
         ['D5',1.02,.16],['E5',1.20,.17],['G5',1.40,.25],['A5',1.70,.18],['G5',1.90,.26]];
@@ -188,7 +200,7 @@ export function renderPodium(target,ranked){
 }
 export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
   const stage=document.getElementById(stageId);
-  if(!stage)return {sync:noop,updateTime:noop,choice:noop,submit:noop,showResults:noop,reset:noop,armEffects:noop,fanfare:noop,autoStartGameMusic:noop,destroy:noop};
+  if(!stage)return {sync:noop,updateTime:noop,choice:noop,submit:noop,reward:noop,showResults:noop,reset:noop,armEffects:noop,fanfare:noop,autoStartGameMusic:noop,destroy:noop};
   const tracks=mode==='gold'?GOLD_TRACKS:CALM_TRACKS;
   const audio=new OriginalAudio(role,tracks);let phase='',roundId='',gradedKey='',lastTick=-1,enabled=false,effectsArmed=false,toastTimer=null;
   let musicRequestId=0,musicAutoStarting=false;
@@ -367,6 +379,7 @@ export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
     sync,updateTime,reset,armEffects,fanfare,newGameMusic,autoStartGameMusic,
     choice(){playEffect('select');},
     submit(){playEffect('submit');},
+    reward(mood){playEffect(['positive','negative','neutral'].includes(mood)?`reward-${mood}`:'reward-neutral');},
     showResults(){playEffect('select');},
     destroy(){audio.disable();if(role==='student'){document.removeEventListener('pointerdown',activateStudentSound,true);document.removeEventListener('keydown',activateStudentSound,true);}if(toastTimer)clearTimeout(toastTimer);toggle?.parentElement?.remove();track.remove();toast.remove();}
   };

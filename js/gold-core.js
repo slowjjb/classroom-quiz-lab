@@ -120,6 +120,27 @@ export function applyGoldOutcome(scores,actorUid,outcome,targetUid=''){
   return {scores:roster,message,affected,gained:own.gold-startedGold};
 }
 
+// v4.5: presentation-only interpretation of an already committed reward.
+// The actual balance change remains authoritative in Firebase; this helper
+// never rolls a reward or modifies gold.
+export function describeGoldReveal(reward){
+  const kind=String(reward?.type||'empty');
+  const delta=Number(reward?.gained||0);
+  const positive=delta>0,negative=delta<0;
+  const mood=positive?'positive':negative?'negative':'neutral';
+  const heading={
+    coins:'황금 보상을 획득했어요!',
+    multiply:positive?'골드가 크게 늘었어요!':'배수 보상! 그런데…',
+    steal:positive?'다른 친구의 골드를 가져왔어요!':'골드를 가져오지 못했어요!',
+    swap:'친구와 골드를 교환했어요!',
+    lose:negative?'앗! 골드를 잃었어요!':'잃을 골드가 없어요!',
+    empty:'빈 상자!',
+  }[kind]||'상자 결과를 확인하세요!';
+  const icon=kind==='empty'?'📦':kind==='swap'?'🔄':negative?'💥':positive?'✨':'🎲';
+  const change=`${delta>0?'+':delta<0?'−':''}${Math.abs(delta).toLocaleString('ko-KR')} G`;
+  return {mood,heading,icon,change,description:String(reward?.description||'골드 변화가 없습니다.')};
+}
+
 export function goldRanking(scores){
   return Object.entries(scores||{}).map(([uid,x])=>({uid,...x}))
     .sort((a,b)=>Number(b.gold||0)-Number(a.gold||0)||Number(b.correct||0)-Number(a.correct||0)||String(a.name).localeCompare(String(b.name),'ko'));
