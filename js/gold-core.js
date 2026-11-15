@@ -44,37 +44,54 @@ function validGoldOptionOrder(order,count){
     order.every(index=>Number.isInteger(index)&&index>=0&&index<count) &&
     new Set(order).size===count;
 }
+// v4.7: cycle across all distinct option permutations before reusing one.
+// A compact bit mask tracks the 24 permutations of four choices per question,
+// while a second mask makes the correct choice visit every position once in
+// each four-attempt cycle. The student's private state keeps this progress.
+// Legacy v4.6 previousOrder arrays are accepted and upgraded automatically.
 export function shuffleGoldChoices(options,previousOrder=null,random=Math.random,correctIndex=0){
   const original=optionsArray(options);
   const count=original.length;
-  const previous=validGoldOptionOrder(previousOrder,count)?previousOrder:null;
   const correctOriginal=Number(correctIndex)-1;
-  const lastCorrectSlot=previous&&correctOriginal>=0&&correctOriginal<count?previous.indexOf(correctOriginal):-1;
-  // Do not randomize free-text accepted answers (handled by the host).
-  const draw=()=>{
-    const indices=Array.from({length:count},(_,i)=>i);
-    for(let i=count-1;i>0;i--){
-      const roll=Number(random());
-      const j=Math.min(i,Math.max(0,Math.floor((Number.isFinite(roll)?roll:0)*(i+1))));
-      [indices[i],indices[j]]=[indices[j],indices[i]];
-    }
-    return indices;
-  };
-  let order=draw();
-  // Repeated questions must change not just the layout but the correct button.
-  // Otherwise students could still click the same number from memory.
-  const repeats=()=>previous && (order.every((index,i)=>index===previous[i]) ||
-    (lastCorrectSlot>=0 && order.indexOf(correctOriginal)===lastCorrectSlot));
-  if(previous && count>1){
-    for(let attempt=0;attempt<12 && repeats();attempt++)order=draw();
-    if(repeats()){
-      if(lastCorrectSlot>=0){
-        const spot=order.indexOf(correctOriginal),other=(spot+1)%count;
-        [order[spot],order[other]]=[order[other],order[spot]];
-      }else [order[0],order[1]]=[order[1],order[0]];
-    }
+  const record=Array.isArray(previousOrder)?{last:previousOrder}:previousOrder||{};
+  const previous=validGoldOptionOrder(record.last,count)?record.last:null;
+  const perms=[];
+  function enumerate(path,remaining){
+    if(!remaining.length){perms.push(path);return;}
+    for(let i=0;i<remaining.length;i++)enumerate([...path,remaining[i]],remaining.filter((_,j)=>j!==i));
   }
-  return {options:order.map(index=>original[index]),optionOrder:order};
+  // Four answers are the CSV standard; the small bound keeps enumeration safe.
+  if(count<2||count>4){
+    const order=Array.from({length:count},(_,i)=>i);
+    for(let i=count-1;i>0;i--){const n=Number(random());const j=Math.min(i,Math.max(0,Math.floor((Number.isFinite(n)?n:0)*(i+1))));[order[i],order[j]]=[order[j],order[i]];}
+    return {options:order.map(i=>original[i]),optionOrder:order,history:{last:order,seenMask:0,slotsMask:0}};
+  }
+  enumerate([],Array.from({length:count},(_,i)=>i));
+  const key=arr=>arr.join(',');
+  const lastIndex=previous?perms.findIndex(p=>key(p)===key(previous)):-1;
+  let seenMask=Number.isInteger(record.seenMask)?record.seenMask>>>0:0;
+  let slotsMask=Number.isInteger(record.slotsMask)?record.slotsMask>>>0:0;
+  if(lastIndex>=0){seenMask|=(1<<lastIndex);if(!slotsMask&&correctOriginal>=0&&correctOriginal<count)slotsMask|=1<<previous.indexOf(correctOriginal);}
+  const fullMask=(1<<perms.length)-1;
+  if((seenMask&fullMask)===fullMask){seenMask=0;slotsMask=0;}
+  const lastSlot=previous&&correctOriginal>=0&&correctOriginal<count?previous.indexOf(correctOriginal):-1;
+  // Pool contains only permutations not already used in this 24-draw cycle.
+  let pool=perms.map((order,index)=>({order,index,slot:order.indexOf(correctOriginal)}))
+    .filter(item=>!(seenMask&(1<<item.index))&&item.index!==lastIndex);
+  if(!pool.length){seenMask=0;slotsMask=0;pool=perms.map((order,index)=>({order,index,slot:order.indexOf(correctOriginal)})).filter(x=>x.index!==lastIndex);}
+  if(correctOriginal>=0&&correctOriginal<count){
+    if(slotsMask===(1<<count)-1)slotsMask=0;
+    // First prefer a correct position not yet used in this group of four.
+    let slotsPool=pool.filter(item=>!(slotsMask&(1<<item.slot)) && item.slot!==lastSlot);
+    if(!slotsPool.length){slotsMask=0;slotsPool=pool.filter(item=>item.slot!==lastSlot);}
+    if(slotsPool.length)pool=slotsPool;
+  }
+  const roll=Number(random());
+  const chosen=pool[Math.min(pool.length-1,Math.max(0,Math.floor((Number.isFinite(roll)?roll:0)*pool.length)))];
+  const order=chosen.order;
+  const history={last:order,seenMask:(seenMask|(1<<chosen.index))>>>0,
+    slotsMask:correctOriginal>=0&&correctOriginal<count?(slotsMask|(1<<chosen.slot))>>>0:0};
+  return {options:order.map(index=>original[index]),optionOrder:order,history};
 }
 // A submission refers to the *displayed* slot, not the original CSV slot.
 // Old v4.5 states without an optionOrder retain their original scoring.

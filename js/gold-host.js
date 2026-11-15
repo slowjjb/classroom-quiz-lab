@@ -1,7 +1,7 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking } from './gold-core.js?v=4.6';
+import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking } from './gold-core.js?v=4.7';
 import { optionsArray, escapeCsv } from './classic-core.js';
 import { buildGoldAccuracy } from './gold-analytics.js';
 import { normalizeQuestionImage } from './image-utils.js';
@@ -205,12 +205,12 @@ function shuffledQuestions(source){
   }));
 }
 function messageForState(question,uid,seq,previous){
-  // Keep the last permutation for EACH question on this student's private state.
+  // Keep a compact 24-order history for EACH question on this student's private state.
   // The next attempt is shuffled once (teacher-side) and survives refresh/reconnect.
   const optionHistory={...(previous?.optionHistory||{})};
   const key=String(question.index);
   const shuffled=question.type==='typing'?null:shuffleGoldChoices(question.options,optionHistory[key],Math.random,question.correctIndex);
-  if(shuffled)optionHistory[key]=shuffled.optionOrder;
+  if(shuffled)optionHistory[key]=shuffled.history;
   return {phase:'question',nonce:`a${seq}_${crypto.randomUUID().slice(0,12)}`,questionIndex:question.index,
     sequence:seq,number:question.number,prompt:question.prompt,type:question.type,
     options:shuffled?shuffled.options:[],

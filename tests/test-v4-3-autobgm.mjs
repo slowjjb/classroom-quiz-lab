@@ -8,7 +8,7 @@ const classic=read('js/classic-host.js'),gold=read('js/gold-host.js');
 assert.match(classic,/publicRound\?\.state==='ready'[\s\S]*arcade\.autoStartGameMusic\(\)/,'Classic first question auto BGM');
 assert.match(gold,/arcade\.newGameMusic\(\);arcade\.autoStartGameMusic\(\);[\s\S]*await update/,'Gold activates before Firebase write');
 assert.match(read('rooms.html'),/js\/classic-host\.js\?v=4\.3/);
-assert.match(read('rooms.html'),/js\/gold-host\.js\?v=4\.[36]/);
+assert.match(read('rooms.html'),/js\/gold-host\.js\?v=4\.[367]/);
 assert.match(classic,/\.\/arcade-ui\.js\?v=4\.3/);
 assert.match(gold,/\.\/arcade-ui\.js\?v=4\.3/);
 let oscillations=0;
