@@ -29,10 +29,67 @@ export function makeShuffleBag(questionCount, length=GOLD_MAX_QUESTION_SEQUENCE,
   return output;
 }
 
-export function verifyGoldAnswer(question,answer){
+export function verifyGoldAnswer(question,answer,optionOrder=null){
   const accepted=optionsArray(question?.options);
   if(question?.type==='typing')return accepted.filter(Boolean).some(item=>normalizedAnswer(item)===normalizedAnswer(answer));
-  return /^[1-4]$/.test(String(answer)) && Number(answer)===Number(question?.correctIndex);
+  const original=originalGoldChoiceIndex(answer,optionOrder,accepted.length);
+  return original>0 && original===Number(question?.correctIndex);
+}
+
+// v4.6: each Gold Quest multiple-choice attempt gets a newly shuffled view.
+// The canonical option order and correctIndex stay private on the teacher side.
+// Returned order[i] is the ORIGINAL zero-based index displayed in slot i.
+function validGoldOptionOrder(order,count){
+  return Array.isArray(order) && order.length===count &&
+    order.every(index=>Number.isInteger(index)&&index>=0&&index<count) &&
+    new Set(order).size===count;
+}
+export function shuffleGoldChoices(options,previousOrder=null,random=Math.random,correctIndex=0){
+  const original=optionsArray(options);
+  const count=original.length;
+  const previous=validGoldOptionOrder(previousOrder,count)?previousOrder:null;
+  const correctOriginal=Number(correctIndex)-1;
+  const lastCorrectSlot=previous&&correctOriginal>=0&&correctOriginal<count?previous.indexOf(correctOriginal):-1;
+  // Do not randomize free-text accepted answers (handled by the host).
+  const draw=()=>{
+    const indices=Array.from({length:count},(_,i)=>i);
+    for(let i=count-1;i>0;i--){
+      const roll=Number(random());
+      const j=Math.min(i,Math.max(0,Math.floor((Number.isFinite(roll)?roll:0)*(i+1))));
+      [indices[i],indices[j]]=[indices[j],indices[i]];
+    }
+    return indices;
+  };
+  let order=draw();
+  // Repeated questions must change not just the layout but the correct button.
+  // Otherwise students could still click the same number from memory.
+  const repeats=()=>previous && (order.every((index,i)=>index===previous[i]) ||
+    (lastCorrectSlot>=0 && order.indexOf(correctOriginal)===lastCorrectSlot));
+  if(previous && count>1){
+    for(let attempt=0;attempt<12 && repeats();attempt++)order=draw();
+    if(repeats()){
+      if(lastCorrectSlot>=0){
+        const spot=order.indexOf(correctOriginal),other=(spot+1)%count;
+        [order[spot],order[other]]=[order[other],order[spot]];
+      }else [order[0],order[1]]=[order[1],order[0]];
+    }
+  }
+  return {options:order.map(index=>original[index]),optionOrder:order};
+}
+// A submission refers to the *displayed* slot, not the original CSV slot.
+// Old v4.5 states without an optionOrder retain their original scoring.
+export function originalGoldChoiceIndex(selected,optionOrder,optionCount=4){
+  if(!/^[1-4]$/.test(String(selected)))return 0;
+  const displayed=Number(selected);
+  if(!validGoldOptionOrder(optionOrder,optionCount))return displayed;
+  return optionOrder[displayed-1]+1;
+}
+export function displayedGoldCorrectIndex(question,optionOrder){
+  const original=Number(question?.correctIndex||0);
+  const count=optionsArray(question?.options).length;
+  if(!validGoldOptionOrder(optionOrder,count))return original;
+  const displayed=optionOrder.indexOf(original-1);
+  return displayed>=0?displayed+1:original;
 }
 
 // Purplekit v4.2: exactly 1000 integer-weighted chances per chest.
