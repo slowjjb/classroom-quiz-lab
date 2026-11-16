@@ -465,3 +465,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{border-color:#95
 .question-image-check[data-kind="missing"],.question-image-check[data-kind="invalid"]{color:#b63f39!important}
 .question-image-check[data-kind="unverified"]{color:#9b6c22!important}
 @media(max-width:760px){.csv-export-tools{align-items:stretch;flex-direction:column}.csv-export-tools .edit-input{width:100%;flex:auto}.csv-export-tools .btn{width:100%}}
+
+/* v4.12: prominent legacy-client notice (never hidden by general .panel rules) */
+.version-warning{margin:16px 0;border:2px solid #ffbe4f;border-radius:18px;background:#fff8e8;color:#70411d;padding:22px;box-shadow:0 10px 34px #28114a24;text-align:center}
+.version-warning[hidden]{display:none!important}
+.version-warning strong{font-size:clamp(21px,3.1vw,29px);display:block;margin-bottom:9px}
+.version-warning p{margin:7px 0 12px;line-height:1.6}
+.version-warning b{color:#7039ba}
+.version-warning .btn{margin-top:5px}
+
+#room-version-rules-warning[hidden]{display:none!important}

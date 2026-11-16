@@ -1,14 +1,15 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV4 } from './rules-v4.js?v=4.8';
+import { makeRulesV4 } from './rules-v4.js?v=4.12';
 import { createAvatarImage } from './avatars.js';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=4.12';
 
 const $ = id => document.getElementById(id);
 const modeNames = {classic:'클래식',gold:'골드 퀘스트',fishing:'피싱 프렌지',racing:'레이싱'};
 let teacher = null, authorized = false, hostRooms = {}, questionSets = {};
 let unsubscribeHost = null, unsubscribeRoom = null, unsubscribeSets = null;
-let selectedCode = '', currentRoom = null, creating = false;
+let selectedCode = '', currentRoom = null, creating = false, versionRulesReady = false;
 const LAST_ROOM_KEY = 'quizlab-v2-last-host-room';
 function info(id, message, kind = '') { $(id).textContent = message; $(id).dataset.kind = kind; }
 function authBadge(message, kind = 'neutral') { $('room-auth-badge').textContent = message; $('room-auth-badge').className = `pill pill-${kind}`; }
@@ -124,7 +125,7 @@ function renderRoom(record) {
   $('room-code').textContent=selectedCode;
   $('room-state').textContent=stateText(meta.state);
   $('room-state').className=`pill pill-${meta.state==='ended'?'error':meta.state==='lobby'?'success':'neutral'}`;
-  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'?'클래식':meta.mode==='gold'?'골드 퀘스트 v4':'대기실'})`;
+  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'?'클래식':meta.mode==='gold'?'골드 퀘스트 v4':'대기실'}) · ${meta.minClientVersion?'입장 최소 v'+meta.minClientVersion:'기존 호환 방'}`;
   $('room-toggle-lock').disabled = meta.state==='ended';
   $('room-toggle-lock').textContent = meta.state==='locked'?'입장 다시 허용':'입장 마감';
   $('room-end').disabled = meta.state==='ended';
@@ -150,15 +151,19 @@ async function createRoom() {
   const target=Number($('room-target').value);if(!Number.isInteger(target)||target<1||target>200){info('room-create-message','운영 인원 기준을 1~200명으로 입력해 주세요.','error');return;}
   creating=true;$('room-create').disabled=true;
   const mode=$('room-mode').value,setId=$('room-set').value;
+  if(!versionRulesReady){creating=false;$('room-create').disabled=false;info('room-create-message','v4.12 Firebase 통합 보안 규칙을 게시한 뒤 권한 다시 확인을 눌러 주세요.','error');return;}
   if(!['classic','gold'].includes(mode)){creating=false;$('room-create').disabled=false;info('room-create-message','선택한 게임 모드는 아직 개발 중입니다.','error');return;}
   if(mode==='gold'&&!setId){creating=false;$('room-create').disabled=false;info('room-create-message','골드 퀘스트용 문제 세트를 먼저 선택해 주세요.','error');return;}
   try {
+    const published=await checkPublishedVersion();
+    const versionReport=checkRoomVersion(null,published);
+    if(!versionReport.ok)throw new Error(`현재 v${APP_VERSION}은(는) 최신 v${published.version}보다 오래됐습니다. 교사 화면을 새로고침해 주세요.`);
     info('room-create-message','사용할 수 있는 6자리 코드를 생성하고 있습니다.');
     for (let attempt=0;attempt<12;attempt++) {
       const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);
       const code=String(100000+(bytes[0]%900000));
       const now=Date.now();
-      const meta={hostUid:teacher.uid,createdAt:now,state:'lobby',title,mode,target,setId,setTitle:setId?(questionSets[setId]?.title||'문제 세트'): '문제 미선택'};
+      const meta={hostUid:teacher.uid,createdAt:now,state:'lobby',title,mode,target,setId,setTitle:setId?(questionSets[setId]?.title||'문제 세트'): '문제 미선택',minClientBuild:APP_BUILD,minClientVersion:APP_VERSION};
       const result=await runTransaction(ref(db,`v2/rooms/${code}`),current=>current === null?{meta}:undefined,{applyLocally:false});
       if (!result.committed) continue;
       await set(ref(db,`v2/hostRooms/${teacher.uid}/${code}`),{createdAt:now,title,state:'lobby'});
@@ -212,9 +217,18 @@ async function startListeners() {
     return;
   }
   if(teacher?.uid!==checkingUid)return;
+  try{
+    await get(ref(db,'v4/clientVersionCheck'));
+    versionRulesReady=true;
+    $('room-version-rules-warning').hidden=true;
+  }catch(_){
+    versionRulesReady=false;
+    $('room-version-rules-warning').hidden=false;
+    info('room-auth-message','기존 방 조회는 가능하지만 새 방 생성에는 v4.12 통합 규칙이 필요합니다.','error');
+  }
   unsubscribeHost=onValue(ref(db,`v2/hostRooms/${teacher.uid}`),snap=>{
     setAuthorized(true);authBadge('교사 권한 확인','success');
-    info('room-auth-message','v2.1 게임 방 읽기·쓰기 권한을 확인했습니다.','success');
+    info('room-auth-message',versionRulesReady?'v4.12 게임 방 생성·버전 검사 권한을 확인했습니다.':'기존 방은 사용 가능하지만 v4.12 규칙 갱신 전에는 새 방을 만들 수 없습니다.',versionRulesReady?'success':'error');
     $('room-rules-guide').hidden=true;$('room-retry').disabled=false;
     hostRooms=snap.val()||{};renderSavedRooms();
     const last=localStorage.getItem(LAST_ROOM_KEY);
@@ -229,7 +243,7 @@ async function startListeners() {
   });
 }
 function handleAuth(user) {
-  stopListeners();setAuthorized(false);hostRooms={};selectedCode='';currentRoom=null;
+  stopListeners();setAuthorized(false);versionRulesReady=false;hostRooms={};selectedCode='';currentRoom=null;
   $('room-detail').hidden=true;renderSavedRooms();
   teacher=user?.providerData?.some(x=>x.providerId==='google.com')?user:null;
   $('room-login').hidden=Boolean(teacher);$('room-logout').hidden=!teacher;$('room-retry').hidden=!teacher;
@@ -244,6 +258,7 @@ else {
   $('room-login').addEventListener('click',async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider());}catch(err){info('room-auth-message',formatError(err),'error');}});
   $('room-logout').addEventListener('click',()=>signOut(auth).catch(err=>info('room-auth-message',formatError(err),'error')));
   $('room-retry').addEventListener('click',startListeners);
+  $('room-version-refresh').addEventListener('click',()=>openFreshPage());
   $('avatar-copy-rules').addEventListener('click',async()=>{
     if(!teacher){info('avatar-rules-message','교사 Google 계정으로 로그인한 다음 다시 눌러 주세요.','error');return;}
     try{

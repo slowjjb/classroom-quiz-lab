@@ -1,5 +1,6 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { firebaseConfig } from '../firebase-config.js';
+import {APP_VERSION,APP_BUILD} from './version.js?v=4.12';
 import { validateCount, summarizeRecords, isCleanPass, csvField } from './loadtest-core.js';
 import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import { getAuth, setPersistence, inMemoryPersistence, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, deleteUser } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
@@ -55,9 +56,10 @@ async function teacherGate(user){
   try{
     setMessage('load-auth-msg','v2.1 보안 규칙과 교사 접근 권한을 검사 중입니다.');
     await get(ref(db,'v2/versionCheck'));
+    await get(ref(db,'v4/clientVersionCheck'));
     await get(ref(db,`v2/hostRooms/${user.uid}`));
     state.teacher=user;state.authorized=true;
-    setMessage('load-auth-msg','교사 권한 확인 완료 · 기존 v2.1 보안 규칙 그대로 이용합니다.','success');
+    setMessage('load-auth-msg','교사 권한 확인 완료 · v4.12 보안 규칙이 적용됐습니다.','success');
     $('load-auth-badge').textContent='교사 권한 확인';$('load-auth-badge').className='pill pill-success';
     await refreshLeftovers();
   }catch(err){setMessage('load-auth-msg',`보안 규칙을 확인할 수 없습니다. ${humanError(err)}`,'error');
@@ -106,7 +108,7 @@ async function makeTestRoom(){
     for(let attempt=0;attempt<15;attempt++){
       const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);
       const code=String(100000+(bytes[0]%900000));const now=Date.now();
-      const meta={hostUid:state.teacher.uid,createdAt:now,state:'lobby',title:'[부하테스트] 가상 학생 전용',mode:'classic',target:30,setId:'',setTitle:'문제 없음',testOnly:true};
+      const meta={hostUid:state.teacher.uid,createdAt:now,state:'lobby',title:'[부하테스트] 가상 학생 전용',mode:'classic',target:30,setId:'',setTitle:'문제 없음',testOnly:true,minClientBuild:APP_BUILD,minClientVersion:APP_VERSION};
       const result=await runTransaction(ref(db,`v2/rooms/${code}`),v=>v===null?{meta}:undefined,{applyLocally:false});
       if(!result.committed)continue;
       try{
@@ -179,7 +181,7 @@ function attachPresence(c){
     const path=push(ref(c.db,`v2/rooms/${state.roomCode}/members/${c.uid}/connections`));
     try{
       await onDisconnect(path).remove();
-      await set(path,serverTimestamp());
+      await set(path,{at:serverTimestamp(),clientBuild:APP_BUILD});
       if(!c.active){try{await remove(path);}catch(_){}return;}
       const wasOffline=c.state==='offline';
       c.sessionRef=path;c.connected=true;
@@ -196,7 +198,7 @@ async function enter(c){
     const claim=ref(c.db,`v2/rooms/${code}/nameClaims/${c.name}`);
     const claimResult=await runTransaction(claim,value=>value===null||value===c.uid?c.uid:undefined,{applyLocally:false});
     if(!claimResult.committed)throw new Error('동일 이름 선점 충돌');
-    await set(ref(c.db,`v2/rooms/${code}/members/${c.uid}/profile`),{name:c.name,joinedAt:Date.now()});
+    await set(ref(c.db,`v2/rooms/${code}/members/${c.uid}/profile`),{name:c.name,joinedAt:Date.now(),clientBuild:APP_BUILD});
     attachPresence(c);
     await waitFor(()=>c.connected,20000);
     c.joinMs=clock()-start;

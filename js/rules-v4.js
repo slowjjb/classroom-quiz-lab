@@ -6,8 +6,20 @@ export function makeRulesV4(uid){
   const member="auth != null && root.child('v2/rooms/' + $code + '/members/' + auth.uid + '/profile').exists()";
   const owner="auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous'";
   const playing="root.child('v4/public/' + $code + '/state').val() === 'playing' && now <= root.child('v4/public/' + $code + '/endsAt').val()";
+  // For new v4.12+ rooms, prohibit legacy creation and prevent old clients
+  // from registering presence. Legacy v4.11 rooms keep their original schema.
+  const room=result.rules.v2.rooms['$code'];
+  room['.validate'] += " && (data.exists() || (newData.child('meta/minClientBuild').isNumber() && newData.child('meta/minClientBuild').val() >= 412))";
+  const profile=room.members['$uid'].profile;
+  profile['.validate'] += " && (!root.child('v2/rooms/' + $code + '/meta/minClientBuild').exists() || (newData.child('clientBuild').isNumber() && newData.child('clientBuild').val() >= root.child('v2/rooms/' + $code + '/meta/minClientBuild').val()))";
+  profile.clientBuild={'.validate':"newData.isNumber() && newData.val() >= 412 && newData.val() <= 9999"};
+  // Presence was a timestamp number before v4.12; versioned rooms require
+  // a {at, clientBuild} object, so a v4.11 client is rejected server-side.
+  room.members['$uid'].connections['$session']['.validate'] =
+    "root.child('v2/rooms/' + $code + '/meta/minClientBuild').exists() ? (newData.hasChildren(['at','clientBuild']) && newData.child('at').isNumber() && newData.child('clientBuild').isNumber() && newData.child('clientBuild').val() >= root.child('v2/rooms/' + $code + '/meta/minClientBuild').val()) : (newData.isNumber() || (newData.hasChildren(['at','clientBuild']) && newData.child('at').isNumber() && newData.child('clientBuild').isNumber()))";
   result.rules.v4={
     versionCheck:{'.read':teacher,'.write':false},
+    clientVersionCheck:{'.read':teacher,'.write':false},
     targetChoiceCheck:{'.read':teacher,'.write':false},
     privateRuns:{'$code':{'.read':teacher,'.write':teacher,'$other':{'.validate':true}}},
     public:{'$code':{

@@ -3,6 +3,7 @@ import { startGoldView, stopGoldView } from './gold-student.js?v=4.11';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,showOutdatedNotice,openFreshPage} from './version-guard.js?v=4.12';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, remove, onValue, onDisconnect, push, serverTimestamp, runTransaction, update } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 
@@ -14,6 +15,12 @@ let currentAvatarId='a01', avatarSaving=false;
 const savedName=localStorage.getItem(NAME_KEY); if(savedName)$('join-name').value=savedName;
 const fromUrl=params.get('code')||'';if(/^\d{6}$/.test(fromUrl))$('join-code').value=fromUrl;
 function feedback(value,kind=''){$('join-feedback').textContent=value;$('join-feedback').dataset.kind=kind;}
+function hideVersionNotice(){$('join-version-warning').hidden=true;}
+function demandUpdate(report){
+  showOutdatedNotice($('join-version-warning'),report);
+  feedback('현재 열려 있는 퍼플킷이 최신 버전보다 오래됐습니다. 아래 버튼으로 새로고침한 다음 입장해 주세요.','error');
+}
+$('join-version-reload').addEventListener('click',()=>openFreshPage());
 function onlineStatus(value,ok=false){$('join-connection').textContent=value;$('join-dot').classList.toggle('connected',ok);}
 function roomStatus(value){$('student-room-state').textContent=({lobby:'입장 가능',locked:'입장 마감',ended:'방 종료'})[value]||'상태 확인 중';}
 
@@ -114,7 +121,7 @@ function watchConnection(uid,name){
     const path=push(ref(db,`v2/rooms/${activeCode}/members/${uid}/connections`));
     try{
       await onDisconnect(path).remove(); // 연결이 끊기면 서버가 세션을 제거합니다.
-      await set(path,serverTimestamp());
+      await set(path,{at:serverTimestamp(),clientBuild:APP_BUILD});
       if(!active||activeUser?.uid!==uid||ended){await remove(path);return;}
       sessionRef=path;onlineStatus('실시간 연결 성공',true);
       feedback(`'${name}'님, 대기실에 입장했습니다!`,'success');
@@ -142,6 +149,11 @@ async function joinRoom(automatic=false){
   const code=$('join-code').value.trim(),inputName=$('join-name').value.trim();
   try{
     if(!/^\d{6}$/.test(code))throw new Error('참여 코드를 숫자 6자리로 입력해 주세요.');
+    hideVersionNotice();
+    feedback('최신 퍼플킷 버전을 확인하고 있습니다…');
+    const latest=await checkPublishedVersion();
+    const siteReport=checkRoomVersion(null,latest);
+    if(!siteReport.ok){demandUpdate(siteReport);return;}
     const requestedName=normalizeName(inputName);
     feedback('방과 이름 중복을 확인하고 있습니다…');
     await setPersistence(auth,browserLocalPersistence);
@@ -151,6 +163,8 @@ async function joinRoom(automatic=false){
     if(!metaSnap.exists())throw new Error('해당 참여 코드의 게임 방이 없습니다.');
     const meta=metaSnap.val();
     if(meta.state==='ended')throw new Error('이미 종료된 게임 방입니다.');
+    const roomReport=checkRoomVersion(meta,latest);
+    if(!roomReport.ok){demandUpdate(roomReport);return;}
     const profileRef=ref(db,`v2/rooms/${code}/members/${user.uid}/profile`);
     const profileSnap=await get(profileRef);
     if(meta.state!=='lobby'&&!profileSnap.exists())throw new Error('입장이 마감된 방입니다.');
@@ -161,7 +175,9 @@ async function joinRoom(automatic=false){
       claimRef=await reserveName(code,displayName,user.uid);
       if(!profileSnap.exists()){
         if(meta.state!=='lobby')throw new Error('입장이 마감된 방입니다.');
-        await set(profileRef,{name:displayName,joinedAt:Date.now()});
+        await set(profileRef,{name:displayName,joinedAt:Date.now(),clientBuild:APP_BUILD});
+      }else if(Number(profileSnap.val()?.clientBuild)!==APP_BUILD){
+        await update(profileRef,{clientBuild:APP_BUILD});
       }
     }catch(error){
       if(claimRef)await releaseOrphanClaim(claimRef,profileRef);
@@ -179,7 +195,7 @@ async function joinRoom(automatic=false){
     });
     watchConnection(user.uid,displayName);
     if(!automatic) history.replaceState(null,'',`join.html?code=${code}`);
-  }catch(err){feedback(formatError(err),'error');onlineStatus('입장 실패');
+  }catch(err){feedback(formatError(err)+(String(err?.code||'').includes('permission-denied')?' v4.12 규칙이 적용되어 있는지 선생님께 확인해 주세요.':''),'error');onlineStatus('입장 실패');
     sessionStorage.removeItem(SESSION_KEY);if(unsubRoom){unsubRoom();unsubRoom=null;}setActive(false);stopQuizView();stopGoldView();activeCode='';activeUser=null;
   }finally{joining=false;$('join-room-btn').disabled=false;}
 }

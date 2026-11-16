@@ -55,6 +55,6 @@ assert.match(host,/verifyGoldAnswer\(q,submission\.value,state\.optionOrder\)/);
 assert.match(host,/originalGoldChoiceIndex\(submission\.value,state\.optionOrder\)/);
 assert.match(host,/displayedGoldCorrectIndex\(q,state\.optionOrder\)/);
 assert.ok(!src('js/gold-student.js').includes('correctIndex'),'student never gets original correctIndex');
-assert.match(src('js/join.js'),/gold-student\.js\?v=4\.(?:[789]|10|11)/);
-assert.match(src('rooms.html'),/js\/gold-host\.js\?v=4\.(?:[789]|10|11)/);
+assert.match(src('js/join.js'),/gold-student\.js\?v=4\.(?:[789]|10|11|12)/);
+assert.match(src('rooms.html'),/js\/gold-host\.js\?v=4\.(?:[789]|10|11|12)/);
 console.log('v4.6 per-attempt choice shuffle, no immediate repeat, mapped scoring, typing and legacy compatibility: PASS');
