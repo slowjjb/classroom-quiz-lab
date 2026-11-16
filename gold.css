@@ -168,3 +168,47 @@
 @keyframes gold-reward-float{from{transform:rotate(-7deg) translateY(0)}to{transform:rotate(7deg) translateY(-8px)}}
 @media(max-height:680px){.gold-reward-card{padding:16px 24px}.gold-reward-icon{font-size:62px}.gold-reward-card h2{margin:4px 0 8px}.gold-reward-detail{margin:9px 0}.gold-reward-next{margin-top:12px}.gold-reward-auto{margin-top:8px}}
 @media(prefers-reduced-motion:reduce){.gold-reward-card,.gold-reward-icon{animation:none}}
+
+/* v4.8 · live leader highlights and exact reward odds below the heading */
+.gold-focus .gold-stage-leaders{justify-content:flex-start;padding:clamp(18px,2.1vw,30px);gap:10px}
+.gold-focus .gold-stage-leaders h2{font-size:clamp(30px,3.9vw,56px);margin:2px 0 4px}
+.gold-focus #gold-focus-lead{margin:2px 0 4px}
+.gold-focus-top3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;width:100%;margin:0 0 5px}
+.gold-focus-top3[hidden],#gold-focus-odds[hidden]{display:none!important}
+.gold-top-card{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-width:0;padding:12px 7px 13px;border-radius:17px;background:#ffffff19;border:2px solid #bca3ff69;box-shadow:0 5px 12px #100d3121}
+.gold-top-card-1{background:#ffdf7650;border-color:#ffd66b}
+.gold-top-card-2{background:#d4e5ff27;border-color:#bed2fa}
+.gold-top-card-3{background:#ffdbbb23;border-color:#ffb991}
+.gold-top-rank{font-size:clamp(15px,1.5vw,21px);color:#ffe9a8;font-weight:950}
+.gold-top-name{font-size:clamp(17px,1.6vw,23px);font-weight:1000;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gold-top-amount{font-size:clamp(18px,1.9vw,28px);color:#fff4a9;font-weight:1000;font-variant-numeric:tabular-nums}
+.gold-focus-odds{width:100%;text-align:left;background:#10194767;border:1px solid #bbb6fd61;border-radius:16px;padding:13px;min-width:0}
+.gold-odds-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.gold-odds-head strong{color:#fff;font-size:clamp(15px,1.4vw,19px)}
+.gold-odds-head small{color:#dfd3ff;font-size:11px;font-weight:800}
+.gold-focus-odds-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:min(54dvh,480px);overflow-y:auto}
+.gold-odds-card{padding:11px 12px;background:#fffffff0;border-radius:11px;color:#203366;min-width:0}
+.gold-odds-card h3{font-size:clamp(13px,1.13vw,15px);font-weight:1000;color:#4b399a;margin:0 0 7px}
+.gold-odds-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:3px 0;font-size:clamp(11px,.87vw,13px);font-weight:750;line-height:1.24}
+.gold-odds-row b{font-size:clamp(12px,.95vw,14px);color:#6745bd;white-space:nowrap;font-variant-numeric:tabular-nums}
+.gold-target-setting{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:13px;font-weight:850}
+.gold-target-setting select{min-width:260px;min-height:37px;border-radius:10px;border:1px solid #bebae6;background:white;color:#243a75;padding:7px;font:inherit}
+.gold-target-note{margin:0 0 6px}
+.gold-target-view{padding:20px 18px;background:#fbfaff;border:3px solid #aca2fa;color:#24356c;border-radius:24px;box-shadow:0 7px 0 #1510462b}
+.gold-target-heading{text-align:center;margin:0 0 14px}
+.gold-target-heading>span{font-size:13px;color:#7652d4;font-weight:950}
+.gold-target-heading h2{font-size:clamp(23px,3vw,35px);margin:5px 0;color:#382a8a}
+.gold-target-heading p{font-size:clamp(14px,1.4vw,17px);margin:5px 0 10px}
+.gold-target-clock{display:inline-block;background:#fff0b5;color:#8c5312;border-radius:999px;padding:6px 16px;font-size:17px}
+.gold-target-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;max-height:min(28dvh,235px);overflow-y:auto;padding:3px}
+.gold-target-option{min-width:0;display:flex;align-items:center;gap:7px;text-align:left;background:#eef1ff;border:2px solid #cccef7;border-radius:12px;padding:8px 9px;color:#2c3e78;font:inherit;cursor:pointer}
+.gold-target-option .avatar-image{width:36px;height:36px;flex-shrink:0}
+.gold-target-name{font-size:clamp(12px,1.2vw,16px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gold-target-gold{font-size:11px;color:#865abf;white-space:nowrap;margin-left:auto;font-weight:900}
+.gold-target-option.selected{border-color:#7552df;background:#e7dafa;box-shadow:0 0 0 2px #8e6fe5}
+.gold-target-option:disabled{cursor:default;opacity:.65}
+.gold-target-submit{display:block;position:sticky;bottom:12px;z-index:2;width:min(100%,490px);min-height:52px;margin:15px auto 9px;font-size:17px;font-weight:950}
+@media(max-width:980px){.gold-focus-odds-grid{max-height:min(48dvh,450px)}.gold-target-options{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.gold-focus-top3{gap:5px}.gold-top-card{padding:9px 3px}.gold-top-rank{font-size:14px}.gold-top-name{font-size:14px}.gold-top-amount{font-size:15px}.gold-focus-odds{padding:8px}.gold-odds-card{padding:7px}.gold-odds-row{gap:4px}.gold-target-options{grid-template-columns:1fr 1fr;max-height:27dvh}.gold-target-option{padding:6px;gap:3px}.gold-target-option .avatar-image{width:28px;height:28px}.gold-target-gold{font-size:10px}.gold-target-name{font-size:12px}}
+
+@media(max-width:700px){.gold-focus-odds-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

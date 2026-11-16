@@ -1,7 +1,7 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV4 } from './rules-v4.js';
+import { makeRulesV4 } from './rules-v4.js?v=4.8';
 import { createAvatarImage } from './avatars.js';
 
 const $ = id => document.getElementById(id);

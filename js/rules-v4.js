@@ -8,6 +8,7 @@ export function makeRulesV4(uid){
   const playing="root.child('v4/public/' + $code + '/state').val() === 'playing' && now <= root.child('v4/public/' + $code + '/endsAt').val()";
   result.rules.v4={
     versionCheck:{'.read':teacher,'.write':false},
+    targetChoiceCheck:{'.read':teacher,'.write':false},
     privateRuns:{'$code':{'.read':teacher,'.write':teacher,'$other':{'.validate':true}}},
     public:{'$code':{
       '.read':`${teacher} || (${member})`,'.write':teacher,
@@ -39,6 +40,18 @@ export function makeRulesV4(uid){
           '.write':`${owner} && !data.exists() && newData.exists() && (${member}) && (${playing}) && root.child('v4/memberState/' + $code + '/' + $uid + '/phase').val() === 'treasure' && root.child('v4/memberState/' + $code + '/' + $uid + '/nonce').val() === $nonce`,
           '.validate':"newData.hasChildren(['choice','at']) && newData.child('choice').isNumber() && newData.child('choice').val() >= 1 && newData.child('choice').val() <= 3 && newData.child('at').isNumber() && newData.child('at').val() >= now - 1000 && newData.child('at').val() <= now + 1000",
           choice:{'.validate':"newData.isNumber() && newData.val() >= 1 && newData.val() <= 3"},
+          at:{'.validate':'newData.isNumber()'},'$other':{'.validate':false}
+        }
+      }
+    }},
+    targets:{'$code':{
+      '.read':teacher,'.write':teacher,
+      '$uid':{
+        '.read':`${teacher} || (${owner})`,
+        '$nonce':{
+          '.write':`${owner} && !data.exists() && newData.exists() && (${member}) && (${playing}) && root.child('v4/memberState/' + $code + '/' + $uid + '/phase').val() === 'target' && root.child('v4/memberState/' + $code + '/' + $uid + '/nonce').val() === $nonce && now <= root.child('v4/memberState/' + $code + '/' + $uid + '/targetDeadline').val()`,
+          '.validate':"newData.hasChildren(['targetUid','at']) && newData.child('targetUid').isString() && newData.child('targetUid').val() !== $uid && root.child('v4/public/' + $code + '/scores/' + newData.child('targetUid').val()).exists() && newData.child('at').isNumber() && newData.child('at').val() >= now - 1000 && newData.child('at').val() <= now + 1000",
+          targetUid:{'.validate':"newData.isString() && newData.val().length >= 8 && newData.val().length <= 128 && newData.val() !== $uid"},
           at:{'.validate':'newData.isNumber()'},'$other':{'.validate':false}
         }
       }

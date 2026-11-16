@@ -2,15 +2,16 @@ import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { createAvatarImage } from './avatars.js';
 import { fullQuestionImageUrl } from './image-utils.js';
-import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.7';
+import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.8';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.5';
 
 const $=id=>document.getElementById(id);
 const stage=$('gold-student');
 const sound=createArcadeUi('gold-student',{role:'student',mode:'gold'});
-let code='',uid='',stopListeners=[],pub=null,own=null,ownAnswer=null,ownPick=null;
+let code='',uid='',stopListeners=[],pub=null,own=null,ownAnswer=null,ownPick=null,ownTarget=null;
 let selected='',selectedNonce='',submitting=false,picking=false,clockOffset=0,finishedShown=false;
 let pendingPickNonce='',showingRewardNonce='',revealedRewardNonce='',rewardTimer=null;
+let targetSelected='',targetSubmitting=false;
 const REWARD_DISPLAY_MS=3000;
 function closeReward({rerender=true}={}){
   if(rewardTimer){clearTimeout(rewardTimer);rewardTimer=null;}
@@ -96,6 +97,55 @@ function updateSubmitButton(){
   btn.textContent=ownAnswer||submitting?'채점을 기다리고 있어요…':'정답 제출하고 보물 찾기';
   $('gold-answer-choices').querySelectorAll('button,input').forEach(el=>el.disabled=Boolean(ownAnswer||submitting));
 }
+function renderTarget(){
+  const available=ranked().filter(player=>player.uid!==uid);
+  const options=$('gold-target-options');
+  if(options.dataset.nonce!==own?.nonce){
+    options.dataset.nonce=own?.nonce||'';options.replaceChildren();targetSelected='';
+    available.forEach(player=>{
+      const btn=element('button','gold-target-option');btn.type='button';btn.dataset.target=player.uid;
+      const photo=createAvatarImage(player.avatarId,{size:'sm',decorative:true});
+      const name=element('strong','gold-target-name',player.name);
+      const amount=element('span','gold-target-gold',`${Math.floor(Number(player.gold||0)).toLocaleString('ko-KR')} G`);
+      btn.append(photo,name,amount);
+      btn.addEventListener('click',()=>{
+        if(ownTarget||targetSubmitting)return;
+        targetSelected=player.uid;sound.choice();
+        options.querySelectorAll('button').forEach(node=>node.classList.toggle('selected',node.dataset.target===targetSelected));
+        updateTargetButton();
+      });
+      options.append(btn);
+    });
+  }
+  // Preserve scroll and selection while updating live balance text.
+  options.querySelectorAll('[data-target]').forEach(btn=>{
+    const person=pub?.scores?.[btn.dataset.target];
+    if(person)btn.querySelector('.gold-target-gold').textContent=`${Math.floor(Number(person.gold||0)).toLocaleString('ko-KR')} G`;
+  });
+  const offer=own?.pendingOutcome||{};
+  $('gold-target-title').textContent=offer.type==='swap'?'누구와 골드를 교환할까요?':'누구의 골드를 가져올까요?';
+  $('gold-target-description').textContent=offer.type==='swap'
+    ?'선택한 친구와 보유 골드 전체를 서로 교환합니다.'
+    :`선택한 친구의 보유 골드 ${Math.round(Number(offer.fraction||0)*100)}%를 가져옵니다.`;
+  const remaining=Math.max(0,Math.ceil((Number(own?.targetDeadline||0)-clientTime())/1000));
+  $('gold-target-clock').textContent=remaining>0?`${remaining}초 안에 선택`:'자동 선택 중…';
+  $('gold-target-feedback').textContent=ownTarget||targetSubmitting?'선택한 상대에게 보상을 적용하는 중입니다…':'시간 안에 선택하지 않으면 무작위로 결정됩니다.';
+  updateTargetButton();
+}
+function updateTargetButton(){
+  const expired=Number(own?.targetDeadline||0)<=clientTime();
+  $('gold-target-submit').disabled=Boolean(!targetSelected||ownTarget||targetSubmitting||expired);
+  $('gold-target-options').querySelectorAll('button').forEach(btn=>btn.disabled=Boolean(ownTarget||targetSubmitting||expired));
+}
+async function selectTarget(){
+  if(!code||!uid||own?.phase!=='target'||!targetSelected||ownTarget||targetSubmitting||clientTime()>Number(own.targetDeadline||0))return;
+  const nonce=own.nonce,targetUid=targetSelected;targetSubmitting=true;render();
+  try{
+    await set(ref(db,`v4/targets/${code}/${uid}/${nonce}`),{targetUid,at:serverTimestamp()});
+    message('상대를 선택했습니다! 보상을 적용하는 중입니다.');
+  }catch(err){message('상대 선택 실패: '+formatError(err),'error');}
+  finally{targetSubmitting=false;render();}
+}
 function render(){
   if(!code||!uid)return;
   const phase=pub?.state||'ready';
@@ -107,8 +157,9 @@ function render(){
   const me=pub?.scores?.[uid];
   $('gold-my-coins').textContent=`${Number(me?.gold||0).toLocaleString('ko-KR')} G`;
   $('gold-my-progress').textContent=`정답 ${me?.correct||0} / 풀이 ${me?.answered||0}`;
-  $('gold-student-question-view').hidden=phase==='finished'||own?.phase==='treasure'||own?.phase==='waiting';
+  $('gold-student-question-view').hidden=phase==='finished'||own?.phase!=='question';
   $('gold-student-treasure-view').hidden=phase==='finished'||own?.phase!=='treasure';
+  $('gold-student-target-view').hidden=phase==='finished'||own?.phase!=='target';
   $('gold-student-finish-view').hidden=phase!=='finished';
   $('gold-student-wait-view').hidden=phase==='finished'||!(own?.phase==='waiting'||!own);
   if(phase==='finished'){
@@ -133,6 +184,7 @@ function render(){
       message('정답을 선택하거나 입력해 주세요.');
     }else updateSubmitButton();
   }
+  if(own?.phase==='target')renderTarget();
   if(own?.phase==='treasure'){
     $('gold-chest-feedback').textContent=ownPick||picking?'보물상자를 여는 중…':'세 개 중 하나를 선택해 주세요!';
     $('gold-chest-buttons').querySelectorAll('button').forEach(btn=>btn.disabled=Boolean(ownPick||picking));
@@ -158,27 +210,38 @@ async function pick(choice){
 export function stopGoldView(){
   for(const un of stopListeners)un();stopListeners=[];
   closeReward({rerender:false});revealedRewardNonce='';
-  code='';uid='';pub=null;own=null;ownAnswer=null;ownPick=null;selected='';selectedNonce='';submitting=false;picking=false;finishedShown=false;
+  code='';uid='';pub=null;own=null;ownAnswer=null;ownPick=null;ownTarget=null;selected='';selectedNonce='';submitting=false;picking=false;targetSelected='';targetSubmitting=false;finishedShown=false;
+  $('gold-target-options').dataset.nonce='';
   $('gold-answer-choices').dataset.nonce='';sound.reset();show(false);
 }
 export function startGoldView(roomCode,userUid){
   stopGoldView();code=roomCode;uid=userUid;
   const c=code,u=uid;
+  let targetUnsub=null;
+  stopListeners.push(()=>{if(targetUnsub)targetUnsub();});
   const watch=(path,callback)=>stopListeners.push(onValue(ref(db,path),snap=>{if(code===c&&uid===u){callback(snap.val());render();}},err=>message('실시간 연결 오류: '+formatError(err),'error')));
   watch(`v4/public/${c}`,value=>pub=value);
   watch(`v4/memberState/${c}/${u}`,value=>{
     const old=own?.nonce;own=value;
-    if(old!==own?.nonce){selected='';selectedNonce='';ownAnswer=null;ownPick=null;$('gold-answer-choices').dataset.nonce='';}
+    if(old!==own?.nonce){selected='';selectedNonce='';ownAnswer=null;ownPick=null;ownTarget=null;targetSelected='';$('gold-answer-choices').dataset.nonce='';$('gold-target-options').dataset.nonce='';}
+    // v4.7 rooms have no /targets permission, so never subscribe until needed.
+    if(own?.phase==='target'&&!targetUnsub){
+      targetUnsub=onValue(ref(db,`v4/targets/${c}/${u}`),snap=>{
+        if(code===c&&uid===u){ownTarget=snap.val()?.[own?.nonce]||null;render();}
+      },err=>message('상대 선택 기록 읽기 실패: '+formatError(err),'error'));
+    }
   });
   watch(`v4/answers/${c}/${u}`,value=>ownAnswer=value?.[own?.nonce]||null);
   watch(`v4/picks/${c}/${u}`,value=>ownPick=value?.[own?.nonce]||null);
 }
 $('gold-submit').addEventListener('click',()=>void submit());
+$('gold-target-submit').addEventListener('click',()=>void selectTarget());
 $('gold-reward-next').addEventListener('click',()=>closeReward());
 $('gold-chest-buttons').querySelectorAll('[data-chest]').forEach(button=>button.addEventListener('click',()=>void pick(Number(button.dataset.chest))));
 setInterval(()=>{
   if(!code||!uid||pub?.state!=='playing')return;
   const remain=Math.max(0,Math.ceil((Number(pub.endsAt||0)-clientTime())/1000));
   $('gold-student-clock').textContent=`${Math.floor(remain/60)}:${String(remain%60).padStart(2,'0')}`;
+  if(own?.phase==='target')renderTarget();
 },500);
 if(db)onValue(ref(db,'.info/serverTimeOffset'),snap=>clockOffset=Number(snap.val()||0));

@@ -147,6 +147,17 @@ export function chooseGoldOutcome(random=Math.random,{allowInteractions=true,pla
   return {...candidates[candidates.length-1]};
 }
 
+// Effective percentages: disallowed interactions are removed and weights renormalized.
+export function goldRewardOdds({allowInteractions=true,playerCount=1}={}){
+  const pool=GOLD_REWARD_TABLE.filter(entry=>
+    (allowInteractions&&playerCount>1) || !['steal','swap'].includes(entry.type));
+  const total=pool.reduce((sum,entry)=>sum+entry.weight,0);
+  return pool.map(entry=>({...entry,percent:total?entry.weight/total*100:0}));
+}
+export function validGoldTarget(scores,actorUid,targetUid){
+  return Boolean(targetUid&&targetUid!==actorUid&&Object.prototype.hasOwnProperty.call(scores||{},targetUid));
+}
+
 // Returns new scores without mutating the input. Percentage rewards are floored
 // to whole gold to avoid stealing/spending more than a player owns.
 export function applyGoldOutcome(scores,actorUid,outcome,targetUid=''){
@@ -155,7 +166,7 @@ export function applyGoldOutcome(scores,actorUid,outcome,targetUid=''){
   const own=roster[actorUid];
   const current=uid=>Math.max(0,Math.floor(Number(roster[uid]?.gold||0)));
   const startedGold=current(actorUid);
-  const validTarget=targetUid&&targetUid!==actorUid&&roster[targetUid];
+  const validTarget=validGoldTarget(roster,actorUid,targetUid);
   let message='',affected=[actorUid];
   const percent=fraction=>Math.max(0,Math.min(1,Number(fraction)||0));
   if(outcome?.type==='coins'){
