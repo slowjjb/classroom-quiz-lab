@@ -109,7 +109,7 @@ export function displayedGoldCorrectIndex(question,optionOrder){
   return displayed>=0?displayed+1:original;
 }
 
-// Purplekit v4.10: exactly 2000 integer-weighted chances per chest (1 weight = 0.05%).
+// Purplekit v4.11: exactly 2000 integer-weighted chances per chest (1 weight = 0.05%).
 // Probabilities apply independently to each chosen chest; all three have the same table.
 // Interactions that are disabled or impossible (one player) are excluded and
 // the remaining outcomes are renormalized. There is no hidden minimum payout.

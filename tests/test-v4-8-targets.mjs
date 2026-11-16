@@ -44,7 +44,7 @@ for(const outcome of [{type:'steal',fraction:.5},{type:'swap'}]){
 assert.match(host,/targetMode\s*===\s*['"]choose['"]/);
 assert.match(host,/pendingOutcome/);
 assert.match(host,/TARGET_WAIT_MS\s*=\s*15000/);
-assert.match(host,/processTarget\(uid,state,targets\?\.\[uid\]\?\.\[state\.nonce\]/);
+assert.match(host,/processTarget\(job\.uid,job\.state,job\.selection\)/);
 assert.match(host,/runTransaction\(scoreRef/);
 assert.match(host,/lastRewardNonce\s*===\s*nonce/);
 assert.match(host,/targetChoiceCheck/);

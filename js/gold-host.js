@@ -1,31 +1,31 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.10';
+import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.11';
 import { optionsArray, escapeCsv } from './classic-core.js';
-import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=4.10';
+import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=4.11';
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
-import { makeRulesV4 } from './rules-v4.js?v=4.10';
+import { makeRulesV4 } from './rules-v4.js?v=4.11';
 
 const $=id=>document.getElementById(id);
 const arcade=createArcadeUi('gold-focus',{role:'teacher',mode:'gold'});
 let teacher=null,code='',room=null,run=null,pub=null,states={},answers={},picks={},targets={};
-let ready=false,unsubs=[],metaUnsub=null,targetUnsub=null,modeHint='',rightsState='idle',processLock=false,operation=false,offset=0,focusOpen=false,checkToken=0;
+let ready=false,unsubs=[],metaUnsub=null,targetSubs=new Map(),modeHint='',rightsState='idle',processLock=false,operation=false,offset=0,focusOpen=false,checkToken=0;
 let processingKeys=new Set(),previousRankSignature='',lastFinished=false;
-let podiumCollapsed=false,resultsMode='first',hideResultsNames=false,oddsSignature='';
+let podiumCollapsed=false,resultsMode='first',hideResultsNames=false,oddsSignature='',settingsOddsSignature='';
 const TARGET_WAIT_MS=15000;
 const roomCode=()=>code;
 function notify(text,type=''){$('gold-message').textContent=text;$('gold-message').dataset.kind=type;}
 function stop(){
   ++checkToken;
   if(metaUnsub){metaUnsub();metaUnsub=null;}
-  if(targetUnsub){targetUnsub();targetUnsub=null;}
+  for(const {unsub} of targetSubs.values())unsub();targetSubs.clear();
   for(const unsubscribe of unsubs)unsubscribe();
   unsubs=[];room=null;run=null;pub=null;states={};answers={};picks={};targets={};ready=false;
   rightsState='idle';processLock=false;processingKeys.clear();previousRankSignature='';
-  lastFinished=false;focusOpen=false;podiumCollapsed=false;oddsSignature='';$('gold-focus').hidden=true;
+  lastFinished=false;focusOpen=false;podiumCollapsed=false;oddsSignature='';settingsOddsSignature='';$('gold-focus').hidden=true;
   document.body.classList.remove('quiz-stage-active');arcade.reset();
 }
 // v2 room metadata is already readable with the existing classroom rules.
@@ -50,6 +50,35 @@ function bindRoom(next,hint=''){
   if(code&&teacher){watchRoomMeta();void checkRights();}
   render();
 }
+// Subscribe only to the pending decision for each active student.
+// The former single listener on /v4/targets/{room} retransmitted the entire
+// growing choice history on every choice, which is unnecessary during class.
+function syncTargetSubscriptions(){
+  const desired=new Map();
+  if(run?.targetMode==='choose'){
+    for(const [uid,state] of Object.entries(states||{})){
+      if(state?.phase==='target'&&state.nonce)desired.set(uid,state.nonce);
+    }
+  }
+  for(const [uid,sub] of targetSubs){
+    if(desired.get(uid)!==sub.nonce){
+      sub.unsub();targetSubs.delete(uid);delete targets[uid];
+    }
+  }
+  for(const [uid,nonce] of desired){
+    if(targetSubs.has(uid))continue;
+    const roomCode=code;
+    const choiceRef=ref(db,`v4/targets/${roomCode}/${uid}/${nonce}`);
+    const unsub=onValue(choiceRef,snap=>{
+      if(code!==roomCode)return;
+      if(!targets[uid])targets[uid]={};
+      if(snap.exists())targets[uid][nonce]=snap.val();
+      else delete targets[uid][nonce];
+      void pump();
+    },err=>notify('학생 상대 선택 기록 읽기 실패: '+formatError(err),'error'));
+    targetSubs.set(uid,{nonce,unsub});
+  }
+}
 function watch(){
   if(!ready||!teacher||!code)return;
   const c=code;
@@ -60,10 +89,10 @@ function watch(){
     const value=snap.val();
     if(key==='room')room=value;else if(key==='run')run=value;else if(key==='pub')pub=value;
     else if(key==='states')states=value||{};else if(key==='answers')answers=value||{};else if(key==='picks')picks=value||{};
-    if(key==='run'&&run?.targetMode==='choose'&&!targetUnsub){
-      targetUnsub=onValue(ref(db,`v4/targets/${c}`),snap=>{if(code!==c)return;targets=snap.val()||{};void pump();},err=>notify('학생 상대 선택 기록 읽기 실패: '+formatError(err),'error'));
-    }
-    render();void pump();
+    if(key==='run'||key==='states')syncTargetSubscriptions();
+    // Answers/picks/state callbacks do not change the teacher's leaderboard UI.
+    if(key==='room'||key==='run'||key==='pub')render();
+    void pump();
   },err=>notify('골드 퀘스트 읽기 실패: '+formatError(err),'error')));
 }
 async function checkRights(){
@@ -121,6 +150,7 @@ function render(){
   $('gold-focus-open').disabled=!run;
   $('gold-settings').hidden=Boolean(run);
   $('gold-target-mode').disabled=!$('gold-interactions').checked;
+  renderSettingsOdds();
   $('gold-count').textContent=`${Object.keys(run?.roster||{}).length}명 · ${run?.questions?.length||0}문항`;
   $('gold-live-count').textContent=`${Object.values(pub?.scores||{}).reduce((n,x)=>n+Number(x.answered||0),0)}회 풀이`;
   rankRows($('gold-live-ranking'));
@@ -139,6 +169,30 @@ function updateGoldTop3(state,alias){
     const gold=document.createElement('b');gold.className='gold-top-amount';gold.textContent=`${Number(player.gold||0).toLocaleString('ko-KR')} G`;
     item.append(rank,name,gold);container.append(item);
   });
+}
+function renderSettingsOdds(){
+  const container=$('gold-odds-settings');if(!container)return;
+  const allowed=$('gold-interactions').checked;
+  const key=String(allowed);
+  if(key===settingsOddsSignature)return;
+  settingsOddsSignature=key;
+  const current=goldRewardOdds({allowInteractions:allowed,playerCount:20});
+  const groups=[
+    ['골드 획득',x=>x.type==='coins'],
+    ['배수·빈 상자',x=>x.type==='multiply'||x.type==='empty'],
+    ['빼앗기·교환',x=>x.type==='steal'||x.type==='swap'],
+    ['내 골드 잃기',x=>x.type==='lose']
+  ];
+  container.replaceChildren();
+  const fmt=p=>Number(p.toFixed(4)).toString()+'%';
+  for(const [title,filter] of groups){
+    const items=current.filter(filter);
+    if(!items.length)continue;
+    const block=document.createElement('div'),heading=document.createElement('strong');
+    const paragraph=document.createElement('p');heading.textContent=title;
+    paragraph.textContent=items.map(x=>`${x.label} ${fmt(x.percent)}`).join(' · ');
+    block.append(heading,paragraph);container.append(block);
+  }
 }
 function updateGoldOdds(){
   const isOn=run?.allowInteractions!==false;
@@ -479,20 +533,52 @@ async function processTarget(uid,state,selection,{force=false}={}){
     await payGoldReward(uid,state,state.pendingOutcome,selected,state.targetChoice);
   }catch(err){processingKeys.delete(key);notify('선택 대상 보상 처리 오류: '+formatError(err),'error');}
 }
+// Teacher-side payout stays single-writer, preserving the score-tree transaction
+// and exact nonce checks. A new target choice jumps ahead of queued answers
+// instead of waiting for the fixed student-roster order to finish.
+function nextGoldJob(attempted){
+  const jobs=[];
+  for(const uid of Object.keys(run?.roster||{})){
+    const state=states?.[uid];if(!state?.nonce)continue;
+    const nonce=state.nonce;
+    if(state.phase==='target'){
+      const selection=targets?.[uid]?.[nonce];
+      const isDue=Date.now()+offset>=Number(state.targetDeadline||0);
+      if(selection?.targetUid||isDue){
+        const key=`target/${uid}/${nonce}`;
+        if(!attempted.has(key)&&!processingKeys.has(key))jobs.push({uid,state,selection,key,priority:selection?.targetUid?0:1,type:'target'});
+      }
+    }else if(state.phase==='treasure'&&picks?.[uid]?.[nonce]){
+      const key=`pick/${uid}/${nonce}`;
+      if(!attempted.has(key)&&!processingKeys.has(key))jobs.push({uid,state,key,priority:2,type:'treasure',pick:picks[uid][nonce]});
+    }else if(state.phase==='question'&&answers?.[uid]?.[nonce]){
+      const key=`answer/${uid}/${nonce}`;
+      if(!attempted.has(key)&&!processingKeys.has(key))jobs.push({uid,state,key,priority:3,type:'answer',answer:answers[uid][nonce]});
+    }
+  }
+  jobs.sort((a,b)=>a.priority-b.priority);
+  return jobs[0];
+}
 async function pump(){
   if(processLock||!ready||!run||pub?.state!=='playing'||!code)return;
   processLock=true;
+  const attempted=new Set();
   try{
-    const ids=Object.keys(run?.roster||{});
-    for(const uid of ids){
-      if(pub?.state!=='playing')break;
-      const state=states?.[uid];if(!state?.nonce)continue;
-      if(state.phase==='question'&&answers?.[uid]?.[state.nonce])await processAnswer(uid,state,answers[uid][state.nonce]);
-      else if(state.phase==='treasure'&&picks?.[uid]?.[state.nonce])await processTreasure(uid,state,picks[uid][state.nonce]);
-      else if(state.phase==='target')await processTarget(uid,state,targets?.[uid]?.[state.nonce]);
+    // Re-check live snapshots after every awaited operation; this lets a target
+    // selected during another student's payout be handled next. Erroring jobs
+    // are attempted only once per pass; the next 250ms poll may retry them.
+    const limit=Math.max(40,Object.keys(run?.roster||{}).length*4);
+    for(let n=0;n<limit&&pub?.state==='playing';n++){
+      const job=nextGoldJob(attempted);
+      if(!job)break;
+      attempted.add(job.key);
+      if(job.type==='target')await processTarget(job.uid,job.state,job.selection);
+      else if(job.type==='treasure')await processTreasure(job.uid,job.state,job.pick);
+      else await processAnswer(job.uid,job.state,job.answer);
     }
   }finally{processLock=false;}
 }
+
 function clockTick(){
   if(!ready||!code||!run||pub?.state!=='playing')return;
   const seconds=Math.ceil((Number(pub.endsAt||0)-(Date.now()+offset))/1000);

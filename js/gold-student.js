@@ -2,7 +2,7 @@ import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { createAvatarImage } from './avatars.js';
 import { fullQuestionImageUrl } from './image-utils.js';
-import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.10';
+import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.11';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.5';
 
 const $=id=>document.getElementById(id);
@@ -11,7 +11,7 @@ const sound=createArcadeUi('gold-student',{role:'student',mode:'gold'});
 let code='',uid='',stopListeners=[],pub=null,own=null,ownAnswer=null,ownPick=null,ownTarget=null;
 let selected='',selectedNonce='',submitting=false,picking=false,clockOffset=0,finishedShown=false;
 let pendingPickNonce='',showingRewardNonce='',revealedRewardNonce='',rewardTimer=null;
-let targetSelected='',targetSubmitting=false,studentStudyMode='first';
+let targetSelected='',targetSubmitting=false,targetSentNonce='',studentStudyMode='first';
 const REWARD_DISPLAY_MS=3800;
 function closeReward({rerender=true}={}){
   if(rewardTimer){clearTimeout(rewardTimer);rewardTimer=null;}
@@ -152,7 +152,7 @@ function renderTarget(){
       const amount=element('span','gold-target-gold',`${Math.floor(Number(player.gold||0)).toLocaleString('ko-KR')} G`);
       btn.append(photo,name,amount);
       btn.addEventListener('click',()=>{
-        if(ownTarget||targetSubmitting)return;
+        if(ownTarget||targetSubmitting||targetSentNonce===own?.nonce)return;
         targetSelected=player.uid;sound.choice();
         options.querySelectorAll('button').forEach(node=>node.classList.toggle('selected',node.dataset.target===targetSelected));
         updateTargetButton();
@@ -172,20 +172,22 @@ function renderTarget(){
     :`선택한 친구의 보유 골드 ${Math.round(Number(offer.fraction||0)*100)}%를 가져옵니다.`;
   const remaining=Math.max(0,Math.ceil((Number(own?.targetDeadline||0)-clientTime())/1000));
   $('gold-target-clock').textContent=remaining>0?`${remaining}초 안에 선택`:'자동 선택 중…';
-  $('gold-target-feedback').textContent=ownTarget||targetSubmitting?'선택한 상대에게 보상을 적용하는 중입니다…':'시간 안에 선택하지 않으면 무작위로 결정됩니다.';
+  $('gold-target-feedback').textContent=(ownTarget||targetSentNonce===own?.nonce)?'선택을 접수했습니다. 보상 적용을 기다리고 있어요…':targetSubmitting?'선택을 보내는 중입니다…':'시간 안에 선택하지 않으면 무작위로 결정됩니다.';
   updateTargetButton();
 }
 function updateTargetButton(){
   const expired=Number(own?.targetDeadline||0)<=clientTime();
-  $('gold-target-submit').disabled=Boolean(!targetSelected||ownTarget||targetSubmitting||expired);
-  $('gold-target-options').querySelectorAll('button').forEach(btn=>btn.disabled=Boolean(ownTarget||targetSubmitting||expired));
+  const locked=Boolean(ownTarget||targetSubmitting||targetSentNonce===own?.nonce||expired);
+  $('gold-target-submit').disabled=Boolean(!targetSelected||locked);
+  $('gold-target-options').querySelectorAll('button').forEach(btn=>btn.disabled=locked);
 }
 async function selectTarget(){
-  if(!code||!uid||own?.phase!=='target'||!targetSelected||ownTarget||targetSubmitting||clientTime()>Number(own.targetDeadline||0))return;
+  if(!code||!uid||own?.phase!=='target'||!targetSelected||ownTarget||targetSubmitting||targetSentNonce===own?.nonce||clientTime()>Number(own.targetDeadline||0))return;
   const nonce=own.nonce,targetUid=targetSelected;targetSubmitting=true;render();
   try{
     await set(ref(db,`v4/targets/${code}/${uid}/${nonce}`),{targetUid,at:serverTimestamp()});
-    message('상대를 선택했습니다! 보상을 적용하는 중입니다.');
+    targetSentNonce=nonce;
+    message('상대 선택이 접수되었습니다. 보상 적용을 기다리고 있어요.');
   }catch(err){message('상대 선택 실패: '+formatError(err),'error');}
   finally{targetSubmitting=false;render();}
 }
@@ -254,7 +256,7 @@ async function pick(choice){
 export function stopGoldView(){
   for(const un of stopListeners)un();stopListeners=[];
   closeReward({rerender:false});revealedRewardNonce='';
-  code='';uid='';pub=null;own=null;ownAnswer=null;ownPick=null;ownTarget=null;selected='';selectedNonce='';submitting=false;picking=false;targetSelected='';targetSubmitting=false;finishedShown=false;
+  code='';uid='';pub=null;own=null;ownAnswer=null;ownPick=null;ownTarget=null;selected='';selectedNonce='';submitting=false;picking=false;targetSelected='';targetSubmitting=false;targetSentNonce='';finishedShown=false;
   studentStudyMode='first';$('gold-student-study-mode').value='first';
   $('gold-target-options').dataset.nonce='';
   $('gold-answer-choices').dataset.nonce='';sound.reset();show(false);
@@ -264,11 +266,13 @@ export function startGoldView(roomCode,userUid){
   const c=code,u=uid;
   let targetUnsub=null;
   stopListeners.push(()=>{if(targetUnsub)targetUnsub();});
-  const watch=(path,callback)=>stopListeners.push(onValue(ref(db,path),snap=>{if(code===c&&uid===u){callback(snap.val());render();}},err=>message('실시간 연결 오류: '+formatError(err),'error')));
+  let queued=false;
+  const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;if(code===c&&uid===u)render();});};
+  const watch=(path,callback)=>stopListeners.push(onValue(ref(db,path),snap=>{if(code===c&&uid===u){callback(snap.val());schedule();}},err=>message('실시간 연결 오류: '+formatError(err),'error')));
   watch(`v4/public/${c}`,value=>pub=value);
   watch(`v4/memberState/${c}/${u}`,value=>{
     const old=own?.nonce;own=value;
-    if(old!==own?.nonce){selected='';selectedNonce='';ownAnswer=null;ownPick=null;ownTarget=null;targetSelected='';$('gold-answer-choices').dataset.nonce='';$('gold-target-options').dataset.nonce='';}
+    if(old!==own?.nonce){selected='';selectedNonce='';ownAnswer=null;ownPick=null;ownTarget=null;targetSelected='';targetSentNonce='';$('gold-answer-choices').dataset.nonce='';$('gold-target-options').dataset.nonce='';}
     // v4.7 rooms have no /targets permission, so never subscribe until needed.
     if(own?.phase==='target'&&!targetUnsub){
       targetUnsub=onValue(ref(db,`v4/targets/${c}/${u}`),snap=>{
@@ -288,6 +292,11 @@ setInterval(()=>{
   if(!code||!uid||pub?.state!=='playing')return;
   const remain=Math.max(0,Math.ceil((Number(pub.endsAt||0)-clientTime())/1000));
   $('gold-student-clock').textContent=`${Math.floor(remain/60)}:${String(remain%60).padStart(2,'0')}`;
-  if(own?.phase==='target')renderTarget();
+  if(own?.phase==='target'){
+    // The countdown changes every half-second, but all 20 avatars do not.
+    const remaining=Math.max(0,Math.ceil((Number(own.targetDeadline||0)-clientTime())/1000));
+    $('gold-target-clock').textContent=remaining>0?`${remaining}초 안에 선택`:'자동 선택 중…';
+    if(remaining<=0)updateTargetButton();
+  }
 },500);
 if(db)onValue(ref(db,'.info/serverTimeOffset'),snap=>clockOffset=Number(snap.val()||0));
