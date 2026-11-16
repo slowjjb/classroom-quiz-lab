@@ -2,7 +2,7 @@ import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { createAvatarImage } from './avatars.js';
 import { fullQuestionImageUrl } from './image-utils.js';
-import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.8';
+import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.9';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.5';
 
 const $=id=>document.getElementById(id);
@@ -11,7 +11,7 @@ const sound=createArcadeUi('gold-student',{role:'student',mode:'gold'});
 let code='',uid='',stopListeners=[],pub=null,own=null,ownAnswer=null,ownPick=null,ownTarget=null;
 let selected='',selectedNonce='',submitting=false,picking=false,clockOffset=0,finishedShown=false;
 let pendingPickNonce='',showingRewardNonce='',revealedRewardNonce='',rewardTimer=null;
-let targetSelected='',targetSubmitting=false;
+let targetSelected='',targetSubmitting=false,studentStudyMode='first';
 const REWARD_DISPLAY_MS=3000;
 function closeReward({rerender=true}={}){
   if(rewardTimer){clearTimeout(rewardTimer);rewardTimer=null;}
@@ -61,6 +61,47 @@ function rankList(container,limit=10){
     line.append(rank,createAvatarImage(player.avatarId,{size:'sm',decorative:true}),title,coins);container.append(line);
   });
 }
+// The teacher publishes aggregate results in v4/public when the game ends.
+// Students never subscribe to raw answer logs or correct-answer values.
+function renderStudentStudy(){
+  const summary=$('gold-student-study-summary');
+  const students=$('gold-student-study-students');
+  const questions=$('gold-student-study-questions');
+  students.replaceChildren();questions.replaceChildren();
+  const report=pub?.learningResults?.[studentStudyMode];
+  if(!report){
+    summary.textContent='이 방에는 공유된 학습 분석 자료가 없습니다. v4.9 이후 새로 종료한 게임부터 표시됩니다.';
+    return;
+  }
+  const figures=report.summary||{};
+  const kind=studentStudyMode==='first'?'첫 시도':'전체 시도';
+  summary.textContent=`${kind} 기준 · 정답 ${figures.correct||0}/${figures.total||0}회 · 전체 정답률 ${figures.rate==null?'—':figures.rate+'%'}`;
+  const toArray=value=>Array.isArray(value)?value:Object.values(value||{});
+  function appendRow(container,label,detail,rate,tier,self=false){
+    const row=element('div','gold-accuracy-row'+(self?' gold-study-self':''));
+    const head=element('div','gold-accuracy-head');
+    const name=element('strong','',label);name.title=label;
+    const percent=element('b','tier-text-'+(tier||'none'),rate==null?'—':`${rate}%`);
+    head.append(name,percent);
+    const track=element('div','gold-accuracy-bar');
+    const fill=element('span','gold-accuracy-fill tier-'+(tier||'none'));
+    fill.style.width=rate==null?'0%':`${Math.max(0,Math.min(100,Number(rate)||0))}%`;
+    track.append(fill);
+    row.append(head,track,element('small','',detail));container.append(row);
+  }
+  toArray(report.students).sort((a,b)=>a.rate==null?1:b.rate==null?-1:Number(b.rate)-Number(a.rate)||String(a.name).localeCompare(String(b.name),'ko'))
+    .forEach(entry=>appendRow(students,
+      (entry.uid===uid?'나 · ':'')+String(entry.name||'참가자'),
+      `${entry.correct||0}/${entry.total||0}회 정답 · 고유 ${entry.uniqueQuestions||0}문항`,
+      entry.rate,entry.tier,entry.uid===uid));
+  toArray(report.questions).sort((a,b)=>Number(a.number)-Number(b.number)).forEach(entry=>{
+    const prompt=String(entry.prompt||'');
+    appendRow(questions,`${entry.number}번 · ${prompt}`,
+      entry.total?`${entry.correct||0}/${entry.total}회 정답 · ${entry.students||0}명 도전`:'아직 푼 학생이 없습니다.',
+      entry.rate,entry.tier);
+  });
+}
+
 function renderQuestion(){
   const question=$('gold-question');question.textContent=own?.prompt||'문제를 기다리는 중입니다.';
   const options=$('gold-answer-choices');options.replaceChildren();
@@ -165,7 +206,8 @@ function render(){
   if(phase==='finished'){
     sound.sync({state:'finished',questionId:'gold-ended'});
     if(!finishedShown){renderPodium($('gold-student-podium'),ranked().map(p=>({...p,score:Number(p.gold||0)})));finishedShown=true;}
-    rankList($('gold-student-final-ranking'),100);return;
+    rankList($('gold-student-final-ranking'),100);
+    renderStudentStudy();return;
   }
   // Do not announce the next question while the large reward result is visible.
   if(!showingRewardNonce)sound.sync({state:'question',questionId:own?.nonce||'wait'});
@@ -211,6 +253,7 @@ export function stopGoldView(){
   for(const un of stopListeners)un();stopListeners=[];
   closeReward({rerender:false});revealedRewardNonce='';
   code='';uid='';pub=null;own=null;ownAnswer=null;ownPick=null;ownTarget=null;selected='';selectedNonce='';submitting=false;picking=false;targetSelected='';targetSubmitting=false;finishedShown=false;
+  studentStudyMode='first';$('gold-student-study-mode').value='first';
   $('gold-target-options').dataset.nonce='';
   $('gold-answer-choices').dataset.nonce='';sound.reset();show(false);
 }
@@ -234,6 +277,7 @@ export function startGoldView(roomCode,userUid){
   watch(`v4/answers/${c}/${u}`,value=>ownAnswer=value?.[own?.nonce]||null);
   watch(`v4/picks/${c}/${u}`,value=>ownPick=value?.[own?.nonce]||null);
 }
+$('gold-student-study-mode').addEventListener('change',event=>{studentStudyMode=event.target.value==='all'?'all':'first';if(pub?.state==='finished')renderStudentStudy();});
 $('gold-submit').addEventListener('click',()=>void submit());
 $('gold-target-submit').addEventListener('click',()=>void selectTarget());
 $('gold-reward-next').addEventListener('click',()=>closeReward());

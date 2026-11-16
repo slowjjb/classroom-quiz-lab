@@ -37,6 +37,6 @@ assert.match(host,/shuffleGoldChoices\(question\.options,optionHistory\[key\],Ma
 assert.match(host,/verifyGoldAnswer\(q,submission\.value,state\.optionOrder\)/);
 const rooms=readFileSync(new URL('../rooms.html',import.meta.url),'utf8');
 const join=readFileSync(new URL('../join.html',import.meta.url),'utf8');
-assert.match(rooms,/js\/gold-host\.js\?v=4\.[78]/);
-assert.match(join,/js\/join\.js\?v=4\.[78]/);
+assert.match(rooms,/js\/gold-host\.js\?v=4\.[789]/);
+assert.match(join,/js\/join\.js\?v=4\.[789]/);
 console.log('v4.7: 24 unique layouts, 4 correct slots per block, teacher grading, JSON persistence, cache busting: PASS');

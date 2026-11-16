@@ -52,7 +52,7 @@ export function buildGoldAccuracy({roster={},scores={},questions=[],answersLog={
     return {uid,name:typeof name==='string'?name:(name?.name||scores?.[uid]?.name||'참가자'),
       avatarId:scores?.[uid]?.avatarId||'a01',...statsFor(current),
       attempts:total.length,uniqueQuestions:new Set(total.map(a=>a.index)).size};
-  }).sort((a,b)=>a.rate===null?1:b.rate===null?-1:a.rate-b.rate||a.name.localeCompare(b.name,'ko'));
+  }).sort((a,b)=>a.rate===null?1:b.rate===null?-1:b.rate-a.rate||a.name.localeCompare(b.name,'ko'));
   const questionStats=list.map((q,index)=>({
     index,number:Number(q?.number)||index+1,prompt:String(q?.prompt||''),
     ...statsFor(selected.filter(a=>a.index===index)),
@@ -62,4 +62,20 @@ export function buildGoldAccuracy({roster={},scores={},questions=[],answersLog={
   const summary=statsFor(selected);
   return {mode,students,questions:questionStats,summary,
     allAttempts:all.length,firstAttempts:first.length,participantCount:students.length};
+}
+
+// v4.9: One-time, read-only learning summary for the completed student screen.
+// Do NOT publish answersLog, submitted values, or the answer key.
+export function makeGoldPublicLearningResults(data={}){
+  const summarize=mode=>{
+    const result=buildGoldAccuracy({...data,mode});
+    return {
+      summary:{correct:result.summary.correct,total:result.summary.total,rate:result.summary.rate},
+      students:result.students.map(({uid,name,correct,total,rate,tier,attempts,uniqueQuestions})=>
+        ({uid,name,correct,total,rate,tier,attempts,uniqueQuestions})),
+      questions:result.questions.map(({number,prompt,correct,total,rate,tier,students})=>
+        ({number,prompt,correct,total,rate,tier,students}))
+    };
+  };
+  return {version:1,first:summarize('first'),all:summarize('all')};
 }

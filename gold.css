@@ -212,3 +212,27 @@
 @media(max-width:620px){.gold-focus-top3{gap:5px}.gold-top-card{padding:9px 3px}.gold-top-rank{font-size:14px}.gold-top-name{font-size:14px}.gold-top-amount{font-size:15px}.gold-focus-odds{padding:8px}.gold-odds-card{padding:7px}.gold-odds-row{gap:4px}.gold-target-options{grid-template-columns:1fr 1fr;max-height:27dvh}.gold-target-option{padding:6px;gap:3px}.gold-target-option .avatar-image{width:28px;height:28px}.gold-target-gold{font-size:10px}.gold-target-name{font-size:12px}}
 
 @media(max-width:700px){.gold-focus-odds-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* v4.9 · read-only learning results on the student's Gold Quest finish view */
+.gold-student-study{margin:22px auto 10px;max-width:1250px;text-align:left;padding:17px;border-radius:20px;background:#edf1ff;border:2px solid #d6d8fa;color:#223971}
+.gold-student-study-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.gold-student-study-head h3{margin:0 0 5px;font-size:clamp(19px,2.2vw,27px);color:#283b83}
+.gold-student-study-head p{margin:0;font-size:13px;font-weight:750;color:#5c698b}
+.gold-student-study-head label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:850}
+.gold-student-study-head select{font:inherit;border:1px solid #aea6e2;background:#fff;border-radius:10px;min-height:40px;padding:7px 12px;color:#293c79}
+.gold-student-study-summary{margin:12px 0;padding:11px 14px;border-radius:12px;background:#fff;font-weight:850;color:#433aa0}
+.gold-student-study-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.gold-student-study-card{min-width:0;padding:12px 13px;background:#fff;border:1px solid #d9e2fa;border-radius:16px}
+.gold-student-study-card h4{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#283c7a;font-size:17px;margin:1px 0 12px}
+.gold-student-study-card h4 span{font-size:11px;color:#716bab}
+.gold-student-study-list{display:flex;flex-direction:column;gap:7px;overflow-y:auto;max-height:min(52dvh,480px);overscroll-behavior:contain;text-align:left}
+.gold-student-study-list .gold-accuracy-row{padding:9px 11px}
+.gold-student-study-list .gold-accuracy-head strong{font-size:14px}
+.gold-student-study-list .gold-accuracy-row small{font-size:11px}
+.gold-study-self{background:#f1eaff;border:2px solid #9976e6}
+.gold-student-study-note{margin:11px 0 0;color:#697392;font-size:12px;font-weight:700;line-height:1.5}
+@media(max-width:740px){.gold-student-study-columns{grid-template-columns:1fr}.gold-student-study{padding:12px}.gold-student-study-list{max-height:40dvh}}
+
+/* Long prompts must remain readable on phone-size student results screens. */
+#gold-student-study-questions .gold-accuracy-head strong{white-space:normal;text-overflow:clip;overflow:visible;overflow-wrap:anywhere;line-height:1.35}

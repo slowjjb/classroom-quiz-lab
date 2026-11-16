@@ -1,13 +1,13 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.8';
+import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.9';
 import { optionsArray, escapeCsv } from './classic-core.js';
-import { buildGoldAccuracy } from './gold-analytics.js';
+import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=4.9';
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
-import { makeRulesV4 } from './rules-v4.js?v=4.8';
+import { makeRulesV4 } from './rules-v4.js?v=4.9';
 
 const $=id=>document.getElementById(id);
 const arcade=createArcadeUi('gold-focus',{role:'teacher',mode:'gold'});
@@ -293,7 +293,7 @@ async function prepare(){
     const targetMode=allowInteractions&&$('gold-target-mode').value==='choose'?'choose':'random';
     if(targetMode==='choose'){
       try{await get(ref(db,'v4/targetChoiceCheck'));}
-      catch{throw Error('학생 상대 선택을 사용하려면 먼저 v4.8 Firebase 보안 규칙을 게시해야 합니다. 보안 규칙 복사 버튼을 눌러 주세요.');}
+      catch{throw Error('학생 상대 선택을 사용하려면 먼저 v4.8 이상 Firebase 보안 규칙을 게시해야 합니다. 보안 규칙 복사 버튼을 눌러 주세요.');}
     }
     const changes={
       [`v4/privateRuns/${code}`]:{setId:room.meta.setId,title:source.title||'골드 퀘스트',questions,decks,roster,durationSec,allowInteractions,targetMode,createdAt:serverTimestamp()},
@@ -343,8 +343,16 @@ async function finish(){
       }
       if(member?.phase==='target')await processTarget(uid,member,targets?.[uid]?.[member.nonce],{force:true});
     }
-    // Force scoreboard refresh only from teacher-controlled data.
-    await update(ref(db,`v4/public/${code}`),{state:'finished',finishedAt:serverTimestamp()});
+    // Publish aggregate learning results only once, at game finish.  Students
+    // cannot read privateRuns/answersLog; never expose raw responses or keys.
+    // Fetch after pending treasure processing so the last accepted answers count.
+    const finalLog=(await get(ref(db,`v4/privateRuns/${code}/answersLog`))).val()||{};
+    const learningResults=makeGoldPublicLearningResults({
+      roster:run?.roster||{},scores:pub?.scores||{},questions:run?.questions||[],answersLog:finalLog
+    });
+    await update(ref(db,`v4/public/${code}`),{
+      learningResults,state:'finished',finishedAt:serverTimestamp()
+    });
     notify('게임 종료! 골드 순위와 시상대를 확인하세요.','success');
     focus(true);
   }catch(err){notify('종료 오류: '+formatError(err),'error');}finally{operation=false;render();}
