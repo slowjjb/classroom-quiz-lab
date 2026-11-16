@@ -1,6 +1,6 @@
 // Public build identifier: increment the build number on every protocol-changing release.
-export const APP_VERSION = '4.12';
-export const APP_BUILD = 412;
+export const APP_VERSION = '5.0.4';
+export const APP_BUILD = 504;
 export function classifyVersion(latest,roomMinBuild=0){
   const requested=Number(roomMinBuild)||0;
   const published=Number(latest?.build)||0;

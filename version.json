@@ -1,6 +1,6 @@
 {
-  "version": "4.12",
-  "build": 412,
+  "version": "5.0.4",
+  "build": 504,
   "minSupportedBuild": 412,
-  "purpose": "퍼플킷 학생 입장·게임방 버전 호환 확인"
+  "purpose": "퍼플킷 게임방 입장 및 피싱 프렌지 모드 버전 확인"
 }

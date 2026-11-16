@@ -1,4 +1,4 @@
-import {APP_VERSION,APP_BUILD,classifyVersion,joinUrlWithFreshCache} from './version.js?v=4.12';
+import {APP_VERSION,APP_BUILD,classifyVersion,joinUrlWithFreshCache} from './version.js?v=5.0.4';
 
 let latestCheck=null;
 // Independently published plain JSON, requested with a unique URL so an old open tab

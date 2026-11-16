@@ -1,0 +1,186 @@
+// Purplekit v5.0 — Fishing Frenzy student interface.
+import {db,formatError} from './firebase.js';
+import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import {fullQuestionImageUrl} from './image-utils.js';
+import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js';
+const $=id=>document.getElementById(id),stage=$('fishing-student');
+let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
+let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',rewardNonce='';
+const now=()=>Date.now()+offset;
+function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.4`; }
+function setLureVisual(level){const icon=$('fishing-lure-icon');if(icon)icon.src=lureAsset(level);$('fishing-level').textContent=`Lv.${level||1}`;}
+function show(flag){stage.hidden=!flag;if(flag){document.body.classList.add('quiz-stage-active');$('student-room').hidden=true;}else document.body.classList.remove('quiz-stage-active');}
+function rankList(){
+  const items=fishingRanking(pub?.scores||{}),out=$('fishing-leaders');out.replaceChildren();
+  items.slice(0,pub?.state==='finished'?100:5).forEach((s,i)=>{
+    const row=document.createElement('div');row.className='fishing-rank-row'+(s.uid===uid?' fishing-rank-me':'');
+    const name=document.createElement('span');name.textContent=`${i<3?['🥇','🥈','🥉'][i]:`${i+1}위`} ${s.name||'친구'} · Lv.${s.level}`;
+    const weight=document.createElement('strong');weight.textContent=`${Number(s.kg||0).toFixed(1)} kg`;
+    row.append(name,weight);out.append(row);
+  });
+  const me=items.findIndex(s=>s.uid===uid);
+  $('fishing-place').textContent=me<0?'—':`${me+1}위 / ${items.length}명`;
+}
+function revealContent(){
+  const result=own?.result||{},score=pub?.scores?.[uid]||{};
+  const creature=CREATURES.find(x=>x.id===result.creatureId);
+  const sprite=$('fishing-catch-image');sprite.hidden=true;
+  $('fishing-catch-emoji').hidden=false;
+  $('fishing-catch-emoji').textContent=result.emoji||'🎣';
+  $('fishing-reward').dataset.rarity=result.tier||'normal';
+  let title='다음 낚시에 도전하세요!',desc='';
+  if(result.type==='fish'){
+    title=`${result.name||creature?.name||'물고기'}!`;
+    desc=`+${Number(result.kg||0).toFixed(1)} kg 획득!`;
+    if(creature){
+      sprite.src=`images/fishing/${creature.id}.png?v=5.0.4`;sprite.alt=title;
+      sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
+      sprite.onerror=()=>{sprite.hidden=true;$('fishing-catch-emoji').hidden=false;};
+    }
+  }else if(result.type==='upgrade'){
+    title=`✨ 루어 ${result.newLevel}단계 강화 성공!`;
+    desc='이제 더 무거운 바다 생물을 만날 수 있어요.';
+    const newLevel=result.newLevel||((score.level||1));
+    sprite.src=lureAsset(newLevel);sprite.alt=`루어 ${newLevel}단계`;sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
+    $('fishing-reward').dataset.rarity='rare';
+  }else if(result.type==='broken'){
+    title='💥 낚싯대가 부러졌습니다!';
+    desc='루어가 1단계로 돌아왔어요. 이미 잡은 kg은 그대로 유지됩니다.';
+    $('fishing-catch-emoji').textContent='🪵';
+  }else if(result.type==='upgrade-miss'){
+    title='루어를 놓쳤어요!';desc='내구도 -1. 정답 1~3개 뒤 같은 단계 루어가 다시 등장합니다.';
+    $('fishing-catch-emoji').textContent='💨';
+  }else if(result.type==='penalty'){
+    title='🪼 깜짝 방해 이벤트!';
+    desc='나를 제외한 모든 친구에게 잠깐 방해 효과가 나타납니다.';
+    $('fishing-catch-emoji').textContent='🌊';
+  }else{
+    title='물고기가 도망갔어요!';desc='내구도 -1. 다음 낚시로 다시 도전해요.';
+    $('fishing-catch-emoji').textContent='💦';
+  }
+  $('fishing-reward-title').textContent=title;
+  $('fishing-reward-detail').textContent=desc;
+  $('fishing-reward-total').textContent=`현재 누적 ${Number(score.kg||0).toFixed(1)} kg`;
+}
+function renderQuestion(){
+  if(!own||own.phase!=='question')return;
+  const opts=$('fishing-choices');opts.replaceChildren();
+  $('fishing-question').textContent=own.prompt||'문제 대기 중';
+  $('fishing-question-label').textContent=`📖 ${own.number||''}번 문제`; 
+  const figure=$('fishing-question-image-wrap'),image=$('fishing-question-image');
+  const url=own.imageUrl?fullQuestionImageUrl(own.imageUrl):'';
+  figure.hidden=!url;if(url)image.src=url;
+  selected='';pending=false;questionNonce=own.nonce;
+  if(own.type==='typing'){
+    const field=document.createElement('input');field.type='text';field.maxLength=180;field.autocomplete='off';field.placeholder='정답을 입력하세요';field.className='fishing-typing';
+    field.addEventListener('input',()=>{selected=field.value.trim();$('fishing-submit').disabled=!selected||pending;});
+    field.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void submitAnswer();}});
+    opts.append(field);
+  }else{
+    (Array.isArray(own.options)?own.options:Object.values(own.options||{})).filter(Boolean).forEach((label,i)=>{
+      const button=document.createElement('button');button.type='button';button.className='fishing-choice';
+      const num=document.createElement('b');num.textContent=String(i+1);
+      const text=document.createElement('span');text.textContent=label;
+      button.append(num,text);
+      button.addEventListener('click',()=>{
+        selected=String(i+1);opts.querySelectorAll('button').forEach(b=>b.classList.toggle('chosen',b===button));
+        $('fishing-submit').disabled=false;
+      });opts.append(button);
+    });
+  }
+  $('fishing-submit').disabled=true;
+}
+function render(){
+  if(!code||!uid||!pub){show(false);return;}
+  const phase=pub.state||'lobby';
+  show(['ready','playing','finished'].includes(phase));
+  if(stage.hidden)return;
+  const score=pub?.scores?.[uid]||{};
+  $('fishing-clock').textContent=phase==='playing'?formatClock((Number(pub.endsAt||0)-now())/1000):'—';
+  $('fishing-weight').textContent=`${Number(score.kg||0).toFixed(1)} kg`;
+  setLureVisual(score.level||1);
+  $('fishing-durability').textContent='❤️'.repeat(score.durability||0)+'🖤'.repeat(Math.max(0,5-(score.durability||0)));
+  $('fishing-progress').textContent=`정답 ${score.correct||0} / 풀이 ${score.answered||0}`;
+  rankList();
+  for(const id of ['fishing-wait','fishing-cast-view','fishing-question-view','fishing-reward','fishing-finished'])$(id).hidden=true;
+  if(phase==='finished'){$('fishing-finished').hidden=false;$('fishing-finish-weight').textContent=`${Number(score.kg||0).toFixed(1)} kg`;return;}
+  if(phase==='ready'||phase==='lobby'||!own){$('fishing-wait').hidden=false;return;}
+  if(own.phase==='waiting'){$('fishing-wait').hidden=false;$('fishing-wait').textContent='준비한 문제를 모두 풀었어요! 선생님의 종료 안내를 기다려 주세요.';return;}
+  if(own.phase==='cast'||own.phase==='bite'){
+    $('fishing-cast-view').hidden=false;
+    const bite=own.phase==='bite',hit=bite&&now()>=Number(own.biteAt||Infinity);
+    const button=$('fishing-cast-button');
+    button.textContent=bite?(hit?'🎣 HIT! 지금 낚아 올리기!':'🐟 입질을 기다리는 중…'):'🎣 낚싯대 던지기 · CAST!';
+    button.disabled=(bite&&!hit)||pending||(action?.nonce===own.nonce&&action?.type===(bite?'hook':'cast'));
+    $('fishing-boat').dataset.phase=bite?(hit?'hit':'waiting'):'cast';
+    $('fishing-cast-hint').textContent=bite?(hit?'입질이 왔어요! 한 번 더 눌러 문제를 풀어요.':'1~3초 뒤에 입질이 옵니다.'): '눌러서 바다에 낚싯대를 던져 보세요!';
+    return;
+  }
+  if(own.phase==='question'){
+    $('fishing-question-view').hidden=false;
+    if(questionNonce!==own.nonce)renderQuestion();
+    else $('fishing-submit').disabled=pending||!!answer||!selected;
+    return;
+  }
+  if(own.phase==='result'){$('fishing-reward').hidden=false;if(rewardNonce!==own.nonce){rewardNonce=own.nonce;revealContent();}$('fishing-next').disabled=pending||(action?.nonce===own.nonce&&action?.type==='next');}
+}
+function formatClock(sec){const v=Math.max(0,Math.ceil(sec));return `${Math.floor(v/60)}:${String(v%60).padStart(2,'0')}`;}
+async function sendAction(type){
+  if(!code||!uid||!own||pending||pub?.state!=='playing')return;
+  const nonce=own.nonce;
+  pending=true;render();notice(type==='cast'?'낚싯대를 던지는 중…':type==='hook'?'물고기를 끌어올리는 중…':'다음 낚시 준비 중…');
+  try{await set(ref(db,`v5/actions/${code}/${uid}/${nonce}/${type}`),{at:serverTimestamp()});action={nonce,type};}
+  catch(err){action=null;notice('낚시 진행 실패: '+formatError(err),true);}finally{pending=false;render();}
+}
+async function submitAnswer(){
+  if(!code||!uid||!own||own.phase!=='question'||!selected||answer||pending||pub?.state!=='playing')return;
+  const nonce=own.nonce;pending=true;render();
+  try{
+    await set(ref(db,`v5/answers/${code}/${uid}/${nonce}`),{value:selected,at:serverTimestamp()});
+    notice('제출했습니다. 정답을 확인하고 있어요.');
+  }catch(err){notice('제출 실패: '+formatError(err),true);}finally{pending=false;render();}
+}
+function showPenalty(evt){
+  if(!evt||evt.actorUid===uid||evt.id===shownEvent||!code||pub?.state!=='playing')return;
+  shownEvent=evt.id;
+  const ms=Math.max(0,Number(evt.durationMs||FISHING_PENALTY_DURATION_MS)-(now()-Number(evt.at||0)));
+  if(ms<=0)return;
+  const layer=$('fishing-penalty');layer.hidden=false;layer.dataset.effect=evt.effect||'school';
+  $('fishing-penalty-description').textContent=({school:'🐟 물고기 떼 출몰!',jelly:'🪼 해파리 떼 습격!',ink:'🐙 먹물 주의!',shrink:'🌊 갑자기 작아진 바다!'})[evt.effect]||'깜짝 벌칙!';
+  stage.classList.toggle('fishing-shrunken',evt.effect==='shrink');
+  if(eventTimer)clearTimeout(eventTimer);
+  eventTimer=setTimeout(()=>{layer.hidden=true;stage.classList.remove('fishing-shrunken');},ms);
+}
+export function stopFishingView(){
+  subs.forEach(fn=>fn());subs=[];code='';uid='';pub=null;own=null;answer=null;
+  questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;
+  if(eventTimer)clearTimeout(eventTimer);if(animTimer)clearTimeout(animTimer);
+  $('fishing-penalty').hidden=true;stage.classList.remove('fishing-shrunken');show(false);
+}
+export function startFishingView(roomCode,userUid){
+  stopFishingView();code=roomCode;uid=userUid;
+  for(const [key,path] of [['pub',`v5/public/${code}`],['own',`v5/memberState/${code}/${uid}`],['answer',`v5/answers/${code}/${uid}`]]){
+    const currentCode=code;
+    subs.push(onValue(ref(db,path),snap=>{
+      if(currentCode!==code)return;
+      if(key==='pub'){pub=snap.val();if(pub?.penaltyEvent)showPenalty(pub.penaltyEvent);}
+      else if(key==='own'){
+        const prev=own?.nonce,prevPhase=own?.phase;own=snap.val();if(prev!==own?.nonce){answer=null;questionNonce='';action=null;}else if(prevPhase!==own?.phase)action=null;
+      }else answer=own?.nonce?snap.val()?.[own.nonce]||null:null;
+      render();
+    },err=>notice('실시간 게임 연결 오류: '+formatError(err),true)));
+  }
+  subs.push(onValue(ref(db,'.info/serverTimeOffset'),s=>{if(code)offset=Number(s.val()||0);}));
+  animTimer=setInterval(()=>{
+    if(pub?.state!=='playing')return;
+    $('fishing-clock').textContent=formatClock((Number(pub.endsAt||0)-now())/1000);
+    if(own?.phase==='bite'&&!stage.hidden)render();
+  },200);
+}
+$('fishing-cast-button').addEventListener('click',()=>{
+  if(own?.phase==='cast')void sendAction('cast');
+  else if(own?.phase==='bite'&&now()>=Number(own.biteAt||Infinity))void sendAction('hook');
+});
+$('fishing-submit').addEventListener('click',()=>void submitAnswer());
+$('fishing-next').addEventListener('click',()=>void sendAction('next'));

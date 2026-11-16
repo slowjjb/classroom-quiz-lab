@@ -1,9 +1,10 @@
 import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
 import { startGoldView, stopGoldView } from './gold-student.js?v=4.11';
+import { startFishingView, stopFishingView } from './fishing-student.js?v=5.0.4';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
-import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,showOutdatedNotice,openFreshPage} from './version-guard.js?v=4.12';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,showOutdatedNotice,openFreshPage} from './version-guard.js?v=5.0.4';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, remove, onValue, onDisconnect, push, serverTimestamp, runTransaction, update } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 
@@ -32,7 +33,7 @@ async function stopPresence() {
 }
 async function leaveRoom(showMessage=true){
   sessionStorage.removeItem(SESSION_KEY);
-  stopQuizView();stopGoldView();
+  stopQuizView();stopGoldView();stopFishingView();
   if($('avatar-dialog').open)$('avatar-dialog').close();
   setAvatarRoster({});
   if(unsubRoom){unsubRoom();unsubRoom=null;}
@@ -48,7 +49,7 @@ function renderRoom(data){
   $('student-room-title').textContent=meta.title||'퀴즈 대기실';roomStatus(meta.state);
   $('student-room-meta').textContent=`참여 코드 ${activeCode} · ${meta.setTitle||'문제 미선택'} · 게임을 시작하면 아래에 문제가 나타납니다.`;
   if(meta.state==='ended'&&!ended){
-    ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopQuizView();stopGoldView();stopPresence();onlineStatus('방이 종료되었습니다.');
+    ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopQuizView();stopGoldView();stopFishingView();stopPresence();onlineStatus('방이 종료되었습니다.');
   }
   const roster=data.members||{};
   const avatars=Object.fromEntries(Object.entries(roster).map(([memberUid,m])=>[memberUid,normalizeAvatarId(m?.profile?.avatarId)]));
@@ -188,6 +189,7 @@ async function joinRoom(automatic=false){
     activeCode=code;activeUser=user;setActive(true);ended=false;
     currentAvatarId=normalizeAvatarId(profileSnap.val()?.avatarId);renderOwnAvatar();
     if(meta.mode==='gold')startGoldView(code,user.uid);
+    else if(meta.mode==='fishing')startFishingView(code,user.uid);
     else startQuizView(code,user.uid);
     onlineStatus('실시간 서버 연결 중…');
     unsubRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),err=>{
@@ -196,7 +198,7 @@ async function joinRoom(automatic=false){
     watchConnection(user.uid,displayName);
     if(!automatic) history.replaceState(null,'',`join.html?code=${code}`);
   }catch(err){feedback(formatError(err)+(String(err?.code||'').includes('permission-denied')?' v4.12 규칙이 적용되어 있는지 선생님께 확인해 주세요.':''),'error');onlineStatus('입장 실패');
-    sessionStorage.removeItem(SESSION_KEY);if(unsubRoom){unsubRoom();unsubRoom=null;}setActive(false);stopQuizView();stopGoldView();activeCode='';activeUser=null;
+    sessionStorage.removeItem(SESSION_KEY);if(unsubRoom){unsubRoom();unsubRoom=null;}setActive(false);stopQuizView();stopGoldView();stopFishingView();activeCode='';activeUser=null;
   }finally{joining=false;$('join-room-btn').disabled=false;}
 }
 $('join-room-btn').addEventListener('click',()=>joinRoom(false));
