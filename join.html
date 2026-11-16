@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v5.0.4</title>
+  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v5.0.5</title>
   <link rel="stylesheet" href="styles.css?v=3.12"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.11"><link rel="stylesheet" href="gold.css?v=4.12"><link rel="stylesheet" href="fishing.css?v=5.0.4"><script type="module" src="js/join.js?v=5.0.4"></script>
 </head>
 <body class="arcade-theme">
-<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">학생 게임 입장 · v5.0.4</span></header>
+<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">학생 게임 입장 · v5.0.5</span></header>
 <main class="page-content student-page join-page">
   <div class="join-layout"><div class="join-entry-column">
   <div class="page-heading"><span class="eyebrow">PURPLEKIT · LET'S PLAY!</span><h1>퀴즈 방에 입장하기 <span class="join-heading-star" aria-hidden="true">✦</span></h1><p>참여 코드를 입력하고 친구들과 함께 실시간 퀴즈에 도전해 보세요!</p></div>
@@ -18,7 +18,7 @@
     <p class="helper">선생님이 안내한 이름이나 별명을 입력하세요.</p>
     <div id="join-version-warning" class="version-warning" hidden role="alert" aria-live="assertive">
       <strong>🔄 퍼플킷 업데이트가 필요합니다</strong>
-      <p>현재 실행 중: <b data-version-current>v5.0.4</b> · 필요한 버전: <b data-version-required>v5.0.4</b></p>
+      <p>현재 실행 중: <b data-version-current>v5.0.5</b> · 필요한 버전: <b data-version-required>v5.0.5</b></p>
       <p>기존에 열어 둔 화면일 수 있습니다. 아래 버튼을 눌러 최신 버전으로 다시 접속해 주세요.</p>
       <button id="join-version-reload" class="btn btn-primary" type="button">새 버전으로 다시 열기</button>
     </div>
@@ -104,7 +104,7 @@
 
   <section id="fishing-student" class="quiz-stage fishing-student" hidden aria-label="피싱 프렌지 학생 게임 화면">
     <div class="quiz-stage-inner fishing-stage-inner">
-      <div class="fishing-head"><div><span class="quiz-stage-kicker">PURPLEKIT · FISHING FRENZY</span><h2>🎣 피싱 프렌지</h2></div><strong id="fishing-clock">7:00</strong></div>
+      <div class="fishing-head"><div><span class="quiz-stage-kicker">PURPLEKIT · FISHING FRENZY</span><h2>🎣 피싱 프렌지</h2></div><div class="fishing-head-side"><button type="button" id="fishing-audio-toggle" class="fishing-audio-toggle" aria-pressed="true">🔊 소리 켜짐</button><strong id="fishing-clock">7:00</strong></div></div>
       <div class="fishing-scorebar"><div><small>누적 무게</small><strong id="fishing-weight">0.0 kg</strong></div><div><small>루어 강화</small><div class="fishing-level-display"><img id="fishing-lure-icon" alt="현재 루어" src="images/fishing/lures/lure1.png"><strong id="fishing-level">Lv.1</strong></div></div><div><small>낚싯대 내구도</small><strong id="fishing-durability">❤️❤️❤️❤️❤️</strong></div><div><small>현재 순위</small><strong id="fishing-place">—</strong></div></div>
       <p id="fishing-progress" class="fishing-progress">정답 0 / 풀이 0</p>
       <div id="fishing-wait" class="fishing-center" hidden>선생님이 낚시 게임을 준비하고 있어요!</div>
@@ -131,6 +131,9 @@
       <p id="fishing-message" class="fishing-status" role="status" aria-live="polite"></p>
       <section class="fishing-leaderboard"><h3>🏆 실시간 순위</h3><div id="fishing-leaders" class="fishing-rank-list"></div></section>
       <div id="fishing-penalty" class="fishing-penalty" data-effect="school" hidden aria-live="polite"><div class="fishing-penalty-creatures">🐟 🐠 🐟 🪼 🐟 🐠 🐟</div><strong id="fishing-penalty-description">🐟 물고기 떼!</strong></div>
+      <audio id="fishing-bgm" src="audio/fishing-bgm.wav" preload="auto" loop></audio>
+      <audio id="fishing-sfx-catch" src="audio/fishing-catch.wav" preload="auto"></audio>
+      <audio id="fishing-sfx-miss" src="audio/fishing-miss.wav" preload="auto"></audio>
     </div>
   </section>
   <section id="gold-student" class="quiz-stage gold-student" hidden aria-label="골드 퀘스트 학생 게임 화면">
@@ -212,6 +215,6 @@
   </section>
   <p class="notice centered join-bottom-notice"><strong>게임 TIP</strong> · 문제를 선택한 뒤 반드시 <strong>정답 제출하기</strong>를 눌러 주세요!</p>
   <a class="back-link" href="./">← 처음 화면으로</a>
-</main><footer>PURPLEKIT · v5.0.4</footer></div>
+</main><footer>PURPLEKIT · v5.0.5</footer></div>
 </body>
 </html>

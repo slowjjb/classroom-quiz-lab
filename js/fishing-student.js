@@ -6,9 +6,16 @@ import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-co
 const $=id=>document.getElementById(id),stage=$('fishing-student');
 let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
 let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',rewardNonce='';
+let audioEnabled=true,bgmStarted=false;
 const now=()=>Date.now()+offset;
 function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
-function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.4`; }
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.5`; }
+function setAudioToggle(){const btn=$('fishing-audio-toggle');if(!btn)return;btn.textContent=audioEnabled?'🔊 소리 켜짐':'🔇 소리 꺼짐';btn.setAttribute('aria-pressed',audioEnabled?'true':'false');}
+function safePlay(el,vol=.6){if(!el||!audioEnabled)return;el.volume=vol;try{el.currentTime=0;}catch{};el.play().catch(()=>{});}
+function ensureBgm(){const bgm=$('fishing-bgm');if(!bgm||!audioEnabled)return;if(bgmStarted&& !bgm.paused)return;bgm.volume=.28;bgm.play().then(()=>{bgmStarted=true;}).catch(()=>{});}
+function stopBgm(){const bgm=$('fishing-bgm');if(bgm)bgm.pause();}
+function setAudioEnabled(flag){audioEnabled=!!flag;try{localStorage.setItem('purplekit_fishing_audio',audioEnabled?'on':'off');}catch{};setAudioToggle();if(audioEnabled)ensureBgm();else stopBgm();}
+function playResultSound(type){if(type==='fish'||type==='upgrade'||type==='penalty')safePlay($('fishing-sfx-catch'),.62);else if(type)safePlay($('fishing-sfx-miss'),.56);}
 function setLureVisual(level){const icon=$('fishing-lure-icon');if(icon)icon.src=lureAsset(level);$('fishing-level').textContent=`Lv.${level||1}`;}
 function show(flag){stage.hidden=!flag;if(flag){document.body.classList.add('quiz-stage-active');$('student-room').hidden=true;}else document.body.classList.remove('quiz-stage-active');}
 function rankList(){
@@ -34,7 +41,7 @@ function revealContent(){
     title=`${result.name||creature?.name||'물고기'}!`;
     desc=`+${Number(result.kg||0).toFixed(1)} kg 획득!`;
     if(creature){
-      sprite.src=`images/fishing/${creature.id}.png?v=5.0.4`;sprite.alt=title;
+      sprite.src=`images/fishing/${creature.id}.png?v=5.0.5`;sprite.alt=title;
       sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
       sprite.onerror=()=>{sprite.hidden=true;$('fishing-catch-emoji').hidden=false;};
     }
@@ -62,6 +69,7 @@ function revealContent(){
   $('fishing-reward-title').textContent=title;
   $('fishing-reward-detail').textContent=desc;
   $('fishing-reward-total').textContent=`현재 누적 ${Number(score.kg||0).toFixed(1)} kg`;
+  playResultSound(result.type);
 }
 function renderQuestion(){
   if(!own||own.phase!=='question')return;
@@ -129,12 +137,14 @@ function formatClock(sec){const v=Math.max(0,Math.ceil(sec));return `${Math.floo
 async function sendAction(type){
   if(!code||!uid||!own||pending||pub?.state!=='playing')return;
   const nonce=own.nonce;
+  ensureBgm();
   pending=true;render();notice(type==='cast'?'낚싯대를 던지는 중…':type==='hook'?'물고기를 끌어올리는 중…':'다음 낚시 준비 중…');
   try{await set(ref(db,`v5/actions/${code}/${uid}/${nonce}/${type}`),{at:serverTimestamp()});action={nonce,type};}
   catch(err){action=null;notice('낚시 진행 실패: '+formatError(err),true);}finally{pending=false;render();}
 }
 async function submitAnswer(){
   if(!code||!uid||!own||own.phase!=='question'||!selected||answer||pending||pub?.state!=='playing')return;
+  ensureBgm();
   const nonce=own.nonce;pending=true;render();
   try{
     await set(ref(db,`v5/answers/${code}/${uid}/${nonce}`),{value:selected,at:serverTimestamp()});
@@ -156,10 +166,12 @@ export function stopFishingView(){
   subs.forEach(fn=>fn());subs=[];code='';uid='';pub=null;own=null;answer=null;
   questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;
   if(eventTimer)clearTimeout(eventTimer);if(animTimer)clearTimeout(animTimer);
-  $('fishing-penalty').hidden=true;stage.classList.remove('fishing-shrunken');show(false);
+  $('fishing-penalty').hidden=true;stage.classList.remove('fishing-shrunken');stopBgm();show(false);
 }
 export function startFishingView(roomCode,userUid){
   stopFishingView();code=roomCode;uid=userUid;
+  try{audioEnabled=(localStorage.getItem('purplekit_fishing_audio')||'on')!=='off';}catch{audioEnabled=true;}
+  setAudioToggle();
   for(const [key,path] of [['pub',`v5/public/${code}`],['own',`v5/memberState/${code}/${uid}`],['answer',`v5/answers/${code}/${uid}`]]){
     const currentCode=code;
     subs.push(onValue(ref(db,path),snap=>{
@@ -184,3 +196,5 @@ $('fishing-cast-button').addEventListener('click',()=>{
 });
 $('fishing-submit').addEventListener('click',()=>void submitAnswer());
 $('fishing-next').addEventListener('click',()=>void sendAction('next'));
+
+$('fishing-audio-toggle')?.addEventListener('click',()=>setAudioEnabled(!audioEnabled));
