@@ -109,28 +109,28 @@ export function displayedGoldCorrectIndex(question,optionOrder){
   return displayed>=0?displayed+1:original;
 }
 
-// Purplekit v4.2: exactly 1000 integer-weighted chances per chest.
+// Purplekit v4.10: exactly 2000 integer-weighted chances per chest (1 weight = 0.05%).
 // Probabilities apply independently to each chosen chest; all three have the same table.
 // Interactions that are disabled or impossible (one player) are excluded and
 // the remaining outcomes are renormalized. There is no hidden minimum payout.
 export const GOLD_REWARD_TABLE = Object.freeze([
-  {type:'coins',amount:10,weight:100,label:'+10G'},
-  {type:'coins',amount:20,weight:130,label:'+20G'},
-  {type:'coins',amount:35,weight:120,label:'+35G'},
-  {type:'coins',amount:50,weight:100,label:'+50G'},
-  {type:'coins',amount:80,weight:70,label:'+80G'},
-  {type:'coins',amount:120,weight:48,label:'+120G'},
-  {type:'coins',amount:250,weight:17,label:'+250G 대박'},
-  {type:'multiply',factor:2,weight:10,label:'보유 골드 2배'},
-  {type:'multiply',factor:3,weight:2,label:'보유 골드 3배'},
-  {type:'steal',fraction:.1,weight:120,label:'상대 골드 10% 빼앗기'},
-  {type:'steal',fraction:.5,weight:50,label:'상대 골드 50% 빼앗기'},
-  {type:'steal',fraction:1,weight:1,label:'상대 골드 전부 빼앗기'},
-  {type:'swap',weight:1,label:'상대와 골드 전부 교환'},
-  {type:'lose',fraction:.1,weight:100,label:'내 골드 10% 잃기'},
-  {type:'lose',fraction:.5,weight:50,label:'내 골드 50% 잃기'},
-  {type:'lose',fraction:1,weight:1,label:'내 골드 전부 잃기'},
-  {type:'empty',weight:80,label:'빈 상자'}
+  {type:'coins',amount:10,weight:240,label:'+10G'},     // 12%
+  {type:'coins',amount:20,weight:280,label:'+20G'},     // 14%
+  {type:'coins',amount:35,weight:260,label:'+35G'},     // 13%
+  {type:'coins',amount:50,weight:200,label:'+50G'},     // 10%
+  {type:'coins',amount:80,weight:140,label:'+80G'},     // 7%
+  {type:'coins',amount:120,weight:96,label:'+120G'},    // 4.8%
+  {type:'coins',amount:250,weight:35,label:'+250G 대박'},// 1.75%
+  {type:'multiply',factor:2,weight:20,label:'보유 골드 2배'}, // 1%
+  {type:'multiply',factor:3,weight:4,label:'보유 골드 3배'}, // 0.2%
+  {type:'steal',fraction:.1,weight:240,label:'상대 골드 10% 빼앗기'}, // 12%
+  {type:'steal',fraction:.5,weight:100,label:'상대 골드 50% 빼앗기'}, // 5%
+  {type:'steal',fraction:1,weight:2,label:'상대 골드 전부 빼앗기'}, // 0.1%
+  {type:'swap',weight:2,label:'상대와 골드 전부 교환'}, // 0.1%
+  {type:'lose',fraction:.1,weight:160,label:'내 골드 10% 잃기'}, // 8%
+  {type:'lose',fraction:.3,weight:60,label:'내 골드 30% 잃기'}, // 3%
+  {type:'lose',fraction:1,weight:1,label:'내 골드 전부 잃기'}, // 0.05%
+  {type:'empty',weight:160,label:'빈 상자'} // 8%
 ]);
 export const GOLD_REWARD_WEIGHT_TOTAL=GOLD_REWARD_TABLE.reduce((sum,r)=>sum+r.weight,0);
 
@@ -221,9 +221,23 @@ export function describeGoldReveal(reward){
     lose:negative?'앗! 골드를 잃었어요!':'잃을 골드가 없어요!',
     empty:'빈 상자!',
   }[kind]||'상자 결과를 확인하세요!';
-  const icon=kind==='empty'?'📦':kind==='swap'?'🔄':negative?'💥':positive?'✨':'🎲';
+  // Show the DRAWN prize prominently; gold delta alone can be misleading
+  // for 0G multipliers, no-loss outcomes, steals and swaps.
+  const fraction=Math.max(0,Math.min(1,Number(reward?.fraction)||0));
+  const rate=`${Math.round(fraction*100)}%`;
+  const prize={
+    coins:`+${Math.max(0,Math.floor(Number(reward?.amount)||0)).toLocaleString('ko-KR')}G 획득!`,
+    multiply:`내 골드 ${Number(reward?.factor)||1}배!`,
+    steal:`상대 골드 ${rate} 빼앗기!`,
+    swap:'친구와 골드 전부 교환!',
+    lose:fraction===1?'내 골드 전부 잃기!':`내 골드 ${rate} 잃기!`,
+    empty:'빈 상자!'
+  }[kind]||'보물상자 결과';
+  const icons={coins:'🪙',multiply:'✨',steal:'🎯',swap:'🔄',lose:'💥',empty:'📦'};
+  const icon=icons[kind]||'🎁';
+  const chest=[1,2,3].includes(Number(reward?.choice))?`${Number(reward.choice)}번 상자에서 나온 보상`:'보물상자에서 나온 보상';
   const change=`${delta>0?'+':delta<0?'−':''}${Math.abs(delta).toLocaleString('ko-KR')} G`;
-  return {mood,heading,icon,change,description:String(reward?.description||'골드 변화가 없습니다.')};
+  return {mood,heading,icon,prize,chest,change,description:String(reward?.description||'골드 변화가 없습니다.')};
 }
 
 export function goldRanking(scores){

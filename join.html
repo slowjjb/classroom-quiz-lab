@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v4.9</title>
-  <link rel="stylesheet" href="styles.css?v=3.12"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.11"><link rel="stylesheet" href="gold.css?v=4.9"><script type="module" src="js/join.js?v=4.9"></script>
+  <meta name="theme-color" content="#234dd0"><title>게임 입장 | 퍼플킷 v4.10</title>
+  <link rel="stylesheet" href="styles.css?v=3.12"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.11"><link rel="stylesheet" href="gold.css?v=4.10"><script type="module" src="js/join.js?v=4.10"></script>
 </head>
 <body class="arcade-theme">
-<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">학생 게임 입장 · v4.9</span></header>
+<div class="shell join-shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">학생 게임 입장 · v4.10</span></header>
 <main class="page-content student-page join-page">
   <div class="join-layout"><div class="join-entry-column">
   <div class="page-heading"><span class="eyebrow">PURPLEKIT · LET'S PLAY!</span><h1>퀴즈 방에 입장하기 <span class="join-heading-star" aria-hidden="true">✦</span></h1><p>참여 코드를 입력하고 친구들과 함께 실시간 퀴즈에 도전해 보세요!</p></div>
@@ -139,13 +139,15 @@
         <div class="gold-reward-card" role="status">
           <div class="gold-reward-spark" aria-hidden="true">✦ ✨ ✦</div>
           <div class="gold-reward-icon" id="gold-reward-icon" aria-hidden="true">🎁</div>
-          <p class="gold-reward-kicker">TREASURE REVEALED!</p>
+          <p class="gold-reward-kicker" id="gold-reward-chest">보물상자에서 나온 보상</p>
+          <strong class="gold-reward-prize" id="gold-reward-prize">당첨된 보상</strong>
           <h2 id="gold-reward-title">보물상자 결과</h2>
+          <p class="gold-reward-change-caption">이번 골드 변화</p>
           <strong class="gold-reward-change" id="gold-reward-change">+0 G</strong>
           <p class="gold-reward-detail" id="gold-reward-detail"></p>
           <div class="gold-reward-balance" id="gold-reward-balance"></div>
           <button type="button" id="gold-reward-next" class="gold-reward-next">다음 문제로 계속하기 ➜</button>
-          <p class="gold-reward-auto">약 3초 후 자동으로 넘어갑니다</p>
+          <p class="gold-reward-auto">약 4초 후 자동으로 넘어갑니다</p>
         </div>
       </section>
       <section id="gold-student-finish-view" class="gold-finish-view" hidden>
@@ -172,6 +174,6 @@
   </section>
   <p class="notice centered join-bottom-notice"><strong>게임 TIP</strong> · 문제를 선택한 뒤 반드시 <strong>정답 제출하기</strong>를 눌러 주세요!</p>
   <a class="back-link" href="./">← 처음 화면으로</a>
-</main><footer>PURPLEKIT · v4.9</footer></div>
+</main><footer>PURPLEKIT · v4.10</footer></div>
 </body>
 </html>

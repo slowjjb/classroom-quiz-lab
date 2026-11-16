@@ -5,19 +5,19 @@ import {buildGoldAccuracy,goldPercent,goldTier} from '../js/gold-analytics.js';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
 assert.equal(GOLD_REWARD_TABLE.length,17);
-assert.equal(GOLD_REWARD_WEIGHT_TOTAL,1000);
+assert.equal(GOLD_REWARD_WEIGHT_TOTAL,2000);
 const seen=new Map();
-for(let i=0;i<1000;i++){
-  const out=chooseGoldOutcome(()=>(i+.5)/1000,{allowInteractions:true,playerCount:20});
+for(let i=0;i<2000;i++){
+  const out=chooseGoldOutcome(()=>(i+.5)/2000,{allowInteractions:true,playerCount:20});
   const key=out.label;
   seen.set(key,(seen.get(key)||0)+1);
 }
 for(const item of GOLD_REWARD_TABLE){
   assert.equal(seen.get(item.label),item.weight,`${item.label} probability`);
 }
-for(let i=0;i<1000;i++){
+for(let i=0;i<2000;i++){
   for(const opts of [{allowInteractions:false,playerCount:20},{allowInteractions:true,playerCount:1}]){
-    assert.ok(!['steal','swap'].includes(chooseGoldOutcome(()=>(i+.5)/1000,opts).type));
+    assert.ok(!['steal','swap'].includes(chooseGoldOutcome(()=>(i+.5)/2000,opts).type));
   }
 }
 const coins={a:{name:'가',gold:0},b:{name:'나',gold:349}};
@@ -32,7 +32,7 @@ assert.equal(applyGoldOutcome(coins,'a',{type:'steal',fraction:.5},'b').scores.a
 assert.equal(applyGoldOutcome(coins,'a',{type:'steal',fraction:1},'b').scores.a.gold,349);
 assert.equal(applyGoldOutcome(coins,'a',{type:'swap'},'b').scores.b.gold,0);
 assert.equal(applyGoldOutcome({a:{gold:350}},'a',{type:'lose',fraction:.1}).scores.a.gold,315);
-assert.equal(applyGoldOutcome({a:{gold:350}},'a',{type:'lose',fraction:.5}).scores.a.gold,175);
+assert.equal(applyGoldOutcome({a:{gold:350}},'a',{type:'lose',fraction:.3}).scores.a.gold,245);
 assert.equal(applyGoldOutcome({a:{gold:350}},'a',{type:'lose',fraction:1}).scores.a.gold,0);
 assert.equal(coins.b.gold,349,'pure reward reducer must not mutate original state');
 

@@ -28,11 +28,11 @@ for(const id of ['gold-reward-reveal','gold-reward-icon','gold-reward-title','go
 const student=src('js/gold-student.js'),css=src('gold.css'),arcade=src('js/arcade-ui.js');
 assert.match(student,/lastRewardNonce!==pendingPickNonce/);
 assert.match(student,/sound\.reward\(info\.mood\)/);
-assert.match(student,/REWARD_DISPLAY_MS=3000/);
+assert.match(student,/REWARD_DISPLAY_MS=3800/);
 assert.match(student,/showingRewardNonce.*closeReward/);
 assert.match(student,/pendingPickNonce=nonce/);
 assert.match(css,/\.gold-reward-reveal:not\(\[hidden\]\)/);
 for(const fx of ['reward-positive','reward-negative','reward-neutral'])assert.ok(arcade.includes(fx),fx);
-assert.match(src('js/join.js'),/gold-student\.js\?v=4\.[56789]/);
-assert.match(src('join.html'),/gold\.css\?v=4\.[56789]/);
+assert.match(src('js/join.js'),/gold-student\.js\?v=4\.(?:[56789]|10)/);
+assert.match(src('join.html'),/gold\.css\?v=4\.(?:[56789]|10)/);
 console.log('v4.5 reward reveal classes, event binding, actual committed payout, styles and original jingles: PASS');

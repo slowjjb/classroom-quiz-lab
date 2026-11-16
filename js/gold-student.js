@@ -2,7 +2,7 @@ import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { createAvatarImage } from './avatars.js';
 import { fullQuestionImageUrl } from './image-utils.js';
-import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.9';
+import { goldRanking, describeGoldReveal } from './gold-core.js?v=4.10';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.5';
 
 const $=id=>document.getElementById(id);
@@ -12,7 +12,7 @@ let code='',uid='',stopListeners=[],pub=null,own=null,ownAnswer=null,ownPick=nul
 let selected='',selectedNonce='',submitting=false,picking=false,clockOffset=0,finishedShown=false;
 let pendingPickNonce='',showingRewardNonce='',revealedRewardNonce='',rewardTimer=null;
 let targetSelected='',targetSubmitting=false,studentStudyMode='first';
-const REWARD_DISPLAY_MS=3000;
+const REWARD_DISPLAY_MS=3800;
 function closeReward({rerender=true}={}){
   if(rewardTimer){clearTimeout(rewardTimer);rewardTimer=null;}
   $('gold-reward-reveal').hidden=true;
@@ -31,6 +31,8 @@ function maybeRevealReward(){
   const panel=$('gold-reward-reveal');panel.dataset.mood=info.mood;
   $('gold-reward-icon').textContent=info.icon;
   $('gold-reward-title').textContent=info.heading;
+  $('gold-reward-prize').textContent=info.prize;
+  $('gold-reward-chest').textContent=info.chest;
   $('gold-reward-change').textContent=info.change;
   $('gold-reward-detail').textContent=info.description;
   $('gold-reward-balance').textContent=`현재 보유 골드: ${Math.floor(Number(me.gold||0)).toLocaleString('ko-KR')} G`;

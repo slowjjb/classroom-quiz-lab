@@ -1,13 +1,13 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.9';
+import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.10';
 import { optionsArray, escapeCsv } from './classic-core.js';
-import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=4.9';
+import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=4.10';
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
-import { makeRulesV4 } from './rules-v4.js?v=4.9';
+import { makeRulesV4 } from './rules-v4.js?v=4.10';
 
 const $=id=>document.getElementById(id);
 const arcade=createArcadeUi('gold-focus',{role:'teacher',mode:'gold'});

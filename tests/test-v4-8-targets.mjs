@@ -6,7 +6,7 @@ const text=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host=text('js/gold-host.js'),student=text('js/gold-student.js'),teacherHtml=text('rooms.html'),studentHtml=text('join.html');
 const ruleJson=makeRulesV4('teacher-uid');
 const rule=JSON.parse(ruleJson).rules;
-assert.equal(GOLD_REWARD_WEIGHT_TOTAL,1000);
+assert.equal(GOLD_REWARD_WEIGHT_TOTAL,2000);
 const probabilities=goldRewardOdds({allowInteractions:true,playerCount:20});
 assert.equal(probabilities.length,17);
 assert.equal(Math.round(probabilities.reduce((sum,x)=>sum+x.percent,0)*100000)/100000,100);
@@ -18,7 +18,7 @@ for(const [allowInteractions,playerCount] of [[false,20],[true,1]]){
 for(const reward of GOLD_REWARD_TABLE){
  const chance=probabilities.find(x=>x.label===reward.label);
  assert.equal(chance.weight,reward.weight);
- assert(Math.abs(chance.percent-reward.weight/10)<1e-10);
+ assert(Math.abs(chance.percent-reward.weight/20)<1e-10);
 }
 const scores={a:{name:'가',gold:100},b:{name:'나',gold:850},c:{name:'다',gold:370}};
 assert(validGoldTarget(scores,'a','b'));
