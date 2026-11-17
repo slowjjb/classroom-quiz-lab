@@ -1,6 +1,6 @@
 {
-  "version": "5.0.4",
-  "build": 504,
+  "version": "5.0.6",
+  "build": 506,
   "minSupportedBuild": 412,
   "purpose": "퍼플킷 게임방 입장 및 피싱 프렌지 모드 버전 확인"
 }

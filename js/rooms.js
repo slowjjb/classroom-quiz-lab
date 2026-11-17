@@ -1,9 +1,9 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.4';
+import { makeRulesV5 } from './rules-v5.js?v=5.0.6';
 import { createAvatarImage } from './avatars.js';
-import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=5.0.4';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=5.0.6';
 
 const $ = id => document.getElementById(id);
 const modeNames = {classic:'클래식',gold:'골드 퀘스트',fishing:'피싱 프렌지',racing:'레이싱'};

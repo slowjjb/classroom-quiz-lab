@@ -35,3 +35,23 @@
 @keyframes fishing-wave{to{background-position:100px 0}}@keyframes fishing-bob{50%{transform:translateY(8px)}}@keyframes fishing-swim{50%{transform:translateX(70px)}}@keyframes fishing-cast-swing{50%{transform:rotate(12deg)}}@keyframes fishing-hit{50%{transform:translate(4px,-4px)}}@keyframes fishing-twinkle{50%{opacity:.45}}@keyframes fishing-rise{from{transform:translateY(35px) scale(.6);opacity:.3}to{transform:translateY(0) scale(1);opacity:1}}@keyframes fishing-penalty-sweep{from{transform:translateX(100vw)}to{transform:translateX(-115vw)}}@keyframes fishing-penalty-pop{0%,100%{opacity:0;transform:scale(.7)}15%,75%{opacity:1;transform:scale(1)}}
 @media(max-width:650px){.fishing-head-side{width:100%;justify-content:space-between}.fishing-audio-toggle{padding:8px 12px;font-size:.92rem}.fishing-scorebar{grid-template-columns:repeat(2,minmax(0,1fr))}.fishing-choices{grid-template-columns:1fr}.fishing-head{padding:10px 14px}.fishing-stage-inner{padding:10px 8px 25px}.fishing-sea{height:240px}.fishing-rod{left:22%;top:12%}.fishing-reward{padding:15px}}
 @media(prefers-reduced-motion:reduce){.fishing-student *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* v5.0.6 question image failure message + teacher progress dashboard */
+.fishing-question-image-warning{background:#fff1ce;border:2px solid #eeac31;border-radius:10px;color:#80500d;font-weight:800;padding:10px 14px;margin:10px auto}
+.fishing-monitor-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin:10px 0 18px}
+.fishing-monitor-row{display:grid;grid-template-columns:minmax(60px,.7fr) minmax(120px,1.25fr);align-items:center;column-gap:8px;row-gap:4px;background:#f6fbff;border:1px solid #b5ddeb;border-radius:12px;padding:10px 12px;color:#114b71}
+.fishing-monitor-row strong{font-size:.98rem}.fishing-monitor-phase{font-size:.84rem;font-weight:800}.fishing-monitor-row small{grid-column:1/-1;color:#35718c}
+.fishing-monitor-row[data-tone=pending]{border-color:#f8ce68;background:#fff9df}.fishing-monitor-row[data-tone=warn]{border-color:#f68b7b;background:#ffede8}
+.fishing-monitor-row[data-tone=done]{border-color:#8fdbb4;background:#eefcf2}
+.fishing-focus{position:fixed;inset:0;z-index:2700;overflow-y:auto;background:linear-gradient(160deg,#003f81,#066aaf 55%,#0b85bd);color:white}
+.fishing-focus[hidden]{display:none!important}.fishing-focus-inner{width:min(1450px,100%);margin:0 auto;padding:22px clamp(12px,3vw,28px) 30px}
+.fishing-focus-header{display:flex;justify-content:space-between;gap:20px;align-items:center;background:#00366b;border:2px solid #a5e6ff;border-radius:18px;padding:17px 22px}
+.fishing-focus-header p{margin:0;color:#a0e7fa;font-size:.73rem;font-weight:800}.fishing-focus-header h2{color:white;margin:4px 0;font-size:clamp(1.4rem,3vw,2.2rem)}.fishing-focus-header small{color:#c3eeff}
+.fishing-focus-actions{display:flex;gap:16px;align-items:center}.fishing-focus-actions>strong{font-size:clamp(1.5rem,4vw,2.7rem);color:#ffe27a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fishing-focus-summary{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.fishing-focus-summary strong{border:1px solid #79c9ec;border-radius:12px;background:#ffffff20;padding:12px 18px}
+.fishing-focus-columns{display:grid;grid-template-columns:minmax(300px,1fr) minmax(350px,1.3fr);gap:16px}
+.fishing-focus-columns>section{background:#fffffff0;border:3px solid #a3e4ff;border-radius:18px;padding:16px;color:#12486c}
+.fishing-focus-columns h3{color:#095385;margin:0 0 14px}
+.fishing-focus .fishing-monitor-list{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+@media(max-width:800px){.fishing-focus-columns{grid-template-columns:1fr}.fishing-focus-header{flex-wrap:wrap}.fishing-focus-actions{width:100%;justify-content:space-between}}

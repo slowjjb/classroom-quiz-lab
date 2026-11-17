@@ -2,16 +2,16 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퍼플킷 v5.0.4</title>
-  <link rel="stylesheet" href="styles.css?v=3.14"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.14"><link rel="stylesheet" href="gold.css?v=4.12"><link rel="stylesheet" href="fishing.css?v=5.0.4">
+  <meta name="theme-color" content="#234dd0"><title>게임 방 관리 | 퍼플킷 v5.0.6</title>
+  <link rel="stylesheet" href="styles.css?v=3.14"><link rel="stylesheet" href="arcade.css?v=3.14"><link rel="stylesheet" href="responsive-v3.6.css?v=3.14"><link rel="stylesheet" href="avatars.css?v=3.14"><link rel="stylesheet" href="gold.css?v=4.12"><link rel="stylesheet" href="fishing.css?v=5.0.6">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
-  <script type="module" src="js/rooms.js?v=5.0.4"></script>
-  <script type="module" src="js/classic-host.js?v=5.0.4"></script>
-  <script type="module" src="js/gold-host.js?v=5.0.4"></script>
-  <script type="module" src="js/fishing-host.js?v=5.0.4"></script>
+  <script type="module" src="js/rooms.js?v=5.0.6"></script>
+  <script type="module" src="js/classic-host.js?v=5.0.6"></script>
+  <script type="module" src="js/gold-host.js?v=5.0.6"></script>
+  <script type="module" src="js/fishing-host.js?v=5.0.6"></script>
 </head>
 <body class="arcade-theme">
-  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">실시간 게임 방 · v5.0.4</span></header>
+  <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">실시간 게임 방 · v5.0.6</span></header>
   <main class="page-content rooms-page">
     <div class="page-heading rooms-heading"><span class="eyebrow">PURPLEKIT · TEACHER STUDIO</span><h1>게임 방 만들기</h1><p>문제 세트를 선택하고 학생들이 입장하면, 한 화면에서 출제·채점·순위까지 진행할 수 있습니다.</p></div>
     <div class="rooms-dashboard">
@@ -21,14 +21,14 @@
       <p id="room-auth-message" class="helper" aria-live="polite">Google 로그인 상태를 확인하고 있습니다.</p>
       <div class="button-row"><button id="room-login" class="btn btn-primary" disabled>교사 Google 로그인</button><button id="room-retry" class="btn btn-outline" hidden>권한 다시 확인</button><button id="room-logout" class="btn btn-quiet" hidden>로그아웃</button></div>
       <details class="avatar-rules-help">
-        <summary>v5 통합 보안 규칙 설정 <span class="pill pill-neutral">v5.0.4 갱신 필요</span></summary>
-        <p>골드 퀘스트 사용을 위해 기존의 클래식·골드 퀘스트·캐릭터 권한을 보존한 <strong>v5.0.4 전체 통합 규칙</strong>으로 갱신해야 합니다. 교사 로그인 후 아래 버튼으로 생성한 규칙을 Firebase Realtime Database → 규칙에 게시하세요. 이후 GitHub의 보안 규칙 파일도 동일하게 보관하는 것을 권장합니다.</p>
-        <button type="button" id="avatar-copy-rules" class="btn btn-outline btn-small">v5.0.4 전체 통합 보안 규칙 복사</button>
+        <summary>v5 통합 보안 규칙 설정 <span class="pill pill-neutral">v5 최초 적용 시 필요</span></summary>
+        <p>v5 규칙을 아직 게시하지 않았다면 기존 클래식·골드 퀘스트·캐릭터 권한을 보존한 <strong>v5 전체 통합 규칙</strong>으로 갱신해야 합니다. v5.0.5에서 이미 적용했다면 이 업데이트로 규칙을 다시 게시할 필요는 없습니다. 교사 로그인 후 아래 버튼으로 생성한 규칙을 Firebase Realtime Database → 규칙에 게시하세요. 이후 GitHub의 보안 규칙 파일도 동일하게 보관하는 것을 권장합니다.</p>
+        <button type="button" id="avatar-copy-rules" class="btn btn-outline btn-small">v5 전체 통합 보안 규칙 복사</button>
         <p id="avatar-rules-message" class="helper" role="status"></p>
       </details>
       <div id="room-rules-guide" class="setup-guide" hidden>
         <strong>Firebase 통합 보안 규칙을 적용해야 합니다.</strong>
-        <p>로그인한 교사 UID를 이용해 <strong>v0~v5.0.4</strong> 전체 규칙을 생성합니다. Firebase Realtime Database의 규칙에 게시하고 GitHub의 `database.rules.json`에도 같은 내용을 저장하세요.</p>
+        <p>로그인한 교사 UID를 이용해 <strong>v0~v5</strong> 전체 규칙을 생성합니다. Firebase Realtime Database의 규칙에 게시하고 GitHub의 `database.rules.json`에도 같은 내용을 저장하세요.</p>
         <div class="button-row"><button class="btn btn-outline" id="room-copy-rules">전체 규칙 복사</button><button class="btn btn-outline" id="room-download-rules">규칙 JSON 다운로드</button></div>
         <p id="room-rules-status" class="helper" aria-live="polite"></p>
       </div>
@@ -48,8 +48,8 @@
           <div><label class="field-label" for="room-set">문제 세트 (모든 게임 공통)</label><select id="room-set"><option value="">연결 테스트용 — 선택 안 함</option></select></div>
         </div>
         <div id="room-version-rules-warning" class="setup-guide" hidden role="alert">
-          <strong>⚠️ v5.0.4 통합 보안 규칙을 먼저 적용해 주세요.</strong>
-          <p>새 게임 방은 학생의 실행 버전을 서버에서도 확인합니다. 교사 인증 영역에서 <b>v5.0.4 전체 통합 보안 규칙 복사</b>를 누르고 Firebase Realtime Database → 규칙에 붙여넣은 뒤 게시하세요. 게시 후 위쪽 <b>권한 다시 확인</b>을 눌러 주세요. 기존 게임방은 계속 이용할 수 있습니다.</p>
+          <strong>⚠️ v5 통합 보안 규칙을 적용하지 않았다면 먼저 게시해 주세요.</strong>
+          <p>새 게임 방은 학생의 실행 버전을 서버에서도 확인합니다. 교사 인증 영역에서 <b>v5 전체 통합 보안 규칙 복사</b>를 누르고 Firebase Realtime Database → 규칙에 붙여넣은 뒤 게시하세요. 게시 후 위쪽 <b>권한 다시 확인</b>을 눌러 주세요. 기존 게임방은 계속 이용할 수 있습니다.</p>
           <button id="room-version-refresh" class="btn btn-outline btn-small" type="button">교사용 페이지 새로고침</button>
         </div>
         <div class="button-row"><button class="btn btn-primary" id="room-create">6자리 참여 코드로 방 만들기</button></div>
@@ -161,7 +161,7 @@
       </section>
 
       <section class="panel fishing-host-panel" id="fishing-panel" hidden>
-        <div class="panel-header"><h2>🎣 피싱 프렌지 v5.0.4</h2><span id="fishing-host-badge" class="pill pill-neutral">대기 중</span></div>
+        <div class="panel-header"><h2>🎣 피싱 프렌지 v5.0.6</h2><span id="fishing-host-badge" class="pill pill-neutral">대기 중</span></div>
         <p id="fishing-host-room" class="helper">게임방을 선택해 주세요.</p>
         <p class="helper">학생이 바다에 낚싯대를 던지고 퀴즈에 정답을 맞혀 바다 생물의 무게(kg)를 모읍니다. <strong>교사 화면을 게임 중 계속 열어 두세요.</strong></p>
         <div id="fishing-rules" class="setup-guide">
@@ -172,10 +172,22 @@
         <div class="fishing-settings"><label>게임 시간 <select id="fishing-duration"><option value="3">3분</option><option value="5">5분</option><option value="7" selected>7분</option><option value="10">10분</option><option value="15">15분</option></select></label>
           <span>🎣 내구도 5 · 정답에 따라 루어 성장 · 전설은 5단계부터 · 벌칙 3%, 방 전체 60초 간격</span>
         </div>
-        <div class="button-row"><button id="fishing-prepare" class="btn btn-outline" type="button">낚시 준비 · 입장 마감</button><button id="fishing-start" class="btn btn-primary" type="button">피싱 프렌지 시작</button><button id="fishing-end" class="btn btn-danger" type="button">게임 종료</button><button id="fishing-export" class="btn btn-quiet" type="button">결과 CSV</button></div>
+        <div class="button-row"><button id="fishing-prepare" class="btn btn-outline" type="button">낚시 준비 · 입장 마감</button><button id="fishing-start" class="btn btn-primary" type="button">피싱 프렌지 시작</button><button id="fishing-focus-open" class="btn btn-outline" type="button">📺 진행 현황 전광판</button><button id="fishing-end" class="btn btn-danger" type="button">게임 종료</button><button id="fishing-export" class="btn btn-quiet" type="button">결과 CSV</button></div>
         <p id="fishing-host-message" class="feedback" role="status" aria-live="polite"></p>
         <div class="fishing-host-summary"><strong>⏱ <span id="fishing-host-clock">—</span></strong><span id="fishing-host-count">0명</span><span id="fishing-host-solved">0회 풀이</span></div>
         <h3>실시간 kg 순위</h3><div id="fishing-host-ranking" class="fishing-rank-list"></div>
+        <h3>학생별 낚시·답안 처리 상태</h3>
+        <p class="helper">문제 풀이, 답안 제출·채점 대기, 결과 확인 상태를 볼 수 있습니다. (화면 오류 여부를 직접 감지하는 것은 아닙니다.)</p>
+        <div id="fishing-host-monitor" class="fishing-monitor-list"></div>
+      </section>
+      <section id="fishing-focus" class="quiz-stage fishing-focus" hidden aria-label="피싱 프렌지 교사 전광판">
+        <div class="fishing-focus-inner">
+          <header class="fishing-focus-header"><div><p>PURPLEKIT · FISHING FRENZY</p><h2>🎣 실시간 낚시 현황</h2><small id="fishing-focus-room">게임방 대기 중</small></div>
+            <div class="fishing-focus-actions"><strong id="fishing-focus-clock">—</strong><button id="fishing-focus-close" class="btn btn-outline" type="button">✕ 관리 화면으로</button></div></header>
+          <div class="fishing-focus-summary"><strong id="fishing-focus-count">0명 참여</strong><strong id="fishing-focus-solved">풀이 0회</strong><strong id="fishing-focus-pending">채점 대기 0명</strong></div>
+          <div class="fishing-focus-columns"><section><h3>🏆 실시간 무게 순위</h3><div id="fishing-focus-ranking" class="fishing-rank-list"></div></section>
+            <section><h3>👀 학생별 문제 진행 상태</h3><div id="fishing-focus-monitor" class="fishing-monitor-list"></div></section></div>
+        </div>
       </section>
       <section class="panel gold-host-panel" id="gold-panel" hidden>
         <div class="panel-header"><h2>💎 골드 퀘스트</h2><span id="gold-status" class="pill pill-neutral">대기실</span></div>
@@ -271,6 +283,6 @@
     <div class="tip">테스트에서는 가상 학생 이름만 사용하세요. 기존 참가자 명단과 참여 코드를 유지합니다. v3 정답은 교사용 경로에만 저장됩니다.</div>
     <p class="notice"><strong>v2.2 동시 접속 검증:</strong> 자동으로 별도 가상 학생 5·15·30명을 입장시키려면 <a href="loadtest.html">동시 접속 테스트 도구 열기 →</a></p>
     <a class="back-link" href="teacher.html">← 기존 교사 접속 현황</a>
-  </main><footer>PURPLEKIT · v5.0.4</footer></div>
+  </main><footer>PURPLEKIT · v5.0.6</footer></div>
 </body>
 </html>

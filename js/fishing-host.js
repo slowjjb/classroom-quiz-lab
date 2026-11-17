@@ -9,11 +9,43 @@ import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHI
 import {makeRulesV5} from './rules-v5.js';
 const $=id=>document.getElementById(id);
 let teacher=null,code='',mode='',room=null,run=null,pub=null,states={},actions={},answers={},rights=false,operation=false,working=false,offset=0;
-let subs=[],authVersion=0;
+let subs=[],authVersion=0,focusOpen=false;
 const serverNow=()=>Date.now()+offset;
 function status(msg,err=false){const el=$('fishing-host-message');el.textContent=msg;el.dataset.kind=err?'error':'success';}
-function stop(){subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;}
+function stop(){focus(false);subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;}
 function formatClock(sec){const n=Math.max(0,Math.ceil(sec));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;}
+function phaseDescription(uid,score){
+  const state=states?.[uid],phase=state?.phase;
+  if(!state)return {label:'시작 대기',tone:'idle'};
+  const hasAnswer=Boolean(state.nonce&&answers?.[uid]?.[state.nonce]);
+  const seconds=Number(state.phaseAt)>0?Math.max(0,Math.round((serverNow()-state.phaseAt)/1000)):0;
+  if(phase==='cast')return {label:'낚싯대 투척 대기',tone:'idle'};
+  if(phase==='bite')return {label:'입질 대기 / HIT',tone:'idle'};
+  if(phase==='question'&&hasAnswer)return {label:`답안 제출 · 채점 대기${seconds>=10?` (${seconds}초)`:''}`,tone:seconds>=15?'warn':'pending'};
+  if(phase==='question')return {label:`문제 풀이 중${seconds>=60?` (${seconds}초)`:''}`,tone:seconds>=90?'warn':'normal'};
+  if(phase==='result')return {label:'결과 확인 / 다음 낚시 대기',tone:'done'};
+  if(phase==='waiting')return {label:'문제 완료',tone:'done'};
+  return {label:'상태 확인 중',tone:'idle'};
+}
+function renderMonitor(target){
+  const container=$(target);container.replaceChildren();
+  const roster=run?.roster||Object.fromEntries(Object.entries(pub?.scores||{}).map(([id,s])=>[id,s.name||'학생']));
+  const entries=Object.entries(roster).map(([uid,name])=>({uid,name,state:phaseDescription(uid,pub?.scores?.[uid]),score:pub?.scores?.[uid]||{}}));
+  entries.sort((a,b)=>(a.state.tone==='warn'?0:a.state.tone==='pending'?1:2)-(b.state.tone==='warn'?0:b.state.tone==='pending'?1:2)||a.name.localeCompare(b.name,'ko'));
+  for(const item of entries){
+    const row=document.createElement('div');row.className='fishing-monitor-row';row.dataset.tone=item.state.tone;
+    const name=document.createElement('strong');name.textContent=item.name;
+    const state=document.createElement('span');state.className='fishing-monitor-phase';state.textContent=item.state.label;
+    const count=document.createElement('small');count.textContent=`정답 ${Number(item.score.correct||0)} / 풀이 ${Number(item.score.answered||0)} · Lv.${Number(item.score.level||1)}`;
+    row.append(name,state,count);container.append(row);
+  }
+  if(!entries.length)container.textContent='게임 준비 후 학생 진행 상태가 표시됩니다.';
+}
+function focus(open){
+  focusOpen=Boolean(open);$('fishing-focus').hidden=!focusOpen;
+  document.body.classList.toggle('quiz-stage-active',focusOpen);
+  if(focusOpen)render();
+}
 function render(){
   const active=Boolean(code&&(mode==='fishing'||room?.meta?.mode==='fishing'));
   $('fishing-panel').hidden=!active;
@@ -38,6 +70,16 @@ function render(){
     row.append(left,right);list.append(row);
   });
   if(!list.children.length)list.textContent='게임을 준비하면 학생 순위가 표시됩니다.';
+  renderMonitor('fishing-host-monitor');
+  if(focusOpen){
+    $('fishing-focus-room').textContent=$('fishing-host-room').textContent;
+    $('fishing-focus-clock').textContent=$('fishing-host-clock').textContent;
+    $('fishing-focus-count').textContent=$('fishing-host-count').textContent+' 참여';
+    $('fishing-focus-solved').textContent=$('fishing-host-solved').textContent;
+    $('fishing-focus-pending').textContent='채점 대기 '+Object.entries(states||{}).filter(([id,st])=>st?.phase==='question'&&Boolean(answers?.[id]?.[st.nonce])).length+'명';
+    const focusRanks=$('fishing-focus-ranking');focusRanks.replaceChildren(...Array.from(list.children).map(row=>row.cloneNode(true)));
+    renderMonitor('fishing-focus-monitor');
+  }
 }
 function watch(){
   if(!teacher||!code||!rights)return;
@@ -52,7 +94,7 @@ function watch(){
       else if(key==='states')states=val||{};
       else if(key==='actions')actions=val||{};
       else if(key==='answers')answers=val||{};
-      if(['room','run','pub','states'].includes(key))render();
+      if(['room','run','pub','states','answers'].includes(key))render();
       void pump();
     },err=>status('피싱 프렌지 데이터 읽기 실패: '+formatError(err),true)));
   }
@@ -84,7 +126,7 @@ function makeCast(uid,index,score,previous=null){
   const optionHistory={...(previous?.optionHistory||{})};
   const shuffled=q.type==='typing'?null:shuffleGoldChoices(q.options,optionHistory[qIndex],Math.random,q.correctIndex);
   if(shuffled)optionHistory[qIndex]=shuffled.history;
-  return {phase:'cast',nonce:`f${index}_${crypto.randomUUID().slice(0,12)}`,sequence:index,questionIndex:qIndex,
+  return {phase:'cast',phaseAt:serverNow(),nonce:`f${index}_${crypto.randomUUID().slice(0,12)}`,sequence:index,questionIndex:qIndex,
     number:q.number,prompt:q.prompt,type:q.type,imageUrl:q.imageUrl||'',
     options:shuffled?shuffled.options:[],...(shuffled?{optionOrder:shuffled.optionOrder}:{}),optionHistory,
     upgrade:Number(score.progress||0)>=Number(score.nextUpgradeAt||3)};
@@ -153,7 +195,7 @@ async function handleAction(uid,state,type){
   await runTransaction(ref(db,`v5/memberState/${code}/${uid}`),current=>{
     if(!current||current.nonce!==state.nonce||current.phase!==expected)return;
     if(type==='next')return draft;
-    return {...current,phase:nextPhase,...(type==='cast'?{biteAt:nextAt}:{})};
+    return {...current,phase:nextPhase,phaseAt:now,...(type==='cast'?{biteAt:nextAt}:{})};
   },{applyLocally:false});
 }
 async function handleAnswer(uid,state,answer){
@@ -192,7 +234,7 @@ async function handleAnswer(uid,state,answer){
 }
 async function publishResult(uid,state,q,answer,score,correct){
   if(score.lastAnswerNonce!==state.nonce)return;
-  const next={...state,phase:'result',result:score.lastResult};
+  const next={...state,phase:'result',phaseAt:serverNow(),result:score.lastResult};
   await update(ref(db),{
     [`v5/memberState/${code}/${uid}`]:next,
     [`v5/privateRuns/${code}/answersLog/${uid}/${state.nonce}`]:{
@@ -250,6 +292,9 @@ if(auth)onAuthStateChanged(auth,user=>{
 if(db)onValue(ref(db,'.info/serverTimeOffset'),snap=>{offset=Number(snap.val()||0);});
 $('fishing-prepare').addEventListener('click',()=>void prepare());
 $('fishing-start').addEventListener('click',()=>void start());
+$('fishing-focus-open').addEventListener('click',()=>focus(true));
+$('fishing-focus-close').addEventListener('click',()=>focus(false));
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)focus(false);});
 $('fishing-end').addEventListener('click',()=>{if(confirm('피싱 프렌지를 지금 종료할까요?'))void finish();});
 $('fishing-export').addEventListener('click',exportCsv);
 $('fishing-copy-rules').addEventListener('click',async()=>{
@@ -266,7 +311,9 @@ setInterval(()=>{
   if(pub?.state==='playing'){
     const left=(Number(pub.endsAt||0)-serverNow())/1000;
     $('fishing-host-clock').textContent=formatClock(left);
+    if(focusOpen)$('fishing-focus-clock').textContent=formatClock(left);
     if(left<=-1.5&&!operation&&!working)void finish();else void pump();
   }
 },250);
+setInterval(()=>{if(focusOpen&&pub?.state==='playing')renderMonitor('fishing-focus-monitor');},5000);
 render();

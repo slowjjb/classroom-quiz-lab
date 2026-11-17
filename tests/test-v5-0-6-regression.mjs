@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {fullQuestionImageUrl} from '../js/image-utils.js';
+import {APP_VERSION,APP_BUILD} from '../js/version.js';
+const read=p=>fs.readFileSync(p,'utf8');
+const student=read('js/fishing-student.js');
+const host=read('js/fishing-host.js');
+const join=read('join.html');
+const rooms=read('rooms.html');
+const manifest=JSON.parse(read('version.json'));
+assert.equal(APP_VERSION,'5.0.6');assert.equal(APP_BUILD,506);
+assert.equal(manifest.version,APP_VERSION);assert.equal(manifest.build,APP_BUILD);
+assert.equal(fullQuestionImageUrl('test.png','https://example.com/classroom/join.html'),'https://example.com/classroom/images/questions/test.png');
+assert.throws(()=>fullQuestionImageUrl('https://evil.org/bad.png','https://example.com/classroom/join.html'),/이 퀴즈 사이트/);
+// Actual question rendering must construct choices/input before image work and catch image URL errors.
+const q=student.split('function renderQuestion(){')[1].split('\nfunction render(){')[0];
+assert.match(q,/if\(own\.type==='typing'\)/);
+assert.ok(q.indexOf("opts.append(field)")<q.indexOf('fullQuestionImageUrl(own.imageUrl,location.href)'));
+assert.ok(q.indexOf('opts.append(button)')<q.indexOf('fullQuestionImageUrl(own.imageUrl,location.href)'));
+assert.match(q,/catch\(err\)/);
+assert.match(q,/image\.onerror=/);
+assert.match(join,/id="fishing-question-image-warning"/);
+for(const id of ['fishing-host-monitor','fishing-focus','fishing-focus-open','fishing-focus-close','fishing-focus-monitor','fishing-focus-ranking'])assert.ok(rooms.includes(`id="${id}"`));
+// Test real progress label logic with simulated Firebase snapshots (no network).
+const monitorCode=host.split('function phaseDescription(uid,score){')[1].split('\nfunction renderMonitor(')[0];
+const now=Date.now();
+const states={student1:{phase:'question',nonce:'abc',phaseAt:now-18000},student2:{phase:'question',nonce:'b',phaseAt:now-100000},student3:{phase:'result',nonce:'c',phaseAt:now-1000}};
+const answers={student1:{abc:{value:'2',at:now-12000}}};
+const func=new Function('states','answers','serverNow',`return function phaseDescription(uid,score){${monitorCode}`)(states,answers,()=>now);
+assert.equal(func('student1').tone,'warn');
+assert.match(func('student1').label,/채점 대기/);
+assert.equal(func('student2').tone,'warn');
+assert.match(func('student2').label,/문제 풀이/);
+assert.equal(func('student3').tone,'done');
+assert.equal(func('student4').tone,'idle');
+console.log('v5.0.6: images keep choices, version consistent, teacher progress states PASS');

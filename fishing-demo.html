@@ -1,7 +1,7 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>피싱 프렌지 v5.0.4 · 오프라인 미리보기</title>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>피싱 프렌지 v5.0.6 · 오프라인 미리보기</title>
 <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="arcade.css"><link rel="stylesheet" href="fishing.css">
 <style>body{margin:0}#fishing-student{display:block!important;position:relative!important}#preview-banner{position:relative;z-index:10;background:#fff7cc;color:#583d00;padding:8px 12px;text-align:center;font-size:14px;font-weight:800}#preview-penalty{border:0;padding:5px 9px;background:#df8b00;color:white;border-radius:8px;cursor:pointer;margin-left:6px}</style></head>
-<body class="arcade-theme quiz-stage-active"><div id="preview-banner">🎣 v5.0.4 화면·확률 시험용 미리보기 (실제 게임방과 연결되지 않습니다) <button type="button" id="preview-penalty">전체 벌칙 화면 체험</button></div>
+<body class="arcade-theme quiz-stage-active"><div id="preview-banner">🎣 v5.0.6 화면·확률 시험용 미리보기 (실제 게임방과 연결되지 않습니다) <button type="button" id="preview-penalty">전체 벌칙 화면 체험</button></div>
 <section id="student-room" hidden></section>
 <section aria-label="피싱 프렌지 학생 게임 화면" class="quiz-stage fishing-student" id="fishing-student">
 <div class="quiz-stage-inner fishing-stage-inner">
@@ -35,7 +35,7 @@
 </div>
 </section>
 <script>
-// Purplekit v5.0.4 Fishing Frenzy — pure balancing and scoring helpers.
+// Purplekit v5.0.6 Fishing Frenzy — pure balancing and scoring helpers.
 // All random rewards are chosen in the teacher's authenticated browser.
 const FISHING_DURABILITY = 5;
 const FISHING_PENALTY_CHANCE = 0.03;
@@ -141,7 +141,7 @@ const bank=[
 ];
 function views(view){for(const name of ['fishing-wait','fishing-cast-view','fishing-question-view','fishing-reward','fishing-finished'])$(name).hidden=name!==view;}
 
-function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.4`; }
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.6`; }
 function setLureVisual(level){const icon=$('fishing-lure-icon');if(icon)icon.src=lureAsset(level);$('fishing-level').textContent='Lv.'+(level||1);}
 
 function stats(){
@@ -172,7 +172,7 @@ $('fishing-submit').addEventListener('click',()=>{
  const sprite=$('fishing-catch-image');sprite.hidden=true;$('fishing-catch-emoji').hidden=false;
  let name='물고기를 놓쳤어요!',detail='다시 도전해 보세요!',emoji='💦';
  if(result.type==='fish'){
-   name=result.name;detail=`+${result.kg.toFixed(1)} kg 획득!`;emoji=result.emoji;sprite.src=`images/fishing/${result.creatureId}.png?v=5.0.4`;sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
+   name=result.name;detail=`+${result.kg.toFixed(1)} kg 획득!`;emoji=result.emoji;sprite.src=`images/fishing/${result.creatureId}.png?v=5.0.6`;sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
  }else if(result.type==='upgrade'){name=`루어 ${result.newLevel}단계 강화!`;detail='더 무거운 생물에 도전해 보세요!';emoji='🎣';sprite.src=lureAsset(result.newLevel);sprite.hidden=false;$('fishing-catch-emoji').hidden=true;}
  else if(result.type==='broken'){name='낚싯대가 부러졌어요!';detail='루어 1단계로 복귀 · 총 kg은 유지';emoji='🪵';}
  else if(result.type==='upgrade-miss'){name='강화 루어를 놓쳤어요!';detail='정답 1~3개 뒤 다시 도전할 수 있어요.';}

@@ -9,7 +9,7 @@ let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',re
 let audioEnabled=true,bgmStarted=false;
 const now=()=>Date.now()+offset;
 function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
-function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.5`; }
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.6`; }
 function setAudioToggle(){const btn=$('fishing-audio-toggle');if(!btn)return;btn.textContent=audioEnabled?'🔊 소리 켜짐':'🔇 소리 꺼짐';btn.setAttribute('aria-pressed',audioEnabled?'true':'false');}
 function safePlay(el,vol=.6){if(!el||!audioEnabled)return;el.volume=vol;try{el.currentTime=0;}catch{};el.play().catch(()=>{});}
 function ensureBgm(){const bgm=$('fishing-bgm');if(!bgm||!audioEnabled)return;if(bgmStarted&& !bgm.paused)return;bgm.volume=.28;bgm.play().then(()=>{bgmStarted=true;}).catch(()=>{});}
@@ -41,7 +41,7 @@ function revealContent(){
     title=`${result.name||creature?.name||'물고기'}!`;
     desc=`+${Number(result.kg||0).toFixed(1)} kg 획득!`;
     if(creature){
-      sprite.src=`images/fishing/${creature.id}.png?v=5.0.5`;sprite.alt=title;
+      sprite.src=`images/fishing/${creature.id}.png?v=5.0.6`;sprite.alt=title;
       sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
       sprite.onerror=()=>{sprite.hidden=true;$('fishing-catch-emoji').hidden=false;};
     }
@@ -73,31 +73,52 @@ function revealContent(){
 }
 function renderQuestion(){
   if(!own||own.phase!=='question')return;
-  const opts=$('fishing-choices');opts.replaceChildren();
-  $('fishing-question').textContent=own.prompt||'문제 대기 중';
-  $('fishing-question-label').textContent=`📖 ${own.number||''}번 문제`; 
-  const figure=$('fishing-question-image-wrap'),image=$('fishing-question-image');
-  const url=own.imageUrl?fullQuestionImageUrl(own.imageUrl):'';
-  figure.hidden=!url;if(url)image.src=url;
+  const opts=$('fishing-choices'),figure=$('fishing-question-image-wrap');
+  const image=$('fishing-question-image'),warning=$('fishing-question-image-warning');
+  opts.replaceChildren();
   selected='';pending=false;questionNonce=own.nonce;
+  $('fishing-question').textContent=own.prompt||'문제 대기 중';
+  $('fishing-question-label').textContent=`📖 ${own.number||''}번 문제`;
+  $('fishing-submit').disabled=true;
+  // Choices MUST render before attempting to resolve an optional image URL.
   if(own.type==='typing'){
-    const field=document.createElement('input');field.type='text';field.maxLength=180;field.autocomplete='off';field.placeholder='정답을 입력하세요';field.className='fishing-typing';
+    const field=document.createElement('input');field.type='text';field.maxLength=180;
+    field.autocomplete='off';field.placeholder='정답을 입력하세요';field.className='fishing-typing';
     field.addEventListener('input',()=>{selected=field.value.trim();$('fishing-submit').disabled=!selected||pending;});
     field.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void submitAnswer();}});
     opts.append(field);
   }else{
-    (Array.isArray(own.options)?own.options:Object.values(own.options||{})).filter(Boolean).forEach((label,i)=>{
+    const options=(Array.isArray(own.options)?own.options:Object.values(own.options||{}))
+      .filter(value=>value!==null&&value!==undefined&&String(value).trim());
+    for(const [i,label] of options.entries()){
       const button=document.createElement('button');button.type='button';button.className='fishing-choice';
       const num=document.createElement('b');num.textContent=String(i+1);
-      const text=document.createElement('span');text.textContent=label;
+      const text=document.createElement('span');text.textContent=String(label);
       button.append(num,text);
       button.addEventListener('click',()=>{
         selected=String(i+1);opts.querySelectorAll('button').forEach(b=>b.classList.toggle('chosen',b===button));
         $('fishing-submit').disabled=false;
       });opts.append(button);
-    });
+    }
+    if(!options.length){
+      const info=document.createElement('p');info.className='fishing-question-image-warning';
+      info.textContent='보기 정보를 불러오지 못했습니다. 선생님께 알려 주세요.';opts.append(info);
+    }
   }
-  $('fishing-submit').disabled=true;
+  // A missing, invalid or failed question image must never suppress inputs/choices.
+  image.onload=null;image.onerror=null;image.removeAttribute('src');figure.hidden=true;warning.hidden=true;
+  if(own.imageUrl){
+    try{
+      const url=fullQuestionImageUrl(own.imageUrl,location.href);
+      if(url){
+        image.onerror=()=>{if(questionNonce===own?.nonce){figure.hidden=true;warning.hidden=false;}};
+        image.src=url;figure.hidden=false;
+      }
+    }catch(err){
+      console.warn('[fishing] question image unavailable:',err);
+      warning.hidden=false;
+    }
+  }
 }
 function render(){
   if(!code||!uid||!pub){show(false);return;}
