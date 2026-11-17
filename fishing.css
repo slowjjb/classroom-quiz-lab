@@ -55,3 +55,20 @@
 .fishing-focus-columns h3{color:#095385;margin:0 0 14px}
 .fishing-focus .fishing-monitor-list{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
 @media(max-width:800px){.fishing-focus-columns{grid-template-columns:1fr}.fishing-focus-header{flex-wrap:wrap}.fishing-focus-actions{width:100%;justify-content:space-between}}
+
+/* v5.0.7: show the prompt on the left and an enlarged question image on the right. */
+.fishing-question-copy{min-width:0}
+.fishing-question-card.has-image{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:clamp(12px,2vw,22px);align-items:center;text-align:left;padding:clamp(15px,2vw,23px)}
+.fishing-question-card.has-image .fishing-question-copy{text-align:left}
+.fishing-question-card.has-image .fishing-question-label{text-align:center}
+.fishing-question-card.has-image h2{font-size:clamp(20px,2.4vw,30px);line-height:1.38;margin:9px 0}
+.fishing-question-card.has-image figure{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:0;width:100%;max-width:none;margin:0;padding:8px;border-radius:13px;background:#eefaff}
+.fishing-question-card.has-image figure img{display:block;width:100%;height:auto;max-width:100%;max-height:min(43dvh,390px);object-fit:contain}
+.fishing-question-card.has-image .fishing-question-image-warning{grid-column:1/-1}
+@media(max-width:760px){
+  .fishing-question-card.has-image{grid-template-columns:minmax(0,1fr);gap:8px;text-align:center;padding:15px}
+  .fishing-question-card.has-image .fishing-question-copy{text-align:center}
+  .fishing-question-card.has-image h2{font-size:clamp(20px,4.4vw,28px);margin:5px 0}
+  .fishing-question-card.has-image figure{padding:6px}
+  .fishing-question-card.has-image figure img{max-height:min(35dvh,290px)}
+}

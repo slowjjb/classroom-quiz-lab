@@ -33,6 +33,6 @@ assert.match(student,/showingRewardNonce.*closeReward/);
 assert.match(student,/pendingPickNonce=nonce/);
 assert.match(css,/\.gold-reward-reveal:not\(\[hidden\]\)/);
 for(const fx of ['reward-positive','reward-negative','reward-neutral'])assert.ok(arcade.includes(fx),fx);
-assert.match(src('js/join.js'),/gold-student\.js\?v=4\.(?:[56789]|10|11|12)/);
-assert.match(src('join.html'),/gold\.css\?v=4\.(?:[56789]|10|11|12)/);
+assert.match(src('js/join.js'),/gold-student\.js\?v=(?:4\.(?:[56789]|10|11|12)|5\.0\.[7-9])/);
+assert.match(src('join.html'),/gold\.css\?v=(?:4\.(?:[56789]|10|11|12)|5\.0\.[7-9])/);
 console.log('v4.5 reward reveal classes, event binding, actual committed payout, styles and original jingles: PASS');

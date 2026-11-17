@@ -8,7 +8,7 @@ const host=read('js/fishing-host.js');
 const join=read('join.html');
 const rooms=read('rooms.html');
 const manifest=JSON.parse(read('version.json'));
-assert.equal(APP_VERSION,'5.0.6');assert.equal(APP_BUILD,506);
+assert.ok(APP_BUILD>=506);assert.ok(APP_VERSION.startsWith('5.0.'));
 assert.equal(manifest.version,APP_VERSION);assert.equal(manifest.build,APP_BUILD);
 assert.equal(fullQuestionImageUrl('test.png','https://example.com/classroom/join.html'),'https://example.com/classroom/images/questions/test.png');
 assert.throws(()=>fullQuestionImageUrl('https://evil.org/bad.png','https://example.com/classroom/join.html'),/이 퀴즈 사이트/);

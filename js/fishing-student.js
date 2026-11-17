@@ -9,7 +9,7 @@ let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',re
 let audioEnabled=true,bgmStarted=false;
 const now=()=>Date.now()+offset;
 function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
-function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.6`; }
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.7`; }
 function setAudioToggle(){const btn=$('fishing-audio-toggle');if(!btn)return;btn.textContent=audioEnabled?'🔊 소리 켜짐':'🔇 소리 꺼짐';btn.setAttribute('aria-pressed',audioEnabled?'true':'false');}
 function safePlay(el,vol=.6){if(!el||!audioEnabled)return;el.volume=vol;try{el.currentTime=0;}catch{};el.play().catch(()=>{});}
 function ensureBgm(){const bgm=$('fishing-bgm');if(!bgm||!audioEnabled)return;if(bgmStarted&& !bgm.paused)return;bgm.volume=.28;bgm.play().then(()=>{bgmStarted=true;}).catch(()=>{});}
@@ -41,7 +41,7 @@ function revealContent(){
     title=`${result.name||creature?.name||'물고기'}!`;
     desc=`+${Number(result.kg||0).toFixed(1)} kg 획득!`;
     if(creature){
-      sprite.src=`images/fishing/${creature.id}.png?v=5.0.6`;sprite.alt=title;
+      sprite.src=`images/fishing/${creature.id}.png?v=5.0.7`;sprite.alt=title;
       sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
       sprite.onerror=()=>{sprite.hidden=true;$('fishing-catch-emoji').hidden=false;};
     }
@@ -75,6 +75,8 @@ function renderQuestion(){
   if(!own||own.phase!=='question')return;
   const opts=$('fishing-choices'),figure=$('fishing-question-image-wrap');
   const image=$('fishing-question-image'),warning=$('fishing-question-image-warning');
+  const card=$('fishing-question-card');
+  card.classList.remove('has-image');
   opts.replaceChildren();
   selected='';pending=false;questionNonce=own.nonce;
   $('fishing-question').textContent=own.prompt||'문제 대기 중';
@@ -107,12 +109,16 @@ function renderQuestion(){
   }
   // A missing, invalid or failed question image must never suppress inputs/choices.
   image.onload=null;image.onerror=null;image.removeAttribute('src');figure.hidden=true;warning.hidden=true;
+  const imageNonce=own.nonce;
   if(own.imageUrl){
     try{
       const url=fullQuestionImageUrl(own.imageUrl,location.href);
       if(url){
-        image.onerror=()=>{if(questionNonce===own?.nonce){figure.hidden=true;warning.hidden=false;}};
-        image.src=url;figure.hidden=false;
+        image.onerror=()=>{
+          if(questionNonce!==imageNonce || own?.nonce!==imageNonce || image.src!==url)return;
+          figure.hidden=true;warning.hidden=false;card.classList.remove('has-image');
+        };
+        image.src=url;figure.hidden=false;card.classList.add('has-image');
       }
     }catch(err){
       console.warn('[fishing] question image unavailable:',err);

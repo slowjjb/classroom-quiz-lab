@@ -108,11 +108,22 @@ function renderQuestion(){
   const question=$('gold-question');question.textContent=own?.prompt||'문제를 기다리는 중입니다.';
   const options=$('gold-answer-choices');options.replaceChildren();
   $('gold-question-n').textContent=`${Number(own?.answered||0)+1}번째 도전`;
-  $('gold-question-image-wrap').hidden=true;
+  const card=$('gold-question-card'),figure=$('gold-question-image-wrap'),image=$('gold-question-image');
+  // Only image questions use the wide two-column layout; stale image events cannot alter newer questions.
+  const imageNonce=own?.nonce;
+  card.classList.remove('has-image');figure.hidden=true;
+  image.onerror=null;image.onload=null;image.removeAttribute('src');
   if(own?.imageUrl){
-    try{const src=fullQuestionImageUrl(own.imageUrl,location.href);
-      if(src){$('gold-question-image-wrap').hidden=false;$('gold-question-image').src=src;}
-    }catch{}
+    try{
+      const src=fullQuestionImageUrl(own.imageUrl,location.href);
+      if(src){
+        image.onerror=()=>{
+          if(own?.nonce!==imageNonce || image.src!==src)return;
+          figure.hidden=true;card.classList.remove('has-image');
+        };
+        image.src=src;figure.hidden=false;card.classList.add('has-image');
+      }
+    }catch(err){console.warn('[gold] question image unavailable:',err);}
   }
   if(selectedNonce!==own?.nonce){selected='';selectedNonce=own?.nonce||'';}
   if(own?.type==='typing'){

@@ -240,3 +240,20 @@
 
 /* Long prompts must remain readable on phone-size student results screens. */
 #gold-student-study-questions .gold-accuracy-head strong{white-space:normal;text-overflow:clip;overflow:visible;overflow-wrap:anywhere;line-height:1.35}
+
+/* v5.0.7: only questions with a valid image URL use a wide, readable left/right arrangement. */
+.gold-question-card .gold-question-copy{max-width:100%;min-width:0}
+.gold-question-card.has-image{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:clamp(12px,2.2vw,26px);align-items:center;justify-items:stretch;text-align:left;padding:clamp(16px,2vw,25px)}
+.gold-question-card.has-image .gold-question-copy{width:100%;text-align:left;align-self:center}
+.gold-question-card.has-image h2{font-size:clamp(21px,2.35vw,35px);line-height:1.38;margin:10px 0 0}
+.gold-question-card.has-image .quiz-image-wrap{box-sizing:border-box;width:100%;max-width:none;min-width:0;margin:0;padding:10px;display:flex;justify-content:center;align-items:center;background:#f6f9ff;border-radius:14px}
+.gold-question-card.has-image .quiz-image-wrap img{display:block;width:100%;height:auto;max-width:100%;max-height:min(33dvh,340px);object-fit:contain}
+.gold-student:has(.gold-question-card.has-image) .gold-choice{min-height:clamp(64px,9dvh,75px)}
+.gold-student:has(.gold-question-card.has-image) .gold-submit{min-height:60px}
+@media(max-width:760px){
+  .gold-question-card.has-image{grid-template-columns:minmax(0,1fr);gap:9px;text-align:center;padding:15px}
+  .gold-question-card.has-image .gold-question-copy{text-align:center}
+  .gold-question-card.has-image h2{font-size:clamp(21px,4vw,30px);margin:5px 0}
+  .gold-question-card.has-image .quiz-image-wrap{padding:6px}
+  .gold-question-card.has-image .quiz-image-wrap img{max-height:min(35dvh,290px)}
+}
