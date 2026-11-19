@@ -61,7 +61,7 @@ export function pickCreature(level,rng=Math.random){
   const juvenile=(fish.tier==='big'||fish.tier==='rare')&&level<=3;
   return {...fish,kg,displayName:juvenile?`어린 ${fish.name}`:fish.name,level};
 }
-export function freshScore(name,avatarId,rng=Math.random){return {name,avatarId,kg:0,answered:0,correct:0,level:1,durability:FISHING_DURABILITY,progress:0,nextUpgradeAt:lureInterval(1,rng),lastAnswerNonce:'',lastResult:null};}
+export function freshScore(name,avatarId,rng=Math.random){return {name,avatarId,kg:0,answered:0,correct:0,level:1,durability:FISHING_DURABILITY,progress:0,nextUpgradeAt:lureInterval(1,rng),lastAnswerNonce:'',lastResult:null,bestBySpecies:{}};}
 export function resolveCatch(score,{correct,upgrade=false,canPenalty=false,rng=Math.random}={}){
   const next={...score,answered:(score.answered||0)+1,correct:(score.correct||0)+(correct?1:0)};
   if(!correct){
@@ -86,6 +86,9 @@ export function resolveCatch(score,{correct,upgrade=false,canPenalty=false,rng=M
   }
   const creature=pickCreature(next.level,rng);
   next.kg=Math.round((next.kg+creature.kg)*10)/10;
+  // Game-scoped record: the same uid's score is restored on refresh, reset on new game.
+  // Store only discovered species, not full sprites, and never add a Firebase listener.
+  next.bestBySpecies={...(next.bestBySpecies||{}),[creature.id]:Math.max(Number(next.bestBySpecies?.[creature.id]||0),creature.kg)};
   return {score:next,result:{type:'fish',correct:true,kg:creature.kg,creatureId:creature.id,name:creature.displayName,tier:creature.tier,emoji:creature.emoji,level:next.level}};
 }
 export function fishingRanking(scores={}){return Object.entries(scores).map(([uid,s])=>({uid,...s})).sort((a,b)=>b.kg-a.kg||b.correct-a.correct||a.name.localeCompare(b.name,'ko'));}

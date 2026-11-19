@@ -1,7 +1,7 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.7';
+import { makeRulesV5 } from './rules-v5.js?v=5.0.8';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';

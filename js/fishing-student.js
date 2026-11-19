@@ -2,20 +2,42 @@
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import {fullQuestionImageUrl} from './image-utils.js';
-import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js';
+import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.8';
+import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=5.0.8';
 const $=id=>document.getElementById(id),stage=$('fishing-student');
 let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
 let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',rewardNonce='';
-let audioEnabled=true,bgmStarted=false;
+let audioEnabled=true,bgmStarted=false,codex=null,hitPlayedNonce='';
 const now=()=>Date.now()+offset;
 function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
-function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.7`; }
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.8`; }
 function setAudioToggle(){const btn=$('fishing-audio-toggle');if(!btn)return;btn.textContent=audioEnabled?'🔊 소리 켜짐':'🔇 소리 꺼짐';btn.setAttribute('aria-pressed',audioEnabled?'true':'false');}
 function safePlay(el,vol=.6){if(!el||!audioEnabled)return;el.volume=vol;try{el.currentTime=0;}catch{};el.play().catch(()=>{});}
 function ensureBgm(){const bgm=$('fishing-bgm');if(!bgm||!audioEnabled)return;if(bgmStarted&& !bgm.paused)return;bgm.volume=.28;bgm.play().then(()=>{bgmStarted=true;}).catch(()=>{});}
 function stopBgm(){const bgm=$('fishing-bgm');if(bgm)bgm.pause();}
 function setAudioEnabled(flag){audioEnabled=!!flag;try{localStorage.setItem('purplekit_fishing_audio',audioEnabled?'on':'off');}catch{};setAudioToggle();if(audioEnabled)ensureBgm();else stopBgm();}
-function playResultSound(type){if(type==='fish'||type==='upgrade'||type==='penalty')safePlay($('fishing-sfx-catch'),.62);else if(type)safePlay($('fishing-sfx-miss'),.56);}
+function playResultSound(type,tier='normal'){
+  if(type==='fish'&&tier==='legend')safePlay($('fishing-sfx-legend'),.64);
+  else if(type==='broken')safePlay($('fishing-sfx-break'),.65);
+  else if(type==='fish'||type==='upgrade'||type==='penalty')safePlay($('fishing-sfx-catch'),.48);
+  else if(type)safePlay($('fishing-sfx-miss'),.48);
+}
+function setCodexOpen(open){
+  const active=Boolean(open);
+  stage.classList.toggle('fishing-codex-open',active);
+  $('fishing-codex-backdrop').hidden=!active;
+  $('fishing-codex-close').hidden=!active;
+  $('fishing-codex-toggle').setAttribute('aria-expanded',String(active));
+}
+function renderCodex(){
+  if(!codex)return;
+  const best=pub?.scores?.[uid]?.bestBySpecies||{};
+  const count=updateFishingCodex(codex,best);
+  $('fishing-codex-left-count').textContent=`${count.left}/12`;
+  $('fishing-codex-right-count').textContent=`${count.right}/11`;
+  $('fishing-codex-total-mobile').textContent=`${count.total}/23종`;
+}
+
 function setLureVisual(level){const icon=$('fishing-lure-icon');if(icon)icon.src=lureAsset(level);$('fishing-level').textContent=`Lv.${level||1}`;}
 function show(flag){stage.hidden=!flag;if(flag){document.body.classList.add('quiz-stage-active');$('student-room').hidden=true;}else document.body.classList.remove('quiz-stage-active');}
 function rankList(){
@@ -36,12 +58,13 @@ function revealContent(){
   $('fishing-catch-emoji').hidden=false;
   $('fishing-catch-emoji').textContent=result.emoji||'🎣';
   $('fishing-reward').dataset.rarity=result.tier||'normal';
+  $('fishing-reward').classList.toggle('fishing-break-effect',result.type==='broken');
   let title='다음 낚시에 도전하세요!',desc='';
   if(result.type==='fish'){
     title=`${result.name||creature?.name||'물고기'}!`;
     desc=`+${Number(result.kg||0).toFixed(1)} kg 획득!`;
     if(creature){
-      sprite.src=`images/fishing/${creature.id}.png?v=5.0.7`;sprite.alt=title;
+      sprite.src=`images/fishing/${creature.id}.png?v=5.0.8`;sprite.alt=title;
       sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
       sprite.onerror=()=>{sprite.hidden=true;$('fishing-catch-emoji').hidden=false;};
     }
@@ -69,7 +92,7 @@ function revealContent(){
   $('fishing-reward-title').textContent=title;
   $('fishing-reward-detail').textContent=desc;
   $('fishing-reward-total').textContent=`현재 누적 ${Number(score.kg||0).toFixed(1)} kg`;
-  playResultSound(result.type);
+  playResultSound(result.type,result.tier);
 }
 function renderQuestion(){
   if(!own||own.phase!=='question')return;
@@ -138,6 +161,7 @@ function render(){
   $('fishing-durability').textContent='❤️'.repeat(score.durability||0)+'🖤'.repeat(Math.max(0,5-(score.durability||0)));
   $('fishing-progress').textContent=`정답 ${score.correct||0} / 풀이 ${score.answered||0}`;
   rankList();
+  renderCodex();
   for(const id of ['fishing-wait','fishing-cast-view','fishing-question-view','fishing-reward','fishing-finished'])$(id).hidden=true;
   if(phase==='finished'){$('fishing-finished').hidden=false;$('fishing-finish-weight').textContent=`${Number(score.kg||0).toFixed(1)} kg`;return;}
   if(phase==='ready'||phase==='lobby'||!own){$('fishing-wait').hidden=false;return;}
@@ -149,6 +173,7 @@ function render(){
     button.textContent=bite?(hit?'🎣 HIT! 지금 낚아 올리기!':'🐟 입질을 기다리는 중…'):'🎣 낚싯대 던지기 · CAST!';
     button.disabled=(bite&&!hit)||pending||(action?.nonce===own.nonce&&action?.type===(bite?'hook':'cast'));
     $('fishing-boat').dataset.phase=bite?(hit?'hit':'waiting'):'cast';
+    if(hit&&hitPlayedNonce!==own.nonce){hitPlayedNonce=own.nonce;safePlay($('fishing-sfx-hit'),.53);} 
     $('fishing-cast-hint').textContent=bite?(hit?'입질이 왔어요! 한 번 더 눌러 문제를 풀어요.':'1~3초 뒤에 입질이 옵니다.'): '눌러서 바다에 낚싯대를 던져 보세요!';
     return;
   }
@@ -165,6 +190,7 @@ async function sendAction(type){
   if(!code||!uid||!own||pending||pub?.state!=='playing')return;
   const nonce=own.nonce;
   ensureBgm();
+  if(type==='cast')safePlay($('fishing-sfx-cast'),.49);
   pending=true;render();notice(type==='cast'?'낚싯대를 던지는 중…':type==='hook'?'물고기를 끌어올리는 중…':'다음 낚시 준비 중…');
   try{await set(ref(db,`v5/actions/${code}/${uid}/${nonce}/${type}`),{at:serverTimestamp()});action={nonce,type};}
   catch(err){action=null;notice('낚시 진행 실패: '+formatError(err),true);}finally{pending=false;render();}
@@ -191,12 +217,13 @@ function showPenalty(evt){
 }
 export function stopFishingView(){
   subs.forEach(fn=>fn());subs=[];code='';uid='';pub=null;own=null;answer=null;
-  questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;
+  questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;hitPlayedNonce='';
   if(eventTimer)clearTimeout(eventTimer);if(animTimer)clearTimeout(animTimer);
-  $('fishing-penalty').hidden=true;stage.classList.remove('fishing-shrunken');stopBgm();show(false);
+  $('fishing-penalty').hidden=true;stage.classList.remove('fishing-shrunken');setCodexOpen(false);stopBgm();show(false);
 }
 export function startFishingView(roomCode,userUid){
   stopFishingView();code=roomCode;uid=userUid;
+  codex=createFishingCodex($('fishing-codex-left'),$('fishing-codex-right'),CREATURES);
   try{audioEnabled=(localStorage.getItem('purplekit_fishing_audio')||'on')!=='off';}catch{audioEnabled=true;}
   setAudioToggle();
   for(const [key,path] of [['pub',`v5/public/${code}`],['own',`v5/memberState/${code}/${uid}`],['answer',`v5/answers/${code}/${uid}`]]){
@@ -225,3 +252,8 @@ $('fishing-submit').addEventListener('click',()=>void submitAnswer());
 $('fishing-next').addEventListener('click',()=>void sendAction('next'));
 
 $('fishing-audio-toggle')?.addEventListener('click',()=>setAudioEnabled(!audioEnabled));
+
+$('fishing-codex-toggle').addEventListener('click',()=>setCodexOpen(!stage.classList.contains('fishing-codex-open')));
+$('fishing-codex-close').addEventListener('click',()=>setCodexOpen(false));
+$('fishing-codex-backdrop').addEventListener('click',()=>setCodexOpen(false));
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&stage.classList.contains('fishing-codex-open'))setCodexOpen(false);});

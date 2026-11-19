@@ -1,6 +1,6 @@
 {
-  "version": "5.0.7",
-  "build": 507,
+  "version": "5.0.8",
+  "build": 508,
   "minSupportedBuild": 412,
-  "purpose": "퍼플킷 이미지 문항 좌우 배치 개선 + 기존 피싱 안정화 유지"
+  "purpose": "피싱 프렌지 좌우 생물 도감 23종, 어종별 최고 무게, 사운드·HIT·전설 연출"
 }

@@ -5,7 +5,7 @@ import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www
 import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
-import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js';
+import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.8';
 import {makeRulesV5} from './rules-v5.js';
 const $=id=>document.getElementById(id);
 let teacher=null,code='',mode='',room=null,run=null,pub=null,states={},actions={},answers={},rights=false,operation=false,working=false,offset=0;

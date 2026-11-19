@@ -7,7 +7,7 @@ import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analyti
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.7';
+import { makeRulesV5 } from './rules-v5.js?v=5.0.8';
 
 const $=id=>document.getElementById(id);
 const arcade=createArcadeUi('gold-focus',{role:'teacher',mode:'gold'});

@@ -1,6 +1,6 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { firebaseConfig } from '../firebase-config.js';
-import {APP_VERSION,APP_BUILD} from './version.js?v=5.0.7';
+import {APP_VERSION,APP_BUILD} from './version.js?v=5.0.8';
 import { validateCount, summarizeRecords, isCleanPass, csvField } from './loadtest-core.js';
 import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import { getAuth, setPersistence, inMemoryPersistence, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, deleteUser } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
