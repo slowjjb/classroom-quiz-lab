@@ -5,14 +5,17 @@ import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www
 import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
-import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.8';
+import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.9';
 import {makeRulesV5} from './rules-v5.js';
+import {buildGoldAccuracy} from './gold-analytics.js?v=4.11';
+import {CREATURES} from './fishing-core.js?v=5.0.9';
 const $=id=>document.getElementById(id);
 let teacher=null,code='',mode='',room=null,run=null,pub=null,states={},actions={},answers={},rights=false,operation=false,working=false,offset=0;
-let subs=[],authVersion=0,focusOpen=false;
+let subs=[],authVersion=0,focusOpen=false,teacherPenaltyId='',teacherPenaltyTimer=null;
+let recentCatches=[],resultsMode='first';
 const serverNow=()=>Date.now()+offset;
 function status(msg,err=false){const el=$('fishing-host-message');el.textContent=msg;el.dataset.kind=err?'error':'success';}
-function stop(){focus(false);subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;}
+function stop(){focus(false);subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;teacherPenaltyId='';recentCatches=[];if(teacherPenaltyTimer)clearTimeout(teacherPenaltyTimer);}
 function formatClock(sec){const n=Math.max(0,Math.ceil(sec));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;}
 function phaseDescription(uid,score){
   const state=states?.[uid],phase=state?.phase;
@@ -41,10 +44,96 @@ function renderMonitor(target){
   }
   if(!entries.length)container.textContent='게임 준비 후 학생 진행 상태가 표시됩니다.';
 }
+// Use the public scores already subscribed by the teacher: no additional Firebase reads.
+function incomingCatches(previous,current){
+  if(!previous||previous.state!=='playing'||current?.state!=='playing'||
+     Number(previous.startedAt||0)!==Number(current.startedAt||0))return [];
+  return Object.entries(current.scores||{}).flatMap(([uid,score])=>{
+    const before=previous.scores?.[uid];
+    if(!score?.lastAnswerNonce||score.lastAnswerNonce===before?.lastAnswerNonce)return [];
+    const result=score.lastResult;
+    if(result?.type!=='fish'||result.nonce!==score.lastAnswerNonce)return [];
+    const fish=CREATURES.find(x=>x.id===result.creatureId);
+    if(!fish)return [];
+    return [{uid,name:score.name||'학생',creature:fish,kg:Number(result.kg)||0,at:serverNow()}];
+  });
+}
+function appendCatchFeed(){
+  const feed=$('fishing-catch-feed');feed.replaceChildren();
+  if(!recentCatches.length){feed.textContent='🐠 첫 물고기가 낚이기를 기다리는 중!';return;}
+  for(const item of recentCatches.slice(0,6)){
+    const row=document.createElement('div');
+    row.textContent=`${item.creature.tier==='legend'?'🌟':'🎣'} ${item.name} · ${item.creature.name} ${item.kg.toFixed(1)} kg 획득!`;
+    feed.append(row);
+  }
+}
+function swimCatch(item){
+  if(!focusOpen||pub?.state!=='playing')return;
+  const water=$('fishing-pond-catches'),pond=$('fishing-focus-pond');
+  if(!water||!pond)return;
+  const figure=document.createElement('figure');figure.className='fishing-swimming-catch';figure.dataset.tier=item.creature.tier;
+  const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=5.0.9`;
+  sprite.alt=item.creature.name;const caption=document.createElement('figcaption');
+  caption.textContent=`${item.name} · ${item.kg.toFixed(1)} kg`;
+  figure.append(sprite,caption);
+  const offset=20+Math.floor(Math.random()*50);
+  figure.style.top=offset+'%';figure.style.setProperty('--fish-distance',(pond.clientWidth+300)+'px');
+  const speed=5.0+Math.random()*2.2;
+  figure.style.setProperty('--fish-time',speed+'s');
+  water.append(figure);
+  figure.addEventListener('animationend',()=>figure.remove(),{once:true});
+  setTimeout(()=>figure.remove(),8000);
+}
+function updateCatchEvents(previous,current){
+  const incoming=incomingCatches(previous,current);
+  for(const item of incoming){recentCatches.unshift(item);swimCatch(item);}
+  if(incoming.length){recentCatches=recentCatches.slice(0,10);if(focusOpen)appendCatchFeed();}
+}
+function showTeacherPenalty(evt,force=false){
+  if(!evt||pub?.state!=='playing'||(!force&&evt.id===teacherPenaltyId))return;
+  teacherPenaltyId=evt.id;
+  if(!focusOpen)return;
+  const remaining=Number(evt.durationMs||FISHING_PENALTY_DURATION_MS)-(serverNow()-Number(evt.at||0));
+  if(remaining<=0)return;
+  const layer=$('fishing-focus-penalty');layer.hidden=true;
+  if(teacherPenaltyTimer)clearTimeout(teacherPenaltyTimer);
+  $('fishing-focus-penalty-description').textContent=({school:'🐟 물고기 떼 출몰!',jelly:'🪼 해파리 떼 습격!',ink:'🐙 먹물 주의!',shrink:'🌊 갑자기 작아진 바다!'})[evt.effect]||'🐠 깜짝 방해 이벤트!';
+  layer.dataset.effect=evt.effect||'school';
+  void layer.offsetWidth;layer.hidden=false;
+  $('fishing-focus').classList.toggle('fishing-shrunken',evt.effect==='shrink');
+  teacherPenaltyTimer=setTimeout(()=>{layer.hidden=true;$('fishing-focus').classList.remove('fishing-shrunken');},remaining);
+}
+function resultsEntry(parent,label,rate,sub,marker,highlight=''){
+  const row=document.createElement('div');row.className='fishing-results-entry';
+  if(highlight)row.dataset.tier=highlight;
+  const icon=document.createElement('b');icon.textContent=marker;
+  const name=document.createElement('span');name.className='fishing-results-label';name.textContent=label;
+  const value=document.createElement('strong');value.className='fishing-results-number';value.textContent=rate;
+  const detail=document.createElement('small');detail.className='fishing-results-sub';detail.textContent=sub;
+  row.append(icon,name,value,detail);parent.append(row);
+}
+function renderFinalResults(){
+  if(!focusOpen||pub?.state!=='finished'||!run)return;
+  const stats=buildGoldAccuracy({roster:run.roster||{},scores:pub?.scores||{},questions:run.questions||[],
+    answersLog:run.answersLog||{},mode:resultsMode});
+  const rate=stats.summary.rate;
+  $('fishing-results-summary').textContent=`${stats.participantCount}명 참여 · ${stats.summary.correct}/${stats.summary.total}회 정답 · 전체 정답률 ${rate===null?'자료 없음':rate+'%'}`;
+  const ranks=$('fishing-results-ranking'),students=$('fishing-results-students'),questions=$('fishing-results-questions');
+  ranks.replaceChildren();students.replaceChildren();questions.replaceChildren();
+  fishingRanking(pub?.scores).forEach((s,i)=>resultsEntry(ranks,s.name||'학생',`${Number(s.kg||0).toFixed(1)} kg`,
+    `정답 ${Number(s.correct||0)}회 / 풀이 ${Number(s.answered||0)}회 · Lv.${Number(s.level||1)}`,
+    i<3?['🥇','🥈','🥉'][i]:`${i+1}위`));
+  stats.students.forEach((s,i)=>resultsEntry(students,s.name, s.rate===null?'—':`${s.rate}%`,
+    `${s.correct}/${s.total}회 정답 · 실제 풀이 ${s.attempts}회`,`${i+1}`,s.tier));
+  stats.questions.forEach(q=>resultsEntry(questions,`${q.number}번. ${q.prompt}`,q.rate===null?'—':`${q.rate}%`,
+    `${q.correct}/${q.total}회 정답 · 참여 ${q.students}명`,`${q.number}`,q.tier));
+  $('fishing-results-student-note').textContent=resultsMode==='first'?'같은 문항의 첫 풀이만 계산합니다.':'반복해서 푼 답안도 모두 계산합니다.';
+}
 function focus(open){
   focusOpen=Boolean(open);$('fishing-focus').hidden=!focusOpen;
   document.body.classList.toggle('quiz-stage-active',focusOpen);
-  if(focusOpen)render();
+  if(!focusOpen){$('fishing-focus-penalty').hidden=true;$('fishing-focus').classList.remove('fishing-shrunken');}
+  if(focusOpen){render();appendCatchFeed();if(pub?.penaltyEvent)showTeacherPenalty(pub.penaltyEvent,true);}
 }
 function render(){
   const active=Boolean(code&&(mode==='fishing'||room?.meta?.mode==='fishing'));
@@ -77,8 +166,12 @@ function render(){
     $('fishing-focus-count').textContent=$('fishing-host-count').textContent+' 참여';
     $('fishing-focus-solved').textContent=$('fishing-host-solved').textContent;
     $('fishing-focus-pending').textContent='채점 대기 '+Object.entries(states||{}).filter(([id,st])=>st?.phase==='question'&&Boolean(answers?.[id]?.[st.nonce])).length+'명';
-    const focusRanks=$('fishing-focus-ranking');focusRanks.replaceChildren(...Array.from(list.children).map(row=>row.cloneNode(true)));
-    renderMonitor('fishing-focus-monitor');
+    const finished=phase==='finished';
+    $('fishing-focus-live').hidden=finished;
+    $('fishing-focus-results').hidden=!finished;
+    $('fishing-focus').querySelector('.fishing-focus-header h2').textContent=finished?'🏆 피싱 프렌지 최종 결과':'🎣 실시간 낚시 현황';
+    if(finished)renderFinalResults();
+    else{const focusRanks=$('fishing-focus-ranking');focusRanks.replaceChildren(...Array.from(list.children).map(row=>row.cloneNode(true)));}
   }
 }
 function watch(){
@@ -90,7 +183,7 @@ function watch(){
       const val=snap.val();
       if(key==='room')room=val;
       else if(key==='run')run=val;
-      else if(key==='pub')pub=val;
+      else if(key==='pub'){const previous=pub;pub=val;updateCatchEvents(previous,pub);if(pub?.penaltyEvent)showTeacherPenalty(pub.penaltyEvent);}
       else if(key==='states')states=val||{};
       else if(key==='actions')actions=val||{};
       else if(key==='answers')answers=val||{};
@@ -133,7 +226,7 @@ function makeCast(uid,index,score,previous=null){
 }
 async function prepare(){
   if(operation||!rights||run||room?.meta?.mode!=='fishing'||!room.meta.setId)return;
-  operation=true;render();
+  operation=true;render();recentCatches=[];teacherPenaltyId='';
   try{
     const source=(await get(ref(db,`v1/questionSets/${room.meta.setId}`))).val();
     const questions=questionsFromSet(source);
@@ -297,6 +390,7 @@ $('fishing-focus-close').addEventListener('click',()=>focus(false));
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)focus(false);});
 $('fishing-end').addEventListener('click',()=>{if(confirm('피싱 프렌지를 지금 종료할까요?'))void finish();});
 $('fishing-export').addEventListener('click',exportCsv);
+$('fishing-results-mode').addEventListener('change',event=>{resultsMode=event.target.value==='all'?'all':'first';renderFinalResults();});
 $('fishing-copy-rules').addEventListener('click',async()=>{
   if(!teacher){status('교사 로그인이 필요합니다.',true);return;}
   try{await navigator.clipboard.writeText(makeRulesV5(teacher.uid));status('v5 통합 규칙을 복사했습니다. Firebase Realtime Database 규칙에 게시해 주세요.');}
@@ -315,5 +409,5 @@ setInterval(()=>{
     if(left<=-1.5&&!operation&&!working)void finish();else void pump();
   }
 },250);
-setInterval(()=>{if(focusOpen&&pub?.state==='playing')renderMonitor('fishing-focus-monitor');},5000);
+// Keep teacher fish animations entirely local: no extra polling or database subscriptions.
 render();

@@ -1,9 +1,9 @@
 // Purplekit v5.0 Fishing Frenzy — pure balancing and scoring helpers.
 // All random rewards are chosen in the teacher's authenticated browser.
 export const FISHING_DURABILITY = 5;
-export const FISHING_PENALTY_CHANCE = 0.03;
+export const FISHING_PENALTY_CHANCE = 0.045;
 export const FISHING_PENALTY_COOLDOWN_MS = 60000;
-export const FISHING_PENALTY_DURATION_MS = 1800;
+export const FISHING_PENALTY_DURATION_MS = 2700;
 export const FISHING_LURE_HEAL = 0; // 0 by default; adjust to 1 after classroom tests.
 export const CREATURES = Object.freeze([
   {id:'mackerel',name:'고등어',tier:'normal',emoji:'🐟'},

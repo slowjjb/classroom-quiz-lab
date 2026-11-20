@@ -15,7 +15,7 @@ function questionList(raw){
   return Object.keys(raw||{}).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]);
 }
 function attemptSequence(nonce){
-  const match=String(nonce||'').match(/^a(\d+)_/);
+  const match=String(nonce||'').match(/^[af](\d+)_/); // a=Gold Quest, f=Fishing Frenzy
   return match?Number(match[1]):Number.MAX_SAFE_INTEGER;
 }
 export function buildGoldAccuracy({roster={},scores={},questions=[],answersLog={},mode='first'}={}){

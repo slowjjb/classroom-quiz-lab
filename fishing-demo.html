@@ -1,7 +1,7 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>퍼플킷 v5.0.8 피싱 프렌지 미리보기</title>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>퍼플킷 v5.0.9 피싱 프렌지 미리보기</title>
 <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="arcade.css"><link rel="stylesheet" href="fishing.css">
 <style>body{margin:0}#fishing-student{display:block!important;position:relative!important}#preview-banner{position:relative;z-index:10;background:#fff6d4;color:#583d00;padding:8px 12px;text-align:center;font-size:13px;font-weight:850}#preview-banner button{border:1px solid #d5a45e;border-radius:8px;background:#fff;color:#704100;font-weight:850;padding:5px 9px;margin:2px;cursor:pointer}</style></head>
-<body class="arcade-theme quiz-stage-active"><div id="preview-banner">🎣 v5.0.8 오프라인 기능 미리보기 · 실제 Firebase 게임방과 연결되지 않습니다.
+<body class="arcade-theme quiz-stage-active"><div id="preview-banner">🎣 v5.0.9 오프라인 기능 미리보기 · 실제 Firebase 게임방과 연결되지 않습니다.
 <button type="button" id="preview-legend">🌟 전설 획득</button><button type="button" id="preview-break">💔 낚싯대 파손</button><button type="button" id="preview-find-all">🐟 전체 발견</button><button type="button" id="preview-reset">🔄 새 게임 시작</button><button type="button" id="preview-penalty">🪼 벌칙 체험</button></div>
 <section id="student-room" hidden></section>
   <section id="fishing-student" class="quiz-stage fishing-student" aria-label="피싱 프렌지 학생 게임 화면">
@@ -65,9 +65,9 @@
 // Purplekit v5.0 Fishing Frenzy — pure balancing and scoring helpers.
 // All random rewards are chosen in the teacher's authenticated browser.
 const FISHING_DURABILITY = 5;
-const FISHING_PENALTY_CHANCE = 0.03;
+const FISHING_PENALTY_CHANCE = 0.045;
 const FISHING_PENALTY_COOLDOWN_MS = 60000;
-const FISHING_PENALTY_DURATION_MS = 1800;
+const FISHING_PENALTY_DURATION_MS = 2700;
 const FISHING_LURE_HEAL = 0; // 0 by default; adjust to 1 after classroom tests.
 const CREATURES = Object.freeze([
   {id:'mackerel',name:'고등어',tier:'normal',emoji:'🐟'},
@@ -157,7 +157,7 @@ function resolveCatch(score,{correct,upgrade=false,canPenalty=false,rng=Math.ran
 }
 function fishingRanking(scores={}){return Object.entries(scores).map(([uid,s])=>({uid,...s})).sort((a,b)=>b.kg-a.kg||b.correct-a.correct||a.name.localeCompare(b.name,'ko'));}
 
-// Purplekit v5.0.8: game-scoped species collection display.
+// Purplekit v5.0.9: game-scoped species collection display.
 // Reads each student's existing public score; no extra Firebase subscription.
 function codexStats(creatures,records={}){
   const found=creatures.map(fish=>Number(records?.[fish.id]||0)>0);
@@ -169,7 +169,7 @@ function createFishingCodex(left,right,creatures){
   for(const [index,fish] of creatures.entries()){
     const card=document.createElement('div');card.className='fishing-codex-card';
     card.dataset.found='false';card.dataset.tier=fish.tier;
-    const img=document.createElement('img');img.src=`images/fishing/thumbs/${fish.id}.webp?v=5.0.8`;
+    const img=document.createElement('img');img.src=`images/fishing/thumbs/${fish.id}.webp?v=5.0.9`;
     img.alt='아직 발견하지 못한 생물의 실루엣';img.loading='lazy';img.decoding='async';
     const name=document.createElement('span');name.className='fishing-codex-card-name';name.textContent='???';
     const best=document.createElement('span');best.className='fishing-codex-card-best';best.textContent='-- kg';
@@ -204,7 +204,7 @@ function updateFishingCodex(codex,records={}){
 const $=id=>document.getElementById(id);
 let audioEnabled=true,bgmStarted=false,question=null,selected='',phase='cast',upgrade=false,hitTimer=null;
 let score;
-try{score=JSON.parse(localStorage.getItem('purplekit_preview_508_score'))||freshScore('연습 학생','a01');}
+try{score=JSON.parse(localStorage.getItem('purplekit_preview_509_score'))||freshScore('연습 학생','a01');}
 catch{score=freshScore('연습 학생','a01');}
 score.bestBySpecies=score.bestBySpecies||{};
 const bank=[
@@ -214,12 +214,12 @@ const bank=[
   ['바다에 사는 포유류는?',['꽃게','고등어','고래','복어'],3]
 ];
 let codex=createFishingCodex($('fishing-codex-left'),$('fishing-codex-right'),CREATURES);
-function persist(){try{localStorage.setItem('purplekit_preview_508_score',JSON.stringify(score));}catch{}}
+function persist(){try{localStorage.setItem('purplekit_preview_509_score',JSON.stringify(score));}catch{}}
 function audio(label,vol=.5){if(!audioEnabled)return;const el=$(label);if(!el)return;el.volume=vol;try{el.currentTime=0;}catch{};el.play().catch(()=>{});}
 function bgm(){const el=$('fishing-bgm');if(!audioEnabled||!el)return;el.volume=.23;el.play().catch(()=>{});}
 function soundToggle(){const button=$('fishing-audio-toggle');button.textContent=audioEnabled?'🔊 소리 켜짐':'🔇 소리 꺼짐';button.setAttribute('aria-pressed',String(audioEnabled));if(audioEnabled)bgm();else $('fishing-bgm').pause();}
 function views(v){for(const id of ['fishing-wait','fishing-cast-view','fishing-question-view','fishing-reward','fishing-finished'])$(id).hidden=id!==v;}
-function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.8`;}
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.9`;}
 function updateStats(){
   $('fishing-weight').textContent=Number(score.kg||0).toFixed(1)+' kg';
   $('fishing-level').textContent='Lv.'+score.level;$('fishing-lure-icon').src=lureAsset(score.level);
@@ -245,7 +245,7 @@ function showResult(result){phase='result';views('fishing-reward');const sprite=
   let title='물고기를 놓쳤어요!',detail='다음 낚시에 도전해요!',emoji='💦';
   if(result.type==='fish'){
      title=result.name;detail='+'+Number(result.kg).toFixed(1)+' kg 획득!';emoji=result.emoji;
-     sprite.src=`images/fishing/${result.creatureId}.png?v=5.0.8`;sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
+     sprite.src=`images/fishing/${result.creatureId}.png?v=5.0.9`;sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
      audio(result.tier==='legend'?'fishing-sfx-legend':'fishing-sfx-catch',result.tier==='legend'?.62:.5);
   }else if(result.type==='broken'){title='낚싯대가 부러졌어요!';detail='루어 Lv.1로 돌아갑니다';emoji='🪵';audio('fishing-sfx-break',.62);}
   else if(result.type==='upgrade'){title='루어 강화 성공!';detail='Lv.'+result.newLevel;emoji='🎣';sprite.src=lureAsset(result.newLevel);sprite.hidden=false;$('fishing-catch-emoji').hidden=true;audio('fishing-sfx-catch',.5);}
@@ -274,7 +274,7 @@ $('preview-legend').addEventListener('click',()=>{
 $('preview-break').addEventListener('click',()=>{score.durability=1;const out=resolveCatch(score,{correct:false});score=out.score;showResult(out.result);});
 $('preview-reset').addEventListener('click',()=>{score=freshScore('연습 학생','a01');persist();updateStats();cast();setCodexOpen(false);});
 $('preview-find-all').addEventListener('click',()=>{for(const fish of CREATURES)score.bestBySpecies[fish.id]=Math.max(Number(score.bestBySpecies[fish.id]||0),Math.random()*50+1);persist();updateStats();});
-$('preview-penalty').addEventListener('click',()=>{const layer=$('fishing-penalty');layer.hidden=false;setTimeout(()=>layer.hidden=true,1800);});
+$('preview-penalty').addEventListener('click',()=>{const layer=$('fishing-penalty');layer.hidden=false;setTimeout(()=>layer.hidden=true,FISHING_PENALTY_DURATION_MS);});
 soundToggle();updateStats();cast();
 
 </script></body></html>

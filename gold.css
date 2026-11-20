@@ -241,7 +241,7 @@
 /* Long prompts must remain readable on phone-size student results screens. */
 #gold-student-study-questions .gold-accuracy-head strong{white-space:normal;text-overflow:clip;overflow:visible;overflow-wrap:anywhere;line-height:1.35}
 
-/* v5.0.8: only questions with a valid image URL use a wide, readable left/right arrangement. */
+/* v5.0.9: only questions with a valid image URL use a wide, readable left/right arrangement. */
 .gold-question-card .gold-question-copy{max-width:100%;min-width:0}
 .gold-question-card.has-image{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:clamp(12px,2.2vw,26px);align-items:center;justify-items:stretch;text-align:left;padding:clamp(16px,2vw,25px)}
 .gold-question-card.has-image .gold-question-copy{width:100%;text-align:left;align-self:center}
