@@ -2,7 +2,7 @@ import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { onValue, ref, push, set, remove } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV } from './csv.js?v=4.4';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.9';
+import { makeRulesV5 } from './rules-v5.js?v=5.0.10';
 import { normalizeQuestionImage, siteRootFromPage, scanQuestionImages } from './image-utils.js?v=4.4';
 
 const $ = id => document.getElementById(id);

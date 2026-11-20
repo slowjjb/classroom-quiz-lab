@@ -5,17 +5,18 @@ import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www
 import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
-import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.9';
+import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.10';
 import {makeRulesV5} from './rules-v5.js';
 import {buildGoldAccuracy} from './gold-analytics.js?v=4.11';
-import {CREATURES} from './fishing-core.js?v=5.0.9';
+import {CREATURES} from './fishing-core.js?v=5.0.10';
+import {renderFishingPodium} from './fishing-podium.js?v=5.0.10';
 const $=id=>document.getElementById(id);
 let teacher=null,code='',mode='',room=null,run=null,pub=null,states={},actions={},answers={},rights=false,operation=false,working=false,offset=0;
 let subs=[],authVersion=0,focusOpen=false,teacherPenaltyId='',teacherPenaltyTimer=null;
-let recentCatches=[],resultsMode='first';
+let recentCatches=[],resultsMode='first',podiumCollapsed=false,podiumSignature='';
 const serverNow=()=>Date.now()+offset;
 function status(msg,err=false){const el=$('fishing-host-message');el.textContent=msg;el.dataset.kind=err?'error':'success';}
-function stop(){focus(false);subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;teacherPenaltyId='';recentCatches=[];if(teacherPenaltyTimer)clearTimeout(teacherPenaltyTimer);}
+function stop(){focus(false);subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;teacherPenaltyId='';recentCatches=[];podiumCollapsed=false;podiumSignature='';if(teacherPenaltyTimer)clearTimeout(teacherPenaltyTimer);}
 function formatClock(sec){const n=Math.max(0,Math.ceil(sec));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;}
 function phaseDescription(uid,score){
   const state=states?.[uid],phase=state?.phase;
@@ -72,7 +73,7 @@ function swimCatch(item){
   const water=$('fishing-pond-catches'),pond=$('fishing-focus-pond');
   if(!water||!pond)return;
   const figure=document.createElement('figure');figure.className='fishing-swimming-catch';figure.dataset.tier=item.creature.tier;
-  const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=5.0.9`;
+  const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=5.0.10`;
   sprite.alt=item.creature.name;const caption=document.createElement('figcaption');
   caption.textContent=`${item.name} · ${item.kg.toFixed(1)} kg`;
   figure.append(sprite,caption);
@@ -118,9 +119,18 @@ function renderFinalResults(){
     answersLog:run.answersLog||{},mode:resultsMode});
   const rate=stats.summary.rate;
   $('fishing-results-summary').textContent=`${stats.participantCount}명 참여 · ${stats.summary.correct}/${stats.summary.total}회 정답 · 전체 정답률 ${rate===null?'자료 없음':rate+'%'}`;
+  const ranked=fishingRanking(pub?.scores||{});
+  const sig=JSON.stringify(ranked.slice(0,3).map(s=>[s.uid,s.name,s.kg,s.avatarId]));
+  if(sig!==podiumSignature){
+    renderFishingPodium($('fishing-results-podium'),ranked);
+    podiumSignature=sig;
+  }
+  $('fishing-results-podium-wrap').hidden=podiumCollapsed||!ranked.length;
+  $('fishing-podium-toggle').textContent=podiumCollapsed?'🏆 시상대 펼치기':'🏆 시상대 접기';
+  $('fishing-podium-toggle').disabled=!ranked.length;
   const ranks=$('fishing-results-ranking'),students=$('fishing-results-students'),questions=$('fishing-results-questions');
   ranks.replaceChildren();students.replaceChildren();questions.replaceChildren();
-  fishingRanking(pub?.scores).forEach((s,i)=>resultsEntry(ranks,s.name||'학생',`${Number(s.kg||0).toFixed(1)} kg`,
+  ranked.forEach((s,i)=>resultsEntry(ranks,s.name||'학생',`${Number(s.kg||0).toFixed(1)} kg`,
     `정답 ${Number(s.correct||0)}회 / 풀이 ${Number(s.answered||0)}회 · Lv.${Number(s.level||1)}`,
     i<3?['🥇','🥈','🥉'][i]:`${i+1}위`));
   stats.students.forEach((s,i)=>resultsEntry(students,s.name, s.rate===null?'—':`${s.rate}%`,
@@ -391,6 +401,7 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)f
 $('fishing-end').addEventListener('click',()=>{if(confirm('피싱 프렌지를 지금 종료할까요?'))void finish();});
 $('fishing-export').addEventListener('click',exportCsv);
 $('fishing-results-mode').addEventListener('change',event=>{resultsMode=event.target.value==='all'?'all':'first';renderFinalResults();});
+$('fishing-podium-toggle').addEventListener('click',()=>{podiumCollapsed=!podiumCollapsed;renderFinalResults();});
 $('fishing-copy-rules').addEventListener('click',async()=>{
   if(!teacher){status('교사 로그인이 필요합니다.',true);return;}
   try{await navigator.clipboard.writeText(makeRulesV5(teacher.uid));status('v5 통합 규칙을 복사했습니다. Firebase Realtime Database 규칙에 게시해 주세요.');}

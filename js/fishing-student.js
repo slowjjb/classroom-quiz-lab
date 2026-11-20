@@ -2,15 +2,15 @@
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import {fullQuestionImageUrl} from './image-utils.js';
-import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.9';
-import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=5.0.9';
+import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.10';
+import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=5.0.10';
 const $=id=>document.getElementById(id),stage=$('fishing-student');
 let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
 let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',rewardNonce='';
 let audioEnabled=true,bgmStarted=false,codex=null,hitPlayedNonce='';
 const now=()=>Date.now()+offset;
 function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
-function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.9`; }
+function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.10`; }
 function setAudioToggle(){const btn=$('fishing-audio-toggle');if(!btn)return;btn.textContent=audioEnabled?'🔊 소리 켜짐':'🔇 소리 꺼짐';btn.setAttribute('aria-pressed',audioEnabled?'true':'false');}
 function safePlay(el,vol=.6){if(!el||!audioEnabled)return;el.volume=vol;try{el.currentTime=0;}catch{};el.play().catch(()=>{});}
 function ensureBgm(){const bgm=$('fishing-bgm');if(!bgm||!audioEnabled)return;if(bgmStarted&& !bgm.paused)return;bgm.volume=.28;bgm.play().then(()=>{bgmStarted=true;}).catch(()=>{});}
@@ -64,7 +64,7 @@ function revealContent(){
     title=`${result.name||creature?.name||'물고기'}!`;
     desc=`+${Number(result.kg||0).toFixed(1)} kg 획득!`;
     if(creature){
-      sprite.src=`images/fishing/${creature.id}.png?v=5.0.9`;sprite.alt=title;
+      sprite.src=`images/fishing/${creature.id}.png?v=5.0.10`;sprite.alt=title;
       sprite.hidden=false;$('fishing-catch-emoji').hidden=true;
       sprite.onerror=()=>{sprite.hidden=true;$('fishing-catch-emoji').hidden=false;};
     }

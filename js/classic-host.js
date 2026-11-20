@@ -1,7 +1,7 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.9';
+import { makeRulesV5 } from './rules-v5.js?v=5.0.10';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
@@ -24,7 +24,8 @@ function getQuestions(r=run){
 function serverNow(){return Date.now()+clockOffset;}
 function detach(){arcade.reset();checkToken++;for(const stop of unsub)stop();unsub=[];room=null;run=null;publicRound=null;answers={};grades={};savedSet=null;scorePublished='';reportPublished='';if(reportTimer)clearTimeout(reportTimer);reportTimer=null;grading.clear();focusOpen=false;focusResults=false;autoRevealPreference=true;completeSince=0;completeRound='';podiumCollapsed=false;setVisibleFocus(false);}
 function resetUi(){
-  $('classic-panel').hidden=!code;
+  // A room's game mode is not known until its metadata arrives. Never show Classic optimistically.
+  $('classic-panel').hidden=true;
   $('classic-rules').hidden=true;
   $('classic-controls').hidden=true;
   $('classic-board').replaceChildren();
@@ -57,14 +58,18 @@ function roomTitle(){return room?.meta?.title||'게임 방';}
 function stateName(state){return ({ready:'게임 준비',question:'문제 진행',paused:'일시 정지',reveal:'정답 공개',finished:'게임 종료'})[state]||'시작 전';}
 function render(){
   if(!ready||!code)return;
-  $('classic-panel').hidden=room?.meta?.mode==='gold';
-  if(room?.meta?.mode==='gold')return;
+  // Classic controls must never appear in a Gold or Fishing room.
+  const isClassic=room?.meta?.mode==='classic';
+  $('classic-panel').hidden=!isClassic;
+  if(!isClassic){
+    if(focusOpen){focusOpen=false;setVisibleFocus(false);}
+    return;
+  }
   $('classic-controls').hidden=false;
   const state=publicRound?.state||'';
   $('classic-room-label').textContent=`${code} · ${roomTitle()} · ${room?.meta?.setTitle||'문제 미선택'}`;
   $('classic-phase').textContent=stateName(state);
   $('classic-progress').textContent=run?`${Math.max(0,(publicRound?.index ?? -1)+1)} / ${getQuestions().length}문항`:'아직 게임을 준비하지 않았습니다.';
-  const isClassic=room?.meta?.mode==='classic';
   const validSet=!!room?.meta?.setId;
   const canBegin=isClassic&&validSet&&room?.meta?.state!=='ended'&&!run;
   $('classic-prepare').disabled=!canBegin||operation;

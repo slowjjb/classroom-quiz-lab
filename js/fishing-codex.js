@@ -1,4 +1,4 @@
-// Purplekit v5.0.9: game-scoped species collection display.
+// Purplekit v5.0.10: game-scoped species collection display.
 // Reads each student's existing public score; no extra Firebase subscription.
 export function codexStats(creatures,records={}){
   const found=creatures.map(fish=>Number(records?.[fish.id]||0)>0);
@@ -10,7 +10,7 @@ export function createFishingCodex(left,right,creatures){
   for(const [index,fish] of creatures.entries()){
     const card=document.createElement('div');card.className='fishing-codex-card';
     card.dataset.found='false';card.dataset.tier=fish.tier;
-    const img=document.createElement('img');img.src=`images/fishing/thumbs/${fish.id}.webp?v=5.0.9`;
+    const img=document.createElement('img');img.src=`images/fishing/thumbs/${fish.id}.webp?v=5.0.10`;
     img.alt='아직 발견하지 못한 생물의 실루엣';img.loading='lazy';img.decoding='async';
     const name=document.createElement('span');name.className='fishing-codex-card-name';name.textContent='???';
     const best=document.createElement('span');best.className='fishing-codex-card-best';best.textContent='-- kg';
