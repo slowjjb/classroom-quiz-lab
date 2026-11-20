@@ -1,0 +1,15 @@
+/* Purplekit v5.0.11 — room list multi-select controls */
+.room-bulk-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:14px 0 6px;padding:12px 14px;background:#f5f7ff;border:1px solid #dde3fb;border-radius:15px}
+.room-bulk-selection{color:#4b46a0;font-weight:900;white-space:nowrap}
+.room-bulk-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.room-bulk-actions .btn{min-height:39px;padding:8px 11px;white-space:normal}
+.room-bulk-actions .btn:disabled{opacity:.44;cursor:not-allowed}
+.room-bulk-row{min-width:0}
+.room-bulk-row.room-bulk-selected{border-color:#9a8deb;background:#f1efff}
+.room-bulk-check-label{display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;padding:8px 2px}
+.rooms-main input.room-bulk-check{appearance:auto;width:20px!important;min-width:20px!important;min-height:20px!important;height:20px!important;margin:0;accent-color:#6050d8;cursor:pointer}
+.room-bulk-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.room-bulk-row .saved-description{flex:1;min-width:0}
+#room-bulk-message[data-kind="error"]{color:#b43b30}
+#room-bulk-message[data-kind="success"]{color:#087951}
+@media(max-width:760px){.room-bulk-toolbar{align-items:stretch;flex-direction:column}.room-bulk-actions{width:100%}.room-bulk-actions .btn{flex:1 1 auto}.rooms-main .room-bulk-row{flex-direction:row;align-items:center;flex-wrap:wrap}.rooms-main .room-bulk-row .saved-description{flex:1 1 65%}.rooms-main .room-bulk-row .button-row{margin-left:32px}}

@@ -5,11 +5,11 @@ import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www
 import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
-import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.10';
+import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.11';
 import {makeRulesV5} from './rules-v5.js';
 import {buildGoldAccuracy} from './gold-analytics.js?v=4.11';
-import {CREATURES} from './fishing-core.js?v=5.0.10';
-import {renderFishingPodium} from './fishing-podium.js?v=5.0.10';
+import {CREATURES} from './fishing-core.js?v=5.0.11';
+import {renderFishingPodium} from './fishing-podium.js?v=5.0.11';
 const $=id=>document.getElementById(id);
 let teacher=null,code='',mode='',room=null,run=null,pub=null,states={},actions={},answers={},rights=false,operation=false,working=false,offset=0;
 let subs=[],authVersion=0,focusOpen=false,teacherPenaltyId='',teacherPenaltyTimer=null;
@@ -73,7 +73,7 @@ function swimCatch(item){
   const water=$('fishing-pond-catches'),pond=$('fishing-focus-pond');
   if(!water||!pond)return;
   const figure=document.createElement('figure');figure.className='fishing-swimming-catch';figure.dataset.tier=item.creature.tier;
-  const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=5.0.10`;
+  const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=5.0.11`;
   sprite.alt=item.creature.name;const caption=document.createElement('figcaption');
   caption.textContent=`${item.name} · ${item.kg.toFixed(1)} kg`;
   figure.append(sprite,caption);

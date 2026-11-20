@@ -1,15 +1,18 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.10';
+import { makeRulesV5 } from './rules-v5.js?v=5.0.11';
 import { createAvatarImage } from './avatars.js';
-import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=5.0.10';
+import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=5.0.11';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=5.0.11';
 
 const $ = id => document.getElementById(id);
 const modeNames = {classic:'클래식',gold:'골드 퀘스트',fishing:'피싱 프렌지',racing:'레이싱'};
 let teacher = null, authorized = false, hostRooms = {}, questionSets = {};
 let unsubscribeHost = null, unsubscribeRoom = null, unsubscribeSets = null;
 let selectedCode = '', currentRoom = null, creating = false, versionRulesReady = false;
+const selectedRoomCodes = new Set();
+let deletingRooms = false;
 const LAST_ROOM_KEY = 'quizlab-v2-last-host-room';
 function info(id, message, kind = '') { $(id).textContent = message; $(id).dataset.kind = kind; }
 function authBadge(message, kind = 'neutral') { $('room-auth-badge').textContent = message; $('room-auth-badge').className = `pill pill-${kind}`; }
@@ -36,20 +39,45 @@ function setAuthorized(next) {
   $('room-workspace').classList.toggle('workspace-locked', !next);
   $('room-workspace').setAttribute('aria-disabled', String(!next));
 }
+function syncRoomBulkControls(){
+  const valid = [...selectedRoomCodes].filter(code=>hostRooms[code]);
+  for(const code of [...selectedRoomCodes])if(!hostRooms[code])selectedRoomCodes.delete(code);
+  $('room-bulk-count').textContent=`${valid.length}개 선택`;
+  $('room-bulk-delete').textContent=`선택한 방 삭제 (${valid.length})`;
+  $('room-bulk-delete').disabled=deletingRooms||!authorized||!valid.length;
+  $('room-bulk-clear').disabled=deletingRooms||!valid.length;
+  $('room-bulk-select-closed').disabled=deletingRooms||!Object.keys(hostRooms).length;
+}
 function renderSavedRooms() {
   const entries = Object.entries(hostRooms).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
   $('room-saved-count').textContent = `${entries.length}개`;
   const list = $('room-saved-list'); list.replaceChildren();
-  if (!entries.length) {const p = document.createElement('p'); p.className='empty-state';p.textContent='아직 만든 방이 없습니다.';list.append(p);return;}
+  if (!entries.length) {const p = document.createElement('p'); p.className='empty-state';p.textContent='아직 만든 방이 없습니다.';list.append(p);syncRoomBulkControls();return;}
   for (const [code, record] of entries) {
-    const row = document.createElement('div'); row.className='saved-set';
+    const row = document.createElement('div'); row.className='saved-set room-bulk-row';
+    row.classList.toggle('room-bulk-selected',selectedRoomCodes.has(code));
+    const selectLabel=document.createElement('label');selectLabel.className='room-bulk-check-label';
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='room-bulk-check';
+    checkbox.checked=selectedRoomCodes.has(code);checkbox.disabled=deletingRooms;
+    checkbox.setAttribute('aria-label',`${code}번 방 삭제 대상으로 선택`);
+    checkbox.addEventListener('change',()=>{
+      if(checkbox.checked)selectedRoomCodes.add(code);else selectedRoomCodes.delete(code);
+      row.classList.toggle('room-bulk-selected',checkbox.checked);syncRoomBulkControls();
+    });
+    const sr=document.createElement('span');sr.className='room-bulk-visually-hidden';sr.textContent=`${code}번 방 선택`;
+    selectLabel.append(checkbox,sr);
     const box = document.createElement('div');box.className='saved-description';
     const label = document.createElement('strong');label.textContent=`${code} · ${record.title || '테스트 방'}`;
-    const meta = document.createElement('span'); meta.className='helper';meta.textContent=`${stateText(record.state)} · ${new Date(record.createdAt).toLocaleString('ko-KR')}`;
+    const created=Number(record.createdAt);
+    const dateText=Number.isFinite(created)&&created>0?new Date(created).toLocaleString('ko-KR'):'생성 일시 미확인';
+    const meta = document.createElement('span'); meta.className='helper';meta.textContent=`${stateText(record.state)} · ${dateText}`;
     const actions = document.createElement('div');actions.className='button-row';
-    const button = document.createElement('button');button.className='btn btn-outline btn-small';button.textContent='방 열기';
-    button.addEventListener('click',()=>openRoom(code));actions.append(button);box.append(label,meta);row.append(box,actions);list.append(row);
+    const button = document.createElement('button');button.type='button';button.className='btn btn-outline btn-small';button.textContent='방 열기';
+    button.disabled=deletingRooms;
+    button.addEventListener('click',()=>openRoom(code));actions.append(button);
+    box.append(label,meta);row.append(selectLabel,box,actions);list.append(row);
   }
+  syncRoomBulkControls();
 }
 function renderSetOptions() {
   const select = $('room-set');const oldValue = select.value;select.replaceChildren();
@@ -185,23 +213,75 @@ async function changeRoomState(next) {
     await update(ref(db,`v2/hostRooms/${teacher.uid}/${selectedCode}`),{state:next});
   }catch(error){info('room-live-message',`방 상태 변경 실패: ${formatError(error)}`,'error');}
 }
+function describeRoom(code){
+  return `${code} · ${hostRooms[code]?.title||'게임 방'}`;
+}
+async function inspectRoomForDeletion(code) {
+  // Always re-check the server, not the cached room list, just before deleting.
+  const room=(await get(ref(db,`v2/rooms/${code}`))).val();
+  if(!room?.meta)return {code,room:null,allowed:true,orphan:true};
+  if(room.meta.hostUid!==teacher?.uid)return {code,allowed:false,reason:'다른 교사의 방입니다.'};
+  const prefix=ROOM_MODE_PREFIX[room.meta.mode];
+  if(!prefix)return {code,allowed:false,reason:'지원되지 않는 게임 유형입니다.'};
+  const gameState=(await get(ref(db,`${prefix}/public/${code}/state`))).val()||'';
+  const decision=canSafelyDeleteRoom(room,gameState);
+  return {code,room,allowed:decision.ok,reason:decision.reason,gameState};
+}
+async function deleteRoomCodes(codes) {
+  if(!authorized||!teacher||deletingRooms)return;
+  const unique=[...new Set(codes)].filter(code=>/^\d{6}$/.test(code)&&hostRooms[code]);
+  if(!unique.length)return;
+  deletingRooms=true;renderSavedRooms();
+  const status=(message,kind='')=>info('room-bulk-message',message,kind);
+  let deleted=0,blocked=[],failed=[];
+  try {
+    status(`선택한 ${unique.length}개 방의 현재 진행 상태를 확인하고 있습니다…`);
+    const checks=[];
+    for(const code of unique){
+      try{checks.push(await inspectRoomForDeletion(code));}
+      catch(err){blocked.push(`${describeRoom(code)} (${formatError(err)})`);}
+    }
+    const eligible=checks.filter(x=>x.allowed);
+    blocked.push(...checks.filter(x=>!x.allowed).map(x=>`${describeRoom(x.code)} (${x.reason})`));
+    if(!eligible.length){status(`삭제 가능한 방이 없습니다. ${blocked.slice(0,3).join(' / ')}`,'error');return;}
+    const example=eligible.slice(0,5).map(x=>describeRoom(x.code)).join('\n');
+    const more=eligible.length>5?`\n외 ${eligible.length-5}개 방`:'';
+    const warning=blocked.length?`\n\n진행 중이거나 접속 중인 ${blocked.length}개 방은 삭제하지 않습니다.`:'';
+    if(!confirm(`다음 ${eligible.length}개 방을 영구 삭제할까요?\n\n${example}${more}\n\n학생 명단, 점수, 답안, 문제별 기록도 복구할 수 없게 삭제됩니다.\n결과 CSV가 필요하면 취소하고 먼저 저장해 주세요.${warning}`)){
+      status('삭제를 취소했습니다. 선택 상태는 유지됩니다.');return;
+    }
+    for(const [i,item] of eligible.entries()){
+      const {code}=item;
+      status(`삭제 진행 ${i+1}/${eligible.length} · ${code}번 방…`);
+      try {
+        const latest=await inspectRoomForDeletion(code);
+        if(!latest.allowed){blocked.push(`${describeRoom(code)} (${latest.reason})`);continue;}
+        const changes=latest.orphan
+          ?{[`v2/hostRooms/${teacher.uid}/${code}`]:null}
+          :buildRoomDeletionUpdates(teacher.uid,code,latest.room.meta.mode);
+        // One atomic multi-path update per room: an error never leaves half of
+        // that room's data deleted. Separate rooms may succeed independently.
+        await update(ref(db),changes);
+        selectedRoomCodes.delete(code);
+        deleted++;
+        if(selectedCode===code){
+          if(unsubscribeRoom){unsubscribeRoom();unsubscribeRoom=null;}
+          selectedCode='';currentRoom=null;$('room-detail').hidden=true;
+          window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code:''}}));
+        }
+        if(localStorage.getItem(LAST_ROOM_KEY)===code)localStorage.removeItem(LAST_ROOM_KEY);
+      }catch(err){failed.push(`${describeRoom(code)} (${formatError(err)})`);}
+    }
+    if(deleted){status(`${deleted}개 방의 대기실 및 게임 기록을 삭제했습니다.`, 'success');}
+    if(blocked.length||failed.length){
+      status(`삭제 ${deleted}개 완료 · 제외 ${blocked.length}개 · 실패 ${failed.length}개. ${[...blocked,...failed].slice(0,3).join(' / ')}${failed.length?' · 클래식 방 삭제 권한 오류라면 Firebase v5.0.11 통합 규칙 게시 여부를 확인해 주세요.':''}`,'error');
+    }
+  }catch(err){status(`삭제 확인 중 오류: ${formatError(err)}`,'error');}
+  finally {deletingRooms=false;renderSavedRooms();}
+}
 async function deleteRoom() {
   if(!authorized||!selectedCode||currentRoom?.meta?.state!=='ended')return;
-  if(!confirm(`종료한 ${selectedCode}번 방을 완전히 삭제할까요? 대기실 테스트 기록이 사라집니다.`))return;
-  const code=selectedCode;
-  try {
-    const cleanup={
-      [`v2/rooms/${code}`]:null,
-      [`v2/hostRooms/${teacher.uid}/${code}`]:null
-    };
-    if(currentRoom?.meta?.mode==='gold'){
-      for(const bucket of ['privateRuns','public','memberState','answers','picks'])cleanup[`v4/${bucket}/${code}`]=null;
-    }
-    await update(ref(db),cleanup);
-    if(unsubscribeRoom){unsubscribeRoom();unsubscribeRoom=null;}
-    selectedCode='';currentRoom=null;$('room-detail').hidden=true;localStorage.removeItem(LAST_ROOM_KEY);window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code:''}}));
-    info('room-create-message','종료한 게임 방 기록을 삭제했습니다.','success');
-  }catch(error){info('room-live-message',formatError(error),'error');}
+  await deleteRoomCodes([selectedCode]);
 }
 async function startListeners() {
   if(!teacher)return;
@@ -248,7 +328,7 @@ async function startListeners() {
 }
 function handleAuth(user) {
   stopListeners();setAuthorized(false);versionRulesReady=false;hostRooms={};selectedCode='';currentRoom=null;
-  $('room-detail').hidden=true;renderSavedRooms();
+  $('room-detail').hidden=true;selectedRoomCodes.clear();renderSavedRooms();
   teacher=user?.providerData?.some(x=>x.providerId==='google.com')?user:null;
   $('room-login').hidden=Boolean(teacher);$('room-logout').hidden=!teacher;$('room-retry').hidden=!teacher;
   $('room-rules-guide').hidden=true;
@@ -285,5 +365,12 @@ else {
   $('room-toggle-lock').addEventListener('click',()=>changeRoomState(currentRoom?.meta?.state==='locked'?'lobby':'locked'));
   $('room-end').addEventListener('click',()=>{if(confirm('게임 방을 종료할까요? v2에는 점수 기록이 없습니다.'))changeRoomState('ended');});
   $('room-delete').addEventListener('click',deleteRoom);
+  $('room-bulk-select-closed').addEventListener('click',()=>{
+    for(const [code,r] of Object.entries(hostRooms))if(['locked','ended'].includes(r.state))selectedRoomCodes.add(code);
+    renderSavedRooms();
+    info('room-bulk-message','입장 마감·종료된 방을 선택했습니다. 실제 진행 중인 방은 삭제 직전에 다시 검사하여 제외합니다.');
+  });
+  $('room-bulk-clear').addEventListener('click',()=>{selectedRoomCodes.clear();renderSavedRooms();info('room-bulk-message','선택을 해제했습니다.');});
+  $('room-bulk-delete').addEventListener('click',()=>void deleteRoomCodes([...selectedRoomCodes]));
   onAuthStateChanged(auth,handleAuth,err=>info('room-auth-message',formatError(err),'error'));
 }

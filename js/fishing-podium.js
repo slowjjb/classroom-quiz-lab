@@ -1,4 +1,4 @@
-/** Purplekit v5.0.10 Fishing podium: independent of Gold/Classic scoring. */
+/** Purplekit v5.0.11 Fishing podium: independent of Gold/Classic scoring. */
 import {createAvatarImage} from './avatars.js';
 
 export function renderFishingPodium(target, ranked=[]){

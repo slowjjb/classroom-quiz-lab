@@ -166,7 +166,8 @@
                 ".validate": false
               }
             }
-          }
+          },
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'"
         }
       },
       "grades": {

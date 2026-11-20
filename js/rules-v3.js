@@ -33,6 +33,9 @@ export function makeRulesV3(uid) {
     answers: {
       '$code': {
         '.read': teacher,
+        // Teachers must be able to remove the whole room answer subtree.
+        // Student writes remain restricted to their own answer leaf.
+        '.write': teacher,
         '$round': {
           '$uid': {
             '.read': `${teacher} || (auth != null && auth.uid === $uid)`,
