@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#241451">
+<title>퍼플킷 레이싱 연구실 | v6.0.0-alpha.1</title>
+<style>
+:root{--bg:#0c1025;--panel:#171b37;--panel2:#20264a;--border:#36406a;--ink:#f7f6ff;--muted:#afb9dd;--purple:#a78bfa;--lime:#8ff4c2;--yellow:#ffdb80;--red:#ff9aab}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:system-ui,-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:radial-gradient(ellipse at 15% 3%,#402375 0%,transparent 36%),radial-gradient(ellipse at 92% 35%,#102b5c 0%,transparent 35%),var(--bg);min-height:100vh}
+button,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}.shell{max-width:1300px;margin:auto;padding:18px 20px 40px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #ffffff22;padding:8px 0 20px}.brand{font-weight:900;letter-spacing:1px;font-size:19px}.brand span{display:inline-grid;place-items:center;background:linear-gradient(140deg,#d3bbff,#7665ff);color:#21134c;border-radius:11px;width:35px;height:35px;margin-right:9px}.beta{font-size:12px;background:#6e4bb43b;border:1px solid #b89bff72;border-radius:999px;color:#dbc8ff;padding:7px 12px}.hero{display:flex;justify-content:space-between;gap:22px;align-items:center;padding:26px 0}.eyebrow{color:var(--lime);font-weight:800;font-size:12px;letter-spacing:2.2px}.hero h1{margin:9px 0;font-size:clamp(30px,4vw,51px);line-height:1.16}.hero h1 em{font-style:normal;color:#c3adff}.hero p{color:var(--muted);margin:0;line-height:1.65}.hero-art{flex-shrink:0;text-align:center;padding:16px 24px;border:1px solid #ffffff16;background:#ffffff08;border-radius:22px}.hero-art .car{font-size:55px;display:block;filter:drop-shadow(0 9px 9px #0006)}.hero-art small{color:var(--muted)}
+.settings{display:flex;flex-wrap:wrap;align-items:end;gap:16px;padding:17px 20px;background:#1c2143e5;border:1px solid var(--border);border-radius:18px;margin-bottom:18px}.setting{display:flex;flex-direction:column;gap:8px;min-width:180px}.setting label{color:#cbd4f8;font-size:12px;font-weight:800}.stepper{display:flex;gap:7px;align-items:center}.stepper strong{min-width:90px;text-align:center;font-size:26px;font-variant-numeric:tabular-nums}.small-btn{border-radius:10px;background:#303963;color:#fff;border:1px solid #5b6699;width:35px;height:35px;font-weight:900}.settings select{background:#131a36;color:#fff;border:1px solid #55608c;border-radius:10px;padding:10px}.setting.actions{flex:1;align-items:flex-end;flex-direction:row;justify-content:flex-end;min-width:220px}.primary,.secondary{border:1px solid transparent;border-radius:12px;padding:12px 20px;font-weight:850}.primary{color:#1c1536;background:linear-gradient(135deg,#f5cdff,#aa92ff);box-shadow:0 8px 18px #25145155}.secondary{color:#e4e5ff;background:#343b63;border-color:#65709d}.main-grid{display:grid;grid-template-columns:minmax(0,1.17fr) minmax(330px,.83fr);gap:18px;transform-origin:center top;transition:transform .2s,filter .2s}.main-grid.is-shrunk{transform:scale(.88);filter:contrast(.90)}.panel{background:#161c3ae9;border:1px solid #3f4a77;border-radius:20px;overflow:hidden;box-shadow:0 15px 30px #02050b2e}.panel-head{padding:19px 20px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #ffffff13}.panel-head h2{font-size:17px;margin:0}.pill{font-size:12px;color:#d8d3ff;border:1px solid #6d64a4;border-radius:100px;padding:6px 10px;background:#6e54bd24}.race-body{padding:14px 18px 18px}.race-ruler{display:flex;justify-content:space-between;margin:0 0 13px;color:var(--muted);font-size:12px}.lanes{display:flex;flex-direction:column;gap:9px;min-height:330px}.lane{border:1px solid #ffffff16;background:#0f1733;border-radius:11px;padding:9px 12px;position:relative}.lane.me{background:#2d2355;border-color:#a58cff}.lane-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:12px}.lane-top strong{font-weight:800}.lane-top span{color:#cbd1eb;font-variant-numeric:tabular-nums}.track{height:15px;border-radius:999px;position:relative;background:repeating-linear-gradient(90deg,#2a345b 0 13px,#323d65 13px 15px);margin:9px 14px 5px 0;overflow:visible}.bar{height:100%;border-radius:999px;background:linear-gradient(90deg,#5daafa,#8ff4c2);transition:width .4s cubic-bezier(.2,.9,.35,1);min-width:0}.lane.me .bar{background:linear-gradient(90deg,#a274ff,#f7c5ff)}.car-icon{position:absolute;left:var(--progress);top:-14px;transform:translateX(-35%);font-size:24px;transition:left .4s cubic-bezier(.2,.9,.35,1);filter:drop-shadow(0 2px 3px #000a);white-space:nowrap}.finish-line{position:absolute;right:-7px;top:-4px;height:23px;border-left:3px dashed #fff8}.race-note{color:var(--muted);font-size:12px;line-height:1.55;padding:12px 19px;border-top:1px solid #ffffff13}
+.play-body{padding:17px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.stat{border:1px solid #49527c;background:#232b52;border-radius:12px;text-align:center;padding:9px 4px}.stat small{display:block;color:var(--muted);font-size:11px}.stat strong{display:block;font-size:22px;margin-top:3px;font-variant-numeric:tabular-nums}.question-box{border-radius:16px;padding:21px;background:linear-gradient(155deg,#44336a,#253d6a);min-height:126px;display:flex;flex-direction:column;justify-content:center}.q-label{font-size:12px;color:#e6d8ff;font-weight:800;margin-bottom:9px}.question{font-size:clamp(18px,2.4vw,25px);font-weight:900;line-height:1.4}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}.answer{min-height:64px;background:#26315a;border:1px solid #59638d;color:#fff;font-weight:800;border-radius:13px;padding:10px;text-align:center;line-height:1.5}.answer:hover:not(:disabled){border-color:#d4baff;background:#423871}.answer.correct{background:#12634f;border-color:#8ff4c2}.answer.wrong{background:#813a55;border-color:#ffadb8}.feedback{font-weight:800;color:#d9d9f8;min-height:28px;line-height:1.6}.hint{color:var(--muted);font-size:12px;line-height:1.6}.boost{border-radius:10px;background:#1f4c4b;border:1px solid #65c8ae;padding:9px 12px;margin-bottom:12px;font-size:12px;color:#dcfff5;font-weight:750}.item-meter{margin:12px 0 6px}.meter-heading{display:flex;justify-content:space-between;font-size:12px;color:#d4d7ef;margin-bottom:7px}.meter-dots{display:flex;gap:6px}.meter-dots span{height:9px;flex:1;background:#41486b;border-radius:99px}.meter-dots span.on{background:linear-gradient(90deg,#a88cf7,#eec5ff)}.event-panel{margin-top:18px}.event-panel .panel-head{padding:12px 16px}.events{padding:12px 18px 15px;margin:0;list-style:none;display:flex;flex-direction:column;gap:7px;max-height:160px;overflow:auto}.events li{color:#ccd6f5;font-size:12px;line-height:1.55}.warning{margin-top:16px;padding:13px 16px;border-left:3px solid #e2bd78;background:#5f4c1b35;border-radius:9px;color:#ecdfbb;font-size:13px;line-height:1.8}
+.modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:18px;background:#050713b8;backdrop-filter:blur(8px)}[hidden]{display:none!important}.modal-card{width:min(520px,100%);padding:28px 24px;text-align:center;border-radius:23px;border:1px solid #b7a0ff;background:linear-gradient(155deg,#332457,#151d42);box-shadow:0 25px 70px #0009}.modal-card h2{font-size:26px;margin:0 0 6px}.modal-card p{color:#ded6f7}.reel-frame{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:23px 0}.reel-cell{border-radius:13px;border:1px solid #7772a7;background:#202a51;padding:14px 5px;min-height:114px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:9px}.reel-cell.center{background:#433178;border:3px solid #ead3ff;box-shadow:0 0 22px #c78dff55;transform:scale(1.06)}.reel-cell span{font-size:32px}.reel-cell strong{font-size:12px}.reel-frame.spinning .center span{filter:blur(1px)}.reel-message{min-height:32px;font-weight:800;color:#ffe9ae}.result-order{display:flex;flex-direction:column;gap:8px;text-align:left;margin:18px 0}.result-line{display:flex;justify-content:space-between;border:1px solid #635c91;background:#ffffff12;border-radius:12px;padding:10px 13px;font-weight:750}.result-line.me{border-color:#ddbaff}.shrink-flag{position:fixed;top:15px;left:50%;transform:translateX(-50%);z-index:15;background:#efbeff;color:#241438;border-radius:999px;font-weight:900;box-shadow:0 8px 25px #0009;padding:10px 18px;text-align:center}
+@media(max-width:940px){.main-grid{grid-template-columns:1fr}.lanes{min-height:unset}.hero-art{display:none}}@media(max-width:560px){.shell{padding:12px 11px 28px}.topbar{align-items:flex-start}.brand{font-size:15px}.beta{font-size:10px;text-align:right}.settings{gap:12px;padding:14px}.setting{min-width:125px}.setting.actions{width:100%;min-width:100%;justify-content:stretch}.setting.actions button{flex:1}.panel-head{padding:13px}.race-body{padding:10px}.play-body{padding:12px}.answer{min-height:57px}.hero{padding:22px 0}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="topbar"><div class="brand"><span>P</span>PURPLEKIT <span style="background:none;color:#c7b1ff;width:auto;height:auto;margin:0">RACING LAB</span></div><div class="beta">v6.0.0-alpha.1 · Firebase 미연결 · 로컬 시제품</div></header>
+<section class="hero"><div><div class="eyebrow">PURPLEKIT · NEXT GAME MODE</div><h1>문제를 풀고,<br><em>결승선을 향해 달려요!</em></h1><p>자동차 경주 · 3정답마다 슬롯 룰렛 · 아이템 10종 실험<br>실제 학생 계정이 아닌 컴퓨터 선수와 진행하는 체험판입니다.</p></div><div class="hero-art"><span class="car">🏎️</span><small>READY · SET · LEARN!</small></div></section>
+<section class="settings" aria-label="경주 테스트 설정">
+<div class="setting"><label>결승선 거리 (5m 단위)</label><div class="stepper"><button class="small-btn" id="minus" aria-label="거리 5m 감소">−</button><strong id="distanceLabel">20m</strong><button class="small-btn" id="plus" aria-label="거리 5m 증가">+</button></div></div>
+<div class="setting"><label for="bots">컴퓨터 선수</label><select id="bots"><option value="4">4명</option><option value="9" selected>9명</option><option value="19">19명 (20명 시뮬레이션)</option></select></div>
+<div class="setting actions"><button class="secondary" id="reset">초기화</button><button class="primary" id="start">▶ 경주 시작</button></div>
+</section>
+<div class="main-grid" id="gameGrid">
+<section class="panel"><div class="panel-head"><h2>🏁 실시간 경주</h2><span class="pill" id="raceState">준비 중</span></div><div class="race-body"><div class="race-ruler"><span>START · 0m</span><span id="finishLabel">FINISH · 20m</span></div><div class="lanes" id="lanes"></div></div><div class="race-note">컴퓨터 선수는 가상으로 정답을 맞혀 이동하며 아이템은 사용하지 않습니다. 실제 다중 접속 테스트는 다음 단계에서 진행합니다.</div></section>
+<div><section class="panel"><div class="panel-head"><h2>🧠 문제 풀기</h2><span class="pill" id="cooldown">화면 방해 대기 없음</span></div><div class="play-body">
+<div class="stats"><div class="stat"><small>맞힌 문제</small><strong id="correct">0</strong></div><div class="stat"><small>정답률</small><strong id="accuracy">0%</strong></div><div class="stat"><small>나의 거리</small><strong id="myMeters">0m</strong></div></div>
+<div id="boost" class="boost" hidden>⚡ 가속 페달 · 남은 문제 3개 · 틀리면 종료</div>
+<div class="question-box"><div class="q-label" id="questionNumber">READY TO RACE</div><div class="question" id="question">경주 시작 버튼을 누르면 문제를 풀 수 있어요.</div></div>
+<div id="answers" class="answers"></div><div id="feedback" class="feedback" role="status" aria-live="polite">먼저 목표 거리를 선택해 주세요.</div>
+<div class="item-meter"><div class="meter-heading"><span>🎰 아이템 뽑기까지</span><span id="itemText">0 / 3 정답</span></div><div class="meter-dots" id="meter"><span></span><span></span><span></span></div></div>
+<div class="hint">정답 1개 = 기본 1m 전진 · 누적 정답 3개마다 룰렛 · 오답은 룰렛 진행도를 초기화하지 않아요.</div>
+</div></section><section class="panel event-panel"><div class="panel-head"><h2>📣 경기 기록</h2></div><ul class="events" id="events"><li>경주를 시작하면 기록이 표시됩니다.</li></ul></section></div>
+</div>
+<div class="warning"><strong>개발용 독립 시제품</strong> · 기존 퍼플킷과 Firebase를 읽거나 수정하지 않습니다. 문제는 임시 샘플이며, AI 선수의 속도와 아이템은 실제 학급 경기 밸런스와 다릅니다. 이 페이지의 결과는 저장되지 않습니다.</div>
+</div>
+<div class="modal" id="reelModal" hidden role="dialog" aria-modal="true" aria-labelledby="reelTitle"><div class="modal-card"><div class="eyebrow">3 CORRECT ANSWERS!</div><h2 id="reelTitle">🎰 아이템 룰렛</h2><p>어떤 아이템이 나올까요?</p><div id="reel" class="reel-frame" aria-hidden="true"></div><div id="reelMessage" class="reel-message" role="status" aria-live="polite">룰렛이 돌아갑니다...</div></div></div>
+<div class="modal" id="resultModal" hidden role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div class="modal-card"><div class="eyebrow">RACE FINISHED</div><h2 id="resultTitle">🏁 경기 종료!</h2><p id="resultText"></p><div id="resultOrder" class="result-order"></div><button id="again" class="primary">새 경주 시작</button></div></div>
+<div id="shrinkFlag" class="shrink-flag" hidden>🌊 전체 화면 축소! (잠시 후 원래대로)</div>
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var ITEMS=[
+{id:"f1",name:"1m 전진",icon:"⚡",weight:34},
+{id:"f2",name:"2m 전진",icon:"🚀",weight:20},
+{id:"f3",name:"3m 전진",icon:"🌟",weight:1},
+{id:"b1",name:"1m 후진",icon:"🌀",weight:13},
+{id:"b2",name:"2m 후진",icon:"🌧️",weight:4},
+{id:"s1",name:"선두 1m 후진",icon:"🎯",weight:7},
+{id:"s2",name:"선두 2m 후진",icon:"💥",weight:1},
+{id:"shrink",name:"전체 화면 축소",icon:"🪼",weight:7},
+{id:"chase",name:"추격 부스터",icon:"🏎️",weight:10},
+{id:"accel",name:"가속 페달",icon:"🔥",weight:3}
+];
+var QUESTIONS=[
+["9 × 7은?",["56","63","72","64"],1],
+["84 ÷ 7은?",["11","13","12","14"],2],
+["35 + 48은?",["73","83","93","78"],1],
+["120 - 57은?",["63","73","67","53"],0],
+["6 × 12는?",["66","72","84","76"],1],
+["96 ÷ 8은?",["10","11","12","14"],2],
+["17 × 3은?",["41","51","61","57"],1],
+["58 + 26은?",["74","94","82","84"],3],
+["15 × 4는?",["45","50","60","65"],2],
+["200 - 78은?",["132","122","112","128"],1],
+["81 ÷ 9는?",["8","9","7","10"],1],
+["13 × 5는?",["55","75","65","70"],2],
+["27 + 39는?",["56","66","76","64"],1],
+["7 × 11은?",["77","88","67","71"],0],
+["144 ÷ 12는?",["11","13","12","14"],2],
+["3.5 + 2.4는?",["5.9","6.1","5.7","4.9"],0],
+["1.2 × 3은?",["3.2","3.6","4.2","3.5"],1],
+["50의 20%는?",["5","15","20","10"],3],
+["4 × (6 + 3)은?",["30","36","42","24"],1],
+["1000 - 375는?",["725","675","625","635"],2],
+["2.5 + 0.7은?",["3.2","2.12","3.0","3.5"],0],
+["18 × 4는?",["64","72","82","78"],1],
+["56 ÷ 7은?",["7","6","8","9"],2],
+["45 + 67은?",["102","122","112","111"],2],
+["1.5 × 6은?",["7","8","9","10"],2],
+["72 - 28은?",["54","44","46","34"],1],
+["11 × 11은?",["111","121","131","112"],1],
+["13 + 29는?",["42","41","43","52"],0],
+["64 ÷ 4는?",["14","15","16","18"],2],
+["6.4 - 1.8은?",["4.6","5.6","4.4","4.8"],0]
+];
+var NAMES=["번개","별똥별","구름","고래","혜성","코코","버블","초롱","슈퍼","다람쥐","바람","파도","호랑이","오로라","달빛","토끼","팡팡","두리","유성"];
+var distance=20,state=null,tick=null,runToken=0,shrinkTimer=null;
+function shuffledIndexes(){var a=QUESTIONS.map(function(_,i){return i});for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var v=a[i];a[i]=a[j];a[j]=v}return a}
+function addLog(message){var list=$("events");var li=document.createElement("li");li.textContent=message;list.prepend(li);while(list.children.length>9)list.lastChild.remove()}
+function clampDistance(m){return Math.max(0,Math.min(distance,m))}
+function sorted(){return state.racers.slice().sort(function(a,b){return b.m-a.m||(b.correct||0)-(a.correct||0)||a.order-b.order})}
+function paint(){
+ if(!state)return;
+ var lanes=$("lanes");lanes.replaceChildren();
+ sorted().forEach(function(r,i){
+  var lane=document.createElement("div");lane.className="lane"+(r.id==="you"?" me":"");
+  var top=document.createElement("div");top.className="lane-top";
+  var who=document.createElement("strong");who.textContent=(i+1)+"위 · "+r.name+(r.id==="you"?" (나)":"");
+  var num=document.createElement("span");num.textContent=r.m+" / "+distance+"m";
+  top.append(who,num);
+  var track=document.createElement("div");track.className="track";
+  var bar=document.createElement("div");bar.className="bar";bar.style.width=(r.m/distance*100)+"%";
+  var car=document.createElement("span");car.className="car-icon";car.style.setProperty("--progress",(r.m/distance*100)+"%");car.textContent=r.id==="you"?"🏎️":r.emoji;
+  var finish=document.createElement("div");finish.className="finish-line";
+  track.append(bar,car,finish);lane.append(top,track);lanes.append(lane);
+ });
+ $("correct").textContent=state.correct;
+ $("accuracy").textContent=state.answered?Math.round(state.correct/state.answered*100)+"%":"0%";
+ $("myMeters").textContent=state.racers[0].m+"m";
+ $("itemText").textContent=state.toItem+" / 3 정답";
+ Array.from($("meter").children).forEach(function(node,i){node.classList.toggle("on",i<state.toItem)});
+ $("boost").hidden=state.accel===0;
+ if(state.accel)$("boost").textContent="🔥 가속 페달 · 남은 문제 "+state.accel+"개 · 맞히면 2m / 틀리면 종료";
+ var wait=30-Math.floor((Date.now()-state.lastShrinkAt)/1000);
+ $("cooldown").textContent=wait>0?"방해 재발동 "+wait+"초 대기":"방해 발동 가능";
+ $("raceState").textContent=state.ended?"경기 종료":state.started?"경주 진행 중":"준비 중";
+}
+function setConfigDisabled(value){$("minus").disabled=value;$("plus").disabled=value;$("bots").disabled=value;$("start").disabled=value}
+function initView(){
+ $("distanceLabel").textContent=distance+"m";$("finishLabel").textContent="FINISH · "+distance+"m";
+ var racers=[{id:"you",name:"퍼플 레이서",m:0,correct:0,order:0,emoji:"🏎️"}];
+ var count=Number($("bots").value);
+ for(var i=0;i<count;i++)racers.push({id:"bot"+i,name:"AI "+NAMES[i],m:0,correct:0,order:i+1,emoji:["🚙","🚗","🚕","🚜"][i%4],skill:.40+((i*13)%29)/100});
+ state={racers:racers,started:false,ended:false,correct:0,answered:0,toItem:0,accel:0,bag:shuffledIndexes(),current:-1,locked:false,rolling:false,lastShrinkAt:-Infinity};
+ paint();
+ $("questionNumber").textContent="READY TO RACE";$("question").textContent="경주 시작 버튼을 누르면 문제를 풀 수 있어요.";
+ $("answers").replaceChildren();$("feedback").textContent="먼저 목표 거리를 선택해 주세요.";
+}
+function stopTimers(){if(tick){clearInterval(tick);tick=null}if(shrinkTimer){clearTimeout(shrinkTimer);shrinkTimer=null}$("gameGrid").classList.remove("is-shrunk");$("shrinkFlag").hidden=true}
+function reset(){runToken++;stopTimers();$("reelModal").hidden=true;$("resultModal").hidden=true;setConfigDisabled(false);$("start").textContent="▶ 경주 시작";initView();$("events").innerHTML="<li>경주를 시작하면 기록이 표시됩니다.</li>"}
+function start(){
+ runToken++;stopTimers();$("reelModal").hidden=true;$("resultModal").hidden=true;initView();state.started=true;setConfigDisabled(true);$("events").replaceChildren();addLog("🏁 경주 시작! 목표 "+distance+"m");
+ nextQuestion();paint();
+ var token=runToken;
+ tick=setInterval(function(){
+  if(token!==runToken||!state||state.ended)return;
+  state.racers.slice(1).forEach(function(b){if(Math.random()<b.skill){b.m=clampDistance(b.m+1);b.correct++}});
+  paint();maybeFinish();
+ },1550);
+}
+function nextQuestion(){
+ if(!state||state.ended)return;
+ if(!state.bag.length)state.bag=shuffledIndexes();
+ var idx=state.bag.pop();state.current=idx;state.locked=false;
+ var q=QUESTIONS[idx];$("questionNumber").textContent="QUESTION · "+(state.answered+1);
+ $("question").textContent=q[0];$("feedback").textContent="정답을 맞혀 앞으로 이동하세요!";
+ var area=$("answers");area.replaceChildren();
+ q[1].forEach(function(v,i){var b=document.createElement("button");b.className="answer";b.textContent=(i+1)+". "+v;b.addEventListener("click",function(){answer(i,b)});area.append(b)});
+}
+function answer(index,button){
+ if(!state||!state.started||state.ended||state.locked||state.rolling)return;
+ state.locked=true;state.answered++;
+ var q=QUESTIONS[state.current],correct=index===q[2];
+ Array.from($("answers").children).forEach(function(b,i){b.disabled=true;if(i===q[2])b.classList.add("correct")});
+ if(!correct)button.classList.add("wrong");
+ if(correct){
+  var step=state.accel>0?2:1;
+  if(state.accel>0)state.accel--;
+  state.correct++;state.toItem++;
+  state.racers[0].correct++;
+  state.racers[0].m=clampDistance(state.racers[0].m+step);
+  $("feedback").textContent="정답! "+step+"m 전진"+(state.accel>0?" · 가속 "+state.accel+"문제 남음":"");
+  addLog("✅ 정답 · "+step+"m 전진");
+ }else{
+  if(state.accel>0){state.accel=0;addLog("💨 오답으로 가속 페달 종료")}
+  $("feedback").textContent="아쉬워요! 정답은 "+q[1][q[2]]+" · 다음 문제에 다시 도전!";
+ }
+ paint();if(maybeFinish())return;
+ var token=runToken,draw=correct&&state.toItem>=3;
+ if(draw)state.toItem=0;
+ if(draw)paint();
+ setTimeout(function(){if(token!==runToken||!state||state.ended)return;if(draw)spinItem(token);else nextQuestion()},650);
+}
+function eligibleItems(){return ITEMS.filter(function(item){return item.id!=="shrink"||Date.now()-state.lastShrinkAt>=30000})}
+function weightedPick(pool){
+ var total=pool.reduce(function(s,item){return s+item.weight},0),r=Math.random()*total;
+ for(var i=0;i<pool.length;i++){r-=pool[i].weight;if(r<0)return pool[i]}
+ return pool[pool.length-1];
+}
+function renderReel(center,pool,spinning){
+ var reel=$("reel");reel.classList.toggle("spinning",spinning);reel.replaceChildren();
+ [pool[Math.floor(Math.random()*pool.length)],center,pool[Math.floor(Math.random()*pool.length)]].forEach(function(item,i){
+  var cell=document.createElement("div");cell.className="reel-cell"+(i===1?" center":"");
+  var icon=document.createElement("span");icon.textContent=item.icon;
+  var label=document.createElement("strong");label.textContent=item.name;
+  cell.append(icon,label);reel.append(cell);
+ });
+}
+function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
+async function spinItem(token){
+ if(token!==runToken||state.ended)return;
+ state.rolling=true;
+ var pool=eligibleItems(),item=weightedPick(pool);
+ $("reelModal").hidden=false;$("reelMessage").textContent="아이템 추첨 중...";addLog("🎰 정답 3개! 아이템 룰렛");
+ for(var i=0;i<20;i++){
+  if(token!==runToken||state.ended)return;
+  renderReel(pool[Math.floor(Math.random()*pool.length)],pool,true);
+  await sleep(32+i*5);
+ }
+ if(token!==runToken||state.ended)return;
+ renderReel(item,pool,false);
+ $("reelMessage").textContent=item.icon+" "+item.name+" 당첨!";
+ applyItem(item);
+ paint();
+ await sleep(950);
+ if(token!==runToken||state.ended)return;
+ $("reelModal").hidden=true;state.rolling=false;nextQuestion();
+}
+function applyItem(item){
+ var me=state.racers[0],target,delta=0,desc="";
+ if(item.id==="f1"||item.id==="f2"||item.id==="f3"){
+  delta=Number(item.id.slice(1));me.m=clampDistance(me.m+delta);desc="나 "+delta+"m 전진";
+ }else if(item.id==="b1"||item.id==="b2"){
+  delta=Number(item.id.slice(1));me.m=clampDistance(me.m-delta);desc="나 "+delta+"m 후진";
+ }else if(item.id==="s1"||item.id==="s2"){
+  delta=Number(item.id.slice(1));
+  target=state.racers.slice(1).sort(function(a,b){return b.m-a.m||a.order-b.order})[0];
+  if(target){target.m=clampDistance(target.m-delta);desc=target.name+" "+delta+"m 후진"}
+ }else if(item.id==="chase"){
+  var lead=Math.max.apply(null,state.racers.slice(1).map(function(r){return r.m}));
+  var gap=Math.max(0,lead-me.m);delta=gap>=5?2:1;me.m=clampDistance(me.m+delta);
+  desc="추격 부스터! "+delta+"m 전진 (1위와 "+gap+"m 차이)";
+ }else if(item.id==="accel"){
+  state.accel=3;desc="가속 페달! 다음 최대 3문제 정답은 2m · 틀리면 종료";
+ }else if(item.id==="shrink"){
+  state.lastShrinkAt=Date.now();$("gameGrid").classList.add("is-shrunk");$("shrinkFlag").hidden=false;
+  if(shrinkTimer)clearTimeout(shrinkTimer);
+  var token=runToken;
+  shrinkTimer=setTimeout(function(){if(token!==runToken)return;$("gameGrid").classList.remove("is-shrunk");$("shrinkFlag").hidden=true},2700);
+  desc="전체 화면 축소 2.7초! (방 전체 재발동 30초 제한)";
+ }
+ addLog(item.icon+" "+desc);
+ $("reelMessage").textContent=desc;
+ maybeFinish();
+}
+function maybeFinish(){
+ if(!state||state.ended)return !!(state&&state.ended);
+ var winners=state.racers.filter(function(r){return r.m>=distance});
+ if(!winners.length)return false;
+ state.ended=true;stopTimers();clearInterval(tick);tick=null;
+ $("reelModal").hidden=true;$("resultModal").hidden=false;
+ $("resultTitle").textContent=winners.some(function(r){return r.id==="you"})?"🏆 결승선 통과!":"🏁 경기 종료!";
+ var order=sorted(),place=order.findIndex(function(r){return r.id==="you"})+1;
+ $("resultText").textContent="나의 순위 "+place+"위 / "+state.racers.length+"명 · 정답 "+state.correct+"/"+state.answered+"문제 · AI 선수는 아이템 미사용";
+ var wrap=$("resultOrder");wrap.replaceChildren();
+ order.slice(0,5).forEach(function(r,i){
+  var row=document.createElement("div");row.className="result-line"+(r.id==="you"?" me":"");
+  var left=document.createElement("span");left.textContent=(i+1)+"위 · "+r.name;
+  var right=document.createElement("span");right.textContent=r.m+"m";
+  row.append(left,right);wrap.append(row);
+ });
+ setConfigDisabled(false);$("start").textContent="▶ 새 경주";paint();addLog("🏁 경기 종료 · 나 "+place+"위");return true;
+}
+$("minus").addEventListener("click",function(){distance=Math.max(20,distance-5);reset()});
+$("plus").addEventListener("click",function(){distance=Math.min(100,distance+5);reset()});
+$("bots").addEventListener("change",reset);
+$("start").addEventListener("click",start);
+$("reset").addEventListener("click",reset);
+$("again").addEventListener("click",start);
+var sum=ITEMS.reduce(function(s,x){return s+x.weight},0);
+if(sum!==100)throw new Error("레이싱 아이템 확률 합계 오류: "+sum);
+if(QUESTIONS.some(function(q){return q[2]<0||q[2]>=q[1].length}))throw new Error("샘플 문제 정답 위치 오류");
+reset();
+})();
+</script>
+</body></html>
