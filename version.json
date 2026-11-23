@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.8",
-  "build": 604,
+  "version": "6.0.0-alpha.9",
+  "build": 605,
   "minSupportedBuild": 412,
-  "purpose": "레이싱 미확정 학생 랜덤 탈것 배정 · 학생 화면 전환 안내 · 디벗 터치 스크롤 안정화"
+  "purpose": "피싱 프렌지 전설 생물 4단계 해금 · 레벨별 전설 확률 한 단계 상향 · 최대 15% 유지"
 }
