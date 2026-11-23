@@ -74,21 +74,21 @@ function swimCatch(item){
   if(!water||!pond)return;
   const figure=document.createElement('figure');figure.className='fishing-swimming-catch';figure.dataset.tier=item.creature.tier;
   // Visual size represents rarity; caught kilograms and scoring remain unchanged.
-  const sizes={normal:92,big:125,rare:155,legend:198};
+  const sizes={normal:120,big:155,rare:195,legend:250};
   const size=sizes[item.creature.tier]||sizes.normal;
   figure.style.setProperty('--fish-size',size+'px');
   figure.style.left=-(size+24)+'px';
-  const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=6.0.0-alpha.10`;
+  const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=6.0.0-alpha.11`;
   sprite.alt=item.creature.name; sprite.onerror=()=>{const fallback=document.createElement('span');fallback.className='fishing-swim-fallback';fallback.textContent=item.creature.emoji||'🐟';sprite.replaceWith(fallback)};const caption=document.createElement('figcaption');
   caption.textContent=`${item.name} · ${item.kg.toFixed(1)} kg`;
   figure.append(sprite,caption);
   // Keep the entire sprite in the pond even for rare and legendary catches.
-  const displayHeight=size*.80+35;
-  const maxTop=Math.max(6,pond.clientHeight-displayHeight-16);
-  const offset=12+Math.random()*Math.max(0,maxTop-12);
-  figure.style.top=Math.min(offset,maxTop)+'px';
+  const displayHeight=size*.78+38;
+  const maxTop=Math.max(8,pond.clientHeight-displayHeight-12);
+  const minTop=Math.min(12,maxTop);
+  figure.style.top=(minTop+Math.random()*Math.max(0,maxTop-minTop))+'px';
   figure.style.setProperty('--fish-distance',(pond.clientWidth+size+72)+'px');
-  const speed=5.0+Math.random()*2.2;
+  const speed=5.0+Math.random()*2.2+(item.creature.tier==='legend'?0.9:item.creature.tier==='rare'?0.4:0);
   figure.style.setProperty('--fish-time',speed+'s');
   water.append(figure);
   figure.addEventListener('animationend',()=>figure.remove(),{once:true});
