@@ -10,6 +10,7 @@
   <script type="module" src="js/gold-host.js?v=6.0.0-alpha.4"></script>
   <script type="module" src="js/fishing-host.js?v=6.0.0-alpha.4"></script>
   <script type="module" src="js/racing-host-lobby.js?v=6.0.0-alpha.4"></script>
+  <script type="module" src="js/racing-host-game.js?v=6.0.0-alpha.5"></script>
 </head>
 <body class="arcade-theme">
   <div class="shell"><header class="site-header"><a class="brand" href="./"><span class="brand-emblem" aria-hidden="true"><span class="brand-icon">P</span><span class="brand-spark brand-spark-a"></span><span class="brand-spark brand-spark-b"></span></span><span class="brand-lockup"><span class="brand-kicker">PURPLEKIT</span><span class="brand-name">퍼플킷</span></span></a><span class="version">실시간 게임 방 · v6.0.0-alpha.4</span></header>
@@ -177,7 +178,30 @@
   <p id="racing-host-status" class="feedback" role="status">레이싱 Firebase 연결을 준비하고 있습니다.</p>
   <p id="racing-host-hint" class="helper">학생이 기존 QR 코드로 입장하여 자동차를 확정하면 이곳에 실시간 반영됩니다.</p>
   <div id="racing-host-lanes" class="racing-host-lanes" aria-label="30대 차량 점유 현황"></div>
-  <p class="helper">이 화면을 열어 두면 자동차 배정 요청을 자동 처리합니다. 별도 승인 불필요. 현재는 자동차 선택·중복 방지 단계이며 정답·경주·룰렛 연동은 다음 단계입니다.</p>
+  <p class="helper">교사 화면을 켜두면 차량 배정과 실제 문제 채점·경주 이동이 자동으로 처리됩니다.</p>
+  <section id="racing-play-controls" class="racing-play-controls" hidden aria-label="실시간 레이싱 경주">
+    <div class="racing-play-header"><div><span class="racing-mini-kicker">PURPLEKIT RACING · LIVE</span><h3>🏁 실시간 경주 상황판</h3></div><span id="racing-play-badge" class="pill pill-neutral">대기 중</span></div>
+    <div class="racing-play-settings">
+      <label for="racing-play-distance">결승선 거리
+        <select id="racing-play-distance"><option value="20" selected>20m</option><option value="25">25m</option><option value="30">30m</option><option value="40">40m</option><option value="50">50m</option><option value="100">100m</option></select>
+      </label>
+      <label for="racing-play-duration">경주 제한 시간
+        <select id="racing-play-duration"><option value="180">3분</option><option value="300" selected>5분</option><option value="420">7분</option><option value="600">10분</option></select>
+      </label>
+      <div class="button-row racing-play-buttons">
+        <button type="button" class="btn btn-primary" id="racing-play-prepare">① 경주 준비</button>
+        <button type="button" class="btn btn-primary" id="racing-play-start" disabled>② 경주 시작!</button>
+        <button type="button" class="btn btn-outline" id="racing-play-end" disabled>경주 종료</button>
+        <button type="button" class="btn btn-outline" id="racing-play-export" disabled>결과 CSV</button>
+      </div>
+    </div>
+    <div class="racing-play-hud"><div><small>남은 시간</small><strong id="racing-play-clock">—</strong></div><div><small>현재 경기</small><strong id="racing-play-summary">준비 전</strong></div></div>
+    <p id="racing-play-guide" class="helper">자동차 선택 후 준비 버튼을 눌러 주세요.</p>
+    <p id="racing-play-status" class="feedback" role="status">문제 세트를 확인하고 있습니다.</p>
+    <button type="button" id="racing-play-focus-toggle" class="btn btn-outline">🏁 경주 상황판 크게 보기</button>
+    <div id="racing-play-ranking" class="racing-play-ranking" aria-label="레이싱 거리별 실시간 순위"></div>
+    <p class="racing-play-footer">정답 +1m · 정답 3회마다 랜덤 룰렛 · 결승선 도착 또는 제한 시간 종료</p>
+  </section>
 </section>
 <section class="panel fishing-host-panel" id="fishing-panel" hidden>
         <div class="panel-header"><h2>🎣 피싱 프렌지 v5.0.11</h2><span id="fishing-host-badge" class="pill pill-neutral">대기 중</span></div>
