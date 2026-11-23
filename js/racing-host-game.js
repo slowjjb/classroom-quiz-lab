@@ -156,7 +156,8 @@ async function start(){
  if(!code||operation||!run||pub?.state!=='lobby')return;
  operation=true;render();const c=code;
  try{
-  await sound.unlock();sound.play('start');
+  // A blocked/suspended audio device must never delay the Firebase race start.
+  void sound.unlock().then(ok=>{if(ok)sound.play('start')});
   const now=Date.now(),changes={
    ['v6/public/'+c+'/state']:'playing',
    ['v6/public/'+c+'/startedAt']:serverTimestamp(),
