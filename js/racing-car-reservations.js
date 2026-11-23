@@ -1,58 +1,114 @@
-// Purplekit v6 racing lobby — Firebase RTDB car reservations (v6 only).
-// Call ONLY after auth and room membership succeeded in existing join flow.
-// This module never changes the v2 roster or v5 fishing/gold data.
-import {ref, get, onValue, runTransaction} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+// Purplekit Racing v6: trustworthy two-way garage in the existing RTDB.
+// Students send car requests, but ONLY the authenticated teacher client
+// commits the registry. All 30 cars + one car per UID are atomic together.
+import {ref, get, set, onValue, runTransaction, serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 
 const CODE_RE=/^\d{6}$/;
+const UID_RE=/^[A-Za-z0-9_-]{8,128}$/;
 const CAR_RE=/^(0[1-9]|[12][0-9]|30)$/;
-const ensureCode = code => {
-  const s=String(code||'');
-  if(!CODE_RE.test(s))throw new Error('참여 코드는 숫자 6자리여야 합니다.');
-  return s;
-};
-export function racingCarId(value){
-  const num=Number(value);
-  if(!Number.isInteger(num)||num<1||num>30)throw new Error('자동차 번호는 1~30 사이여야 합니다.');
-  return String(num).padStart(2,'0');
-}
-function slotsRef(db,code){return ref(db,'v6/carSlots/'+ensureCode(code))}
-function slotRef(db,code,id){const carId=racingCarId(id);if(!CAR_RE.test(carId))throw Error('자동차 번호 오류');return ref(db,'v6/carSlots/'+ensureCode(code)+'/'+carId)}
-function checkUid(uid){
-  if(typeof uid!=='string'||uid.length<8||uid.length>128||/[^\w-]/.test(uid))throw new Error('학생 로그인 UID가 올바르지 않습니다.');
-  return uid;
-}
-export function findOwnedCar(slots,uid){
-  const found=Object.entries(slots||{}).filter(([,owner])=>owner===uid).map(([id])=>id).sort();
-  return {id:found[0]||null,duplicates:found.slice(1)};
-}
+const ensureCode=code=>{const s=String(code||'');if(!CODE_RE.test(s))throw Error('참여 코드는 숫자 6자리여야 합니다.');return s};
+const ensureUid=uid=>{if(typeof uid!=='string'||!UID_RE.test(uid))throw Error('유효한 학생 UID가 필요합니다.');return uid};
+export const racingCarId=value=>{const n=Number(value);if(!Number.isInteger(n)||n<1||n>30)throw Error('자동차 번호는 1~30 사이여야 합니다.');return String(n).padStart(2,'0')};
+export const emptyRacingGarage=()=>({slots:{},byUid:{},lastAction:{}});
+const garagePath=code=>'v6/carRegistry/'+ensureCode(code);
+const requestPath=code=>'v6/carRequests/'+ensureCode(code);
+const emptyIfMissing=v=>v&&typeof v==='object'?v:{};
+const normalizeGarage=raw=>({
+ slots:{...emptyIfMissing(raw?.slots)},
+ byUid:{...emptyIfMissing(raw?.byUid)},
+ lastAction:{...emptyIfMissing(raw?.lastAction)}
+});
 export function watchRacingCars(db,code,onUpdate,onError){
-  if(typeof onUpdate!=='function')throw Error('onUpdate 콜백이 필요합니다.');
-  return onValue(slotsRef(db,code),snapshot=>onUpdate(snapshot.val()||{}),onError);
+ return onValue(ref(db,garagePath(code)),snapshot=>onUpdate(normalizeGarage(snapshot.val())),onError);
 }
 export async function getRacingCars(db,code){
-  const snap=await get(slotsRef(db,code));
-  return snap.val()||{};
+ const snapshot=await get(ref(db,garagePath(code)));
+ return normalizeGarage(snapshot.val());
 }
-export async function claimRacingCar(db,code,uid,carId){
-  const self=checkUid(uid),desired=racingCarId(carId),rooms=await getRacingCars(db,code);
-  const assigned=findOwnedCar(rooms,self);
-  if(assigned.duplicates.length)throw Error('내 계정으로 자동차가 여러 대 선점되어 있습니다. 교사에게 알려 주세요.');
-  if(assigned.id&&assigned.id!==desired)throw Error('이미 선택한 자동차가 있습니다. 먼저 선택 취소를 눌러 주세요.');
-  const result=await runTransaction(slotRef(db,code,desired),current=>{
-    if(current===null||current===self)return self;
-    return undefined;
-  },{applyLocally:false});
-  if(!result.committed||result.snapshot.val()!==self)throw Error('다른 친구가 먼저 선택한 자동차입니다. 다른 자동차를 골라 주세요.');
-  return {carId:desired,ownerUid:self};
+export function chosenCarFor(garage,uid){return garage?.byUid?.[uid]||null}
+
+// Student-side: submit an intent. Actual ownership changes only after the
+// teacher processes it. This is how both uniqueness constraints are enforced.
+export async function requestRacingCar(db,code,uid,carId){
+ return sendRacingCarRequest(db,code,uid,'claim',racingCarId(carId));
 }
-export async function cancelRacingCar(db,code,uid,carId){
-  const self=checkUid(uid),selected=racingCarId(carId);
-  const result=await runTransaction(slotRef(db,code,selected),current=>{
-    if(current===self)return null;
-    return undefined;
-  },{applyLocally:false});
-  if(!result.committed)throw Error('현재 자동차의 소유자이 아니거나, 경기 시작으로 변경이 잠겼습니다.');
-  return selected;
+export async function cancelRacingCar(db,code,uid){
+ return sendRacingCarRequest(db,code,uid,'cancel','00');
 }
-// A racing car is deliberately NOT cleared by onDisconnect.
-// This preserves the player's car across refresh and temporary network loss.
+async function sendRacingCarRequest(db,code,uid,action,carId){
+ const path=requestPath(code)+'/'+ensureUid(uid),target=ref(db,path);
+ for(let attempt=0;attempt<3;attempt++){
+  const existing=(await get(target)).val();
+  const seq=Math.max(Date.now(),Number(existing?.seq||0)+1);
+  try{
+   await set(target,{seq,action,carId,at:serverTimestamp()});
+   return {seq,action,carId,status:'pending'};
+  }catch(error){
+   if(attempt===2)throw error;
+  }
+ }
+}
+
+// Pure deterministic transition for a single request. This is used INSIDE
+// a transaction and can be unit-tested without a Firebase connection.
+export function applyCarRequest(previous,uid,request){
+ ensureUid(uid);
+ const current=normalizeGarage(previous),seq=Number(request?.seq||0);
+ if(!Number.isSafeInteger(seq)||seq<=0||!['claim','cancel'].includes(request?.action))return undefined;
+ const prevSeq=Number(current.lastAction[uid]?.seq||0);
+ if(seq<=prevSeq)return undefined;
+ let status,carId='00',held=current.byUid[uid]||null;
+ if(request.action==='cancel'){
+  if(held){
+   if(current.slots[held]===uid)delete current.slots[held];
+   delete current.byUid[uid];status='canceled';carId=held;
+  }else status='not_selected';
+ }else{
+  const desired=request.carId;
+  if(typeof desired!=='string'||!CAR_RE.test(desired))return undefined;
+  carId=desired;
+  if(held){status=held===desired?'selected':'cancel_first';carId=held;}
+  else if(current.slots[desired])status='already_taken';
+  else{
+   current.slots[desired]=uid;
+   current.byUid[uid]=desired;
+   status='selected';
+  }
+ }
+ current.lastAction[uid]={seq,status,carId};
+ return current;
+}
+
+// Teacher-side automatic coordinator: process requests sequentially.
+// Multiple host tabs are safe because runTransaction retries conflicts.
+export function watchRacingCarRequestsAsTeacher(db,code,onError=console.error){
+ const room=ensureCode(code),requestsRef=ref(db,requestPath(room)),registryRef=ref(db,garagePath(room));
+ let closed=false,processing=false,pending=null;
+ const unsubscribe=onValue(requestsRef,snap=>{
+  pending=snap.val()||{};
+  if(!processing)void flush();
+ },onError);
+ async function flush(){
+  processing=true;
+  while(pending!==null&&!closed){
+   const batch=pending;pending=null;
+   try{
+    const [meta,publicState,roster]=await Promise.all([
+     get(ref(db,'v2/rooms/'+room+'/meta')),
+     get(ref(db,'v6/public/'+room)),
+     get(ref(db,'v2/rooms/'+room+'/members'))
+    ]);
+    if(meta.val()?.mode!=='racing'||meta.val()?.state!=='lobby'||publicState.val()?.state!=='lobby')continue;
+    const members=roster.val()||{};
+    const ordered=Object.entries(batch).sort((a,b)=>Number(a[1]?.at||0)-Number(b[1]?.at||0)||a[0].localeCompare(b[0]));
+    for(const [uid,req] of ordered){
+     if(closed)break;
+     if(!UID_RE.test(uid)||!members[uid]?.profile)continue;
+     await runTransaction(registryRef,current=>applyCarRequest(current,uid,req),{applyLocally:false});
+    }
+   }catch(error){onError(error)}
+  }
+  processing=false;
+ }
+ return ()=>{closed=true;unsubscribe()};
+}
