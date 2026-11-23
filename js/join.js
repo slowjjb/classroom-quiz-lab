@@ -1,6 +1,7 @@
 import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
 import { startGoldView, stopGoldView } from './gold-student.js?v=5.0.11';
 import { startFishingView, stopFishingView } from './fishing-student.js?v=5.0.11';
+import { startRacingGarageView, stopRacingGarageView } from './racing-student-garage.js?v=6.0.0-alpha.4';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
@@ -33,7 +34,7 @@ async function stopPresence() {
 }
 async function leaveRoom(showMessage=true){
   sessionStorage.removeItem(SESSION_KEY);
-  stopQuizView();stopGoldView();stopFishingView();
+  stopQuizView();stopGoldView();stopFishingView();stopRacingGarageView();
   if($('avatar-dialog').open)$('avatar-dialog').close();
   setAvatarRoster({});
   if(unsubRoom){unsubRoom();unsubRoom=null;}
@@ -47,9 +48,11 @@ function renderRoom(data){
   const meta=data?.meta;
   if(!meta){feedback('방이 삭제되거나 존재하지 않습니다. 다시 참여해 주세요.','error');leaveRoom(false);return;}
   $('student-room-title').textContent=meta.title||'퀴즈 대기실';roomStatus(meta.state);
-  $('student-room-meta').textContent=`참여 코드 ${activeCode} · ${meta.setTitle||'문제 미선택'} · 게임을 시작하면 아래에 문제가 나타납니다.`;
+  $('student-room-meta').textContent=`참여 코드 ${activeCode} · ${meta.setTitle||'문제 미선택'} · ${meta.mode==='racing'?'자동차를 골라 선택 확정해 주세요.':'게임을 시작하면 아래에 문제가 나타납니다.'}`;
+  $('avatar-self').hidden=meta.mode==='racing';
+  $('join-generic-wait').hidden=meta.mode==='racing';
   if(meta.state==='ended'&&!ended){
-    ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopQuizView();stopGoldView();stopFishingView();stopPresence();onlineStatus('방이 종료되었습니다.');
+    ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopQuizView();stopGoldView();stopFishingView();stopRacingGarageView();stopPresence();onlineStatus('방이 종료되었습니다.');
   }
   const roster=data.members||{};
   const avatars=Object.fromEntries(Object.entries(roster).map(([memberUid,m])=>[memberUid,normalizeAvatarId(m?.profile?.avatarId)]));
@@ -190,6 +193,7 @@ async function joinRoom(automatic=false){
     currentAvatarId=normalizeAvatarId(profileSnap.val()?.avatarId);renderOwnAvatar();
     if(meta.mode==='gold')startGoldView(code,user.uid);
     else if(meta.mode==='fishing')startFishingView(code,user.uid);
+    else if(meta.mode==='racing')startRacingGarageView(code,user.uid);
     else startQuizView(code,user.uid);
     onlineStatus('실시간 서버 연결 중…');
     unsubRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),err=>{
@@ -198,7 +202,7 @@ async function joinRoom(automatic=false){
     watchConnection(user.uid,displayName);
     if(!automatic) history.replaceState(null,'',`join.html?code=${code}`);
   }catch(err){feedback(formatError(err)+(String(err?.code||'').includes('permission-denied')?' v4.12 규칙이 적용되어 있는지 선생님께 확인해 주세요.':''),'error');onlineStatus('입장 실패');
-    sessionStorage.removeItem(SESSION_KEY);if(unsubRoom){unsubRoom();unsubRoom=null;}setActive(false);stopQuizView();stopGoldView();stopFishingView();activeCode='';activeUser=null;
+    sessionStorage.removeItem(SESSION_KEY);if(unsubRoom){unsubRoom();unsubRoom=null;}setActive(false);stopQuizView();stopGoldView();stopFishingView();stopRacingGarageView();activeCode='';activeUser=null;
   }finally{joining=false;$('join-room-btn').disabled=false;}
 }
 $('join-room-btn').addEventListener('click',()=>joinRoom(false));
