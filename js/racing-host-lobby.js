@@ -18,7 +18,7 @@ function render(){
  const slots=garage?.slots||{},uids=garage?.byUid||{},count=Object.keys(slots).length;
  $('racing-host-selected').textContent=count+' / 30대 선택 · '+Object.keys(uids).length+'명 확정';
  $('racing-host-phase').textContent=phase==='playing'?'경주 상태(선택 잠금)':phase==='finished'?'경주 종료':'대기 중 · 선택 가능';
- $('racing-host-hint').textContent=lobbyState!=='lobby'||phase!=='lobby'?'자동차 선택이 잠겼습니다.':'학생들이 자동차를 확정하면 이곳에 실시간으로 반영됩니다.';
+ $('racing-host-hint').textContent=lobbyState!=='lobby'||phase!=='lobby'?'입장이 마감되어 자동차 선택이 잠겼습니다. 아래 「① 경주 준비」를 누르면 진행할 수 있습니다.':'학생들이 자동차를 확정하면 이곳에 실시간으로 반영됩니다.';
  const grid=$('racing-host-lanes');grid.replaceChildren();
  for(let n=1;n<=30;n++){
   const no=String(n).padStart(2,'0'),uid=slots[no],line=document.createElement('div');
