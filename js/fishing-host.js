@@ -79,7 +79,7 @@ function swimCatch(item){
   figure.style.setProperty('--fish-size',size+'px');
   figure.style.left=-(size+24)+'px';
   const sprite=document.createElement('img');sprite.src=`images/fishing/thumbs/${item.creature.id}.webp?v=6.0.0-alpha.10`;
-  sprite.alt=item.creature.name;const caption=document.createElement('figcaption');
+  sprite.alt=item.creature.name; sprite.onerror=()=>{const fallback=document.createElement('span');fallback.className='fishing-swim-fallback';fallback.textContent=item.creature.emoji||'🐟';sprite.replaceWith(fallback)};const caption=document.createElement('figcaption');
   caption.textContent=`${item.name} · ${item.kg.toFixed(1)} kg`;
   figure.append(sprite,caption);
   // Keep the entire sprite in the pond even for rare and legendary catches.
