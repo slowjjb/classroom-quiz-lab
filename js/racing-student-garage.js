@@ -94,6 +94,13 @@ async function cancelCar(){
   render();
  }catch(error){pendingSeq=0;note('선택 취소 실패: '+formatError(error),true);render()}
 }
+// Only an intentional lobby exit requests cancellation. A network disconnect
+// or browser refresh must never release the car, so reconnect retains it.
+export async function releaseRacingCarOnExplicitLeave(){
+ if(!code||!uid||roomState!=='lobby'||gameState!=='lobby'||!chosenCarFor(garage,uid))return;
+ try{await cancelRacingCar(db,code,uid)}
+ catch(err){console.warn('레이싱 대기실 나가기: 자동차 선택 취소 요청 실패',err)}
+}
 export function stopRacingGarageView(){
  session++;
  for(const stop of unsubs){try{stop()}catch(_){}}
