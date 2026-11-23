@@ -5,7 +5,7 @@ import {racingStandings,RACING_REWARDS} from './racing-game-core.js';
 import {createRacingAudio} from './racing-audio.js';
 import {fullQuestionImageUrl} from './image-utils.js';
 const $=id=>document.getElementById(id);
-let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null;
+let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null,stagePositioned=false;
 const sound=createRacingAudio({role:'student'});
 const notice=(text,bad=false)=>{const el=$('racing-student-message');if(el){el.textContent=text;el.dataset.kind=bad?'error':'success'}};
 const fmtTime=sec=>Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
@@ -166,7 +166,7 @@ async function submitAnswer(value){
 export function stopRacingGame(){
  session++;stopFns.forEach(fn=>{try{fn()}catch(_){}});
  stopFns=[];code='';uid='';pub=null;own=null;submitting=false;submittedNonce='';shownNonce='';
- clearTimeout(lastResultTimer);lastResultTimer=null;clearRoulette();sound.setPlaying(false);lastPhase='';
+ clearTimeout(lastResultTimer);lastResultTimer=null;clearRoulette();sound.setPlaying(false);lastPhase='';stagePositioned=false;
  if(unlockListener){document.removeEventListener('pointerdown',unlockListener,true);unlockListener=null}
  $('racing-student-play').hidden=true;$('racing-student-question-zone').dataset.nonce='';
 }
