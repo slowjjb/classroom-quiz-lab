@@ -1,7 +1,7 @@
 import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
 import { startGoldView, stopGoldView } from './gold-student.js?v=5.0.11';
 import { startFishingView, stopFishingView } from './fishing-student.js?v=5.0.11';
-import { startRacingGarageView, stopRacingGarageView } from './racing-student-garage.js?v=6.0.0-alpha.4';
+import { startRacingGarageView, stopRacingGarageView, releaseRacingCarOnExplicitLeave } from './racing-student-garage.js?v=6.0.0-alpha.4';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
@@ -33,6 +33,7 @@ async function stopPresence() {
   if(old){try{await remove(old);await onDisconnect(old).cancel();}catch(_){/* 서버가 연결 종료 시 정리합니다. */}}
 }
 async function leaveRoom(showMessage=true){
+  if(showMessage)await releaseRacingCarOnExplicitLeave();
   sessionStorage.removeItem(SESSION_KEY);
   stopQuizView();stopGoldView();stopFishingView();stopRacingGarageView();
   if($('avatar-dialog').open)$('avatar-dialog').close();
