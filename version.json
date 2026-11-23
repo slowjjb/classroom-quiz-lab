@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.5",
-  "build": 601,
+  "version": "6.0.0-alpha.6",
+  "build": 602,
   "minSupportedBuild": 412,
-  "purpose": "실시간 레이싱 문제 풀이/채점/+1m/자동 룰렛/교사 상황판/결승선 MVP"
+  "purpose": "레이싱 입장 마감 후 경주 준비 가능 · 단독 플레이 수정"
 }
