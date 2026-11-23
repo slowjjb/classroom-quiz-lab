@@ -76,3 +76,7 @@ body.racing-focus-active{overflow:hidden}
 .racing-student-rank-item:last-child{border-bottom:none}.racing-student-rank-item.is-me{background:#e5fbf5;border-radius:8px;font-weight:900}
 .racing-student-finish{text-align:center;padding:20px;border-radius:12px;background:#e5f6ea}.racing-student-finish h3{font-size:24px;margin:0 0 5px;color:#27734a}
 @media(max-width:700px){.racing-answer-options{grid-template-columns:1fr}.racing-answer-button{min-height:62px;padding:12px}.racing-track-row{grid-template-columns:95px 37px minmax(100px,1fr) 56px;gap:4px}.racing-track-row small{display:none}.racing-track-car{width:37px}.racing-play-controls{padding:10px}.racing-student-head h3{font-size:19px}.racing-student-meters{flex-wrap:wrap}}
+
+.racing-student-reward.roulette-spin{background:linear-gradient(110deg,#fff4b5,#d9eaff,#fbe4ff);border-color:#bf83de;box-shadow:0 3px 24px #a687ed66;animation:racingPrizeFlash .75s ease-in-out 4 alternate}
+@keyframes racingPrizeFlash{from{transform:scale(1);filter:brightness(1)}to{transform:scale(1.035);filter:brightness(1.11)}}
+@media(prefers-reduced-motion:reduce){.racing-student-reward.roulette-spin{animation:none}}
