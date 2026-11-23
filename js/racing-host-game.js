@@ -33,6 +33,22 @@ function nextQuestion(uid,seq,prev){
   optionOrder:shuffled?.optionOrder||[],imageUrl:q.imageUrl||'',timeLimit:q.timeLimit,
   answered:Number(prev?.answered||0),correct:Number(prev?.correct||0)};
 }
+let spritePromise=null;
+function loadSpriteImages(){
+ if(spritePromise)return spritePromise;
+ spritePromise=(async()=>{
+  for(let part=1;part<=3;part++){
+   const first=1+(part-1)*10;
+   if(window.RACING_SPRITES?.[first])continue;
+   await new Promise((resolve,reject)=>{
+    const tag=document.createElement('script');tag.src='racing-assets/part'+part+'.js';
+    tag.onload=resolve;tag.onerror=()=>reject(new Error('차량 이미지 '+part+'번 묶음 불러오기 실패'));
+    document.head.append(tag);
+   });
+  }
+ })().catch(e=>{spritePromise=null;throw e});
+ return spritePromise;
+}
 function render(){
  const panel=$('racing-play-controls');if(!code){panel.hidden=true;return;}
  panel.hidden=false;
@@ -186,6 +202,7 @@ function bind(next,mode){
  const user=auth.currentUser;if(!user||user.isAnonymous)return;
  code=next;$('racing-play-controls').hidden=false;
  watch(next);notice('레이싱 게임 준비를 기다리고 있습니다.');
+ void loadSpriteImages().then(()=>{if(code===next){rankingSignature='';render()}}).catch(e=>notice('차량 이미지 오류: '+formatError(e),true));
 }
 function exportCsv(){
  if(!run||!code)return;
