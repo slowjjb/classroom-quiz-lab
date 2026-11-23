@@ -55,7 +55,7 @@ function render(){
  const state=pub?.state||'lobby',ready=Boolean(run),scores=pub?.scores||{},rank=racingStandings(scores);
  const meters=Number(pub?.finishMeters||20);
  $('racing-play-badge').textContent=state==='finished'?'경기 종료':state==='playing'?'경기 중':ready?'준비 완료':'대기 중';
- $('racing-play-prepare').disabled=operation||ready||!room?.meta?.setId||room?.meta?.state!=='lobby';
+ $('racing-play-prepare').disabled=operation||ready||!room?.meta?.setId||!['lobby','locked'].includes(room?.meta?.state);
  $('racing-play-start').disabled=operation||!ready||state!=='lobby';
  $('racing-play-end').disabled=operation||state!=='playing';
  $('racing-play-export').disabled=!ready;
@@ -89,7 +89,7 @@ function setFocus(value){
  document.body.classList.toggle('racing-focus-active',focus);
 }
 async function prepare(){
- if(!code||run||operation||room?.meta?.mode!=='racing'||room?.meta?.state!=='lobby')return;
+ if(!code||run||operation||room?.meta?.mode!=='racing'||!['lobby','locked'].includes(room?.meta?.state))return;
  operation=true;render();
  const c=code;
  try{
