@@ -1,8 +1,8 @@
 import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
 import { startGoldView, stopGoldView } from './gold-student.js?v=5.0.11';
 import { startFishingView, stopFishingView } from './fishing-student.js?v=5.0.11';
-import { startRacingGarageView, stopRacingGarageView, releaseRacingCarOnExplicitLeave } from './racing-student-garage.js?v=6.0.0-alpha.5';
-import { startRacingGame, stopRacingGame } from './racing-student-game.js?v=6.0.0-alpha.5';
+import { startRacingGarageView, stopRacingGarageView, releaseRacingCarOnExplicitLeave } from './racing-student-garage.js?v=6.0.0-alpha.6';
+import { startRacingGame, stopRacingGame } from './racing-student-game.js?v=6.0.0-alpha.6';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
