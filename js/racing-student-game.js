@@ -19,6 +19,7 @@ function showResult(score){
  const desc=result.correct?'✅ 정답! +1m':'❌ 아쉽지만 다음 문제에 도전!';
  const reward=result.spin?' · 🎰 '+(result.reward?.name||'룰렛'):'';
  pane.textContent=desc+reward+' · 현재 '+Number(result.meters||0)+'m';
+ pane.classList.toggle('roulette-spin',Boolean(result.spin));
  pane.hidden=false;
  clearTimeout(lastResultTimer);lastResultTimer=setTimeout(()=>{pane.hidden=true},3200);
 }
