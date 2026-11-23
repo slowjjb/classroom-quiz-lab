@@ -57,7 +57,7 @@ export function createRacingAudio({role='student'}={}){
  function stopMusic(){
   if(timer){clearInterval(timer);timer=null}
   if(bgmBus&&context){const t=context.currentTime;bgmBus.gain.cancelScheduledValues(t);
-   bgmBus.gain.setTargetAtTime(playing&&muted?0:.52,t,.03)}
+   bgmBus.gain.setTargetAtTime((!playing||muted)?0:.52,t,.03)}
  }
  function play(name){
   if(ended||muted||!unlocked||!context)return;
