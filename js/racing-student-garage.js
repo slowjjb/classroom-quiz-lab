@@ -38,16 +38,28 @@ function render(){
  $('racing-lobby-count').textContent=total+' / 30대 선택됨';
  $('racing-lobby-selected').textContent=selected?'내 탈것: '+id(Number(selected))+'번 · '+NAMES[Number(selected)-1]:'아직 확정한 탈것이 없습니다.';
  $('racing-lobby-cancel').disabled=Boolean(!selected||locked||pendingSeq);
- const gallery=$('racing-lobby-gallery');gallery.replaceChildren();
+ const gallery=$('racing-lobby-gallery');
+ // Keep 30 image elements mounted. A full rebuild on every Firebase update
+ // causes unnecessary base64 image decoding and lag on student phones.
+ if(gallery.children.length!==30){
+  gallery.replaceChildren();
+  for(let i=1;i<=30;i++){
+   const button=document.createElement('button');button.type='button';button.className='racing-car-choice';
+   button.dataset.carId=id(i);
+   const img=document.createElement('img');img.alt='';img.loading='lazy';
+   const caption=document.createElement('span');button.append(img,caption);
+   button.addEventListener('click',()=>{previewId=i;render()});
+   gallery.append(button);
+  }
+ }
  for(let i=1;i<=30;i++){
   const number=id(i),owner=taken[number],mine=owner===uid,takenOther=Boolean(owner&&!mine);
-  const button=document.createElement('button');button.type='button';button.className='racing-car-choice';
+  const button=gallery.children[i-1];
   button.dataset.taken=String(takenOther);button.setAttribute('aria-pressed',String(mine));
   button.disabled=locked||takenOther||Boolean(selected&&!mine)||Boolean(pendingSeq);
-  const img=document.createElement('img');img.alt='';img.loading='lazy';img.src=window.RACING_SPRITES?.[i]||'';
-  const span=document.createElement('span');span.textContent=number+' · '+(mine?'내 차':takenOther?'선택됨':NAMES[i-1]);
-  button.append(img,span);button.addEventListener('click',()=>{if(!selected&&!locked&&!takenOther){previewId=i;render()}});
-  gallery.append(button);
+  const img=button.firstElementChild,nextSrc=window.RACING_SPRITES?.[i]||'';
+  if(nextSrc&&img.src!==nextSrc)img.src=nextSrc;
+  button.lastElementChild.textContent=number+' · '+(mine?'내 차':takenOther?'선택됨':NAMES[i-1]);
  }
  const allowed=Boolean(previewId&&!selected&&!taken[id(previewId)]&&!locked&&!pendingSeq);
  const preview=$('racing-lobby-preview');preview.hidden=!allowed;
