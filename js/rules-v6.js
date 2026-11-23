@@ -19,7 +19,7 @@ export function addRacingV6Rules(existingRules, teacherUid) {
     public: {'$code': {
       '.read': `${teacher} || (${member})`,
       '.write': teacher,
-      '.validate': "newData.hasChildren(['state','finishMeters','scores']) && (newData.child('state').val() === 'lobby' || newData.child('state').val() === 'playing' || newData.child('state').val() === 'finished') && newData.child('finishMeters').isNumber() && newData.child('finishMeters').val() >= 20 && newData.child('finishMeters').val() <= 100 && newData.child('finishMeters').val() % 5 === 0",
+      '.validate': "newData.hasChildren(['state','finishMeters']) && (newData.child('state').val() === 'lobby' || newData.child('state').val() === 'playing' || newData.child('state').val() === 'finished') && newData.child('finishMeters').isNumber() && newData.child('finishMeters').val() >= 20 && newData.child('finishMeters').val() <= 100 && newData.child('finishMeters').val() % 5 === 0",
       state: {'.validate': "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'finished')"},
       finishMeters: {'.validate': "newData.isNumber() && newData.val() >= 20 && newData.val() <= 100 && newData.val() % 5 === 0"},
       '$other': {'.validate': true}
