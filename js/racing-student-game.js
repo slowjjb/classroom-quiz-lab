@@ -1,28 +1,85 @@
 // Racing v6 alpha5 — student race stage with teacher-graded answers.
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import {racingStandings} from './racing-game-core.js';
+import {racingStandings,RACING_REWARDS} from './racing-game-core.js';
+import {createRacingAudio} from './racing-audio.js';
 import {fullQuestionImageUrl} from './image-utils.js';
 const $=id=>document.getElementById(id);
-let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,submittedNonce='',shownNonce='',lastResultTimer=null;
+let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null;
+const sound=createRacingAudio({role:'student'});
 const notice=(text,bad=false)=>{const el=$('racing-student-message');if(el){el.textContent=text;el.dataset.kind=bad?'error':'success'}};
 const fmtTime=sec=>Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
 function timer(){
  if(!code||pub?.state!=='playing')return;
  $('racing-student-clock').textContent=fmtTime(Math.max(0,Math.ceil((Number(pub.endsAt||0)-Date.now())/1000)));
 }
+function syncAudioButtons(){
+ const label=sound.isOn?'🔊 배경음·효과음 끄기':'🔈 배경음·효과음 켜기';
+ $('racing-lobby-sound-toggle').textContent=label;
+ $('racing-student-sound-toggle').textContent=label;
+}
+async function toggleAudio(){
+ const enabled=await sound.toggle();syncAudioButtons();
+ if(!enabled&&!sound.canPlay)notice('이 브라우저는 오디오 기능을 지원하지 않습니다.',true);
+}
+function clearRoulette(){
+ if(rouletteTimer!==null){clearTimeout(rouletteTimer);rouletteTimer=null}
+ spinningNonce='';
+ const layer=$('racing-roulette-overlay');layer.hidden=true;
+ layer.classList.remove('is-spinning','is-settled');
+}
+function runRoulette(result){
+ clearRoulette();
+ const nonce=result.nonce;spinningNonce=nonce;
+ const layer=$('racing-roulette-overlay');layer.hidden=false;
+ layer.classList.add('is-spinning');layer.classList.remove('is-settled');
+ $('racing-roulette-result').textContent='슬롯머신 회전 중…';
+ $('racing-roulette-caption').textContent='정답 3회! 이번 보너스는 무엇일까요?';
+ const reels=[$('racing-reel-left'),$('racing-reel-center'),$('racing-reel-right')];
+ const pool=RACING_REWARDS;
+ const sample=()=>pool[Math.floor(Math.random()*pool.length)];
+ const draw=(middle)=>{const items=[sample(),middle,sample()];
+  items.forEach((item,i)=>{reels[i].textContent=item.name;reels[i].dataset.mood=Number(item.delta)>0?'good':Number(item.delta)<0?'bad':'neutral';});
+ };
+ const outcome=pool.find(item=>item.id===result.reward?.id)||pool[0];
+ let ticks=0;
+ sound.play('spin');
+ const step=()=>{
+  if(spinningNonce!==nonce||!code)return;
+  ticks++;
+  if(ticks>=20){
+   draw(outcome);layer.classList.remove('is-spinning');layer.classList.add('is-settled');
+   $('racing-roulette-result').textContent=outcome.name+' 당첨! · '+(Number(outcome.delta)>0?'+':'')+Number(outcome.delta)+'m';
+   $('racing-roulette-caption').textContent='🎉 실제 경기 결과가 확정되었습니다!';
+   sound.play(Number(outcome.delta)>0?'positive':Number(outcome.delta)<0?'negative':'neutral');
+   rouletteTimer=setTimeout(()=>{if(spinningNonce!==nonce)return;clearRoulette();
+    const pane=$('racing-student-result');
+    pane.textContent='🎰 '+outcome.name+' · 현재 '+Number(result.meters||0)+'m';pane.hidden=false;
+    clearTimeout(lastResultTimer);lastResultTimer=setTimeout(()=>{pane.hidden=true},2300);
+   },1250);
+   return;
+  }
+  draw(sample());
+  if(ticks%3===0)sound.play('tick');
+  rouletteTimer=setTimeout(step,48+ticks*6);
+ };
+ step();
+}
 function showResult(score){
  const result=score?.lastResult;
  if(!result?.nonce||result.nonce===shownNonce)return;
  shownNonce=result.nonce;
+ sound.play(result.correct?'correct':'wrong');
  const pane=$('racing-student-result');
- const desc=result.correct?'✅ 정답! +1m':'❌ 아쉽지만 다음 문제에 도전!';
- const reward=result.spin?' · 🎰 '+(result.reward?.name||'룰렛'):'';
- pane.textContent=desc+reward+' · 현재 '+Number(result.meters||0)+'m';
- pane.classList.toggle('roulette-spin',Boolean(result.spin));
- pane.hidden=false;
- clearTimeout(lastResultTimer);lastResultTimer=setTimeout(()=>{pane.hidden=true},3200);
+ clearTimeout(lastResultTimer);
+ if(result.spin&&result.reward){
+  pane.hidden=true;runRoulette(result);
+ }else{
+  pane.textContent=(result.correct?'✅ 정답! +1m':'❌ 다음 문제에 도전!')+' · 현재 '+Number(result.meters||0)+'m';
+  pane.hidden=false;lastResultTimer=setTimeout(()=>{pane.hidden=true},2600);
+ }
 }
+
 function renderRanking(rank,finished){
  const target=$('racing-student-ranking');target.replaceChildren();
  const list=finished?rank:rank.slice(0,5);
@@ -63,6 +120,10 @@ function renderQuestion(){
 function render(){
  const stage=$('racing-student-play');if(!code){stage.hidden=true;return;}
  const state=pub?.state||'lobby';stage.hidden=state!=='playing'&&state!=='finished';
+ sound.setPlaying(state==='playing');
+ if(lastPhase==='playing'&&state==='finished')sound.play('finish');
+ lastPhase=state;
+ syncAudioButtons();
  if(stage.hidden)return;
  const scores=pub?.scores||{},me=scores[uid],ranking=racingStandings(scores);
  const meters=Number(me?.meters||0),goal=Number(pub?.finishMeters||20);
@@ -82,14 +143,15 @@ function render(){
   timer();renderQuestion();
   if(own?.phase==='waiting')notice('준비된 문제를 모두 풀었습니다. 경주 종료를 기다려 주세요.');
   else if(!own)notice('선생님이 출발 신호를 보내는 중입니다.');
-  showResult(me);
  }
+ showResult(me);
 }
 async function submitAnswer(value){
  if(!code||!uid||pub?.state!=='playing'||own?.phase!=='question'||submitting)return;
  if(!String(value).trim()){notice('답을 입력해 주세요.',true);return}
  const nonce=own.nonce;if(!nonce||nonce===submittedNonce)return;
  submitting=true;submittedNonce=nonce;
+ void sound.unlock().then(()=>sound.play('submit'));
  for(const button of $('racing-student-options').querySelectorAll('button'))button.disabled=true;
  $('racing-student-typing-submit').disabled=true;
  notice('답을 제출했습니다. 선생님이 채점하는 중…');
@@ -104,11 +166,22 @@ async function submitAnswer(value){
 export function stopRacingGame(){
  session++;stopFns.forEach(fn=>{try{fn()}catch(_){}});
  stopFns=[];code='';uid='';pub=null;own=null;submitting=false;submittedNonce='';shownNonce='';
- clearTimeout(lastResultTimer);lastResultTimer=null;
+ clearTimeout(lastResultTimer);lastResultTimer=null;clearRoulette();sound.setPlaying(false);lastPhase='';
+ if(unlockListener){document.removeEventListener('pointerdown',unlockListener,true);unlockListener=null}
  $('racing-student-play').hidden=true;$('racing-student-question-zone').dataset.nonce='';
 }
 export function startRacingGame(nextCode,nextUid){
  stopRacingGame();code=nextCode;uid=nextUid;const token=session;
+ $('racing-lobby-sound-toggle').onclick=()=>void toggleAudio();
+ $('racing-student-sound-toggle').onclick=()=>void toggleAudio();
+ // Audio may not autoplay on mobiles: unlock on the first car-choice tap.
+ unlockListener=event=>{
+  if(event.target?.closest?.('#racing-lobby-sound-toggle,#racing-student-sound-toggle'))return;
+  document.removeEventListener('pointerdown',unlockListener,true);unlockListener=null;
+  void sound.unlock().then(()=>{syncAudioButtons();sound.play('choose')});
+ };
+ document.addEventListener('pointerdown',unlockListener,true);
+ syncAudioButtons();
  $('racing-student-typing-submit').onclick=()=>void submitAnswer($('racing-student-typing').value);
  $('racing-student-typing').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();void submitAnswer(e.target.value)}};
  stopFns.push(onValue(ref(db,'v6/public/'+code),snap=>{if(session!==token)return;pub=snap.val();render()},e=>notice('실시간 경기 연결 실패: '+formatError(e),true)));

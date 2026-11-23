@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.6",
-  "build": 602,
+  "version": "6.0.0-alpha.7",
+  "build": 603,
   "minSupportedBuild": 412,
-  "purpose": "레이싱 입장 마감 후 경주 준비 가능 · 단독 플레이 수정"
+  "purpose": "레이싱 25레인 차량 실제 주행 · 슬롯 룰렛 연출 · 오리지널 BGM/효과음"
 }

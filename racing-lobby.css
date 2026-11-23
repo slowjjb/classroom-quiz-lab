@@ -80,3 +80,64 @@ body.racing-focus-active{overflow:hidden}
 .racing-student-reward.roulette-spin{background:linear-gradient(110deg,#fff4b5,#d9eaff,#fbe4ff);border-color:#bf83de;box-shadow:0 3px 24px #a687ed66;animation:racingPrizeFlash .75s ease-in-out 4 alternate}
 @keyframes racingPrizeFlash{from{transform:scale(1);filter:brightness(1)}to{transform:scale(1.035);filter:brightness(1.11)}}
 @media(prefers-reduced-motion:reduce){.racing-student-reward.roulette-spin{animation:none}}
+
+
+/* v6.0.0-alpha7: REAL car travel across fixed numbered race lanes. */
+.racing-control-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:9px 0}
+.racing-control-actions .btn{font-size:13px}
+.racing-play-ranking{gap:6px}
+.racing-track-row{display:grid;grid-template-columns:minmax(105px,1.25fr) minmax(170px,5.8fr) 88px 85px;align-items:center;gap:8px;min-height:47px;padding:4px 8px;border-radius:11px;border:1px solid #c9cfde;background:#fff;box-shadow:0 2px 5px #4e638012}
+.racing-track-name{font-size:13px;font-weight:900;color:#263369}
+.racing-track-lane{position:relative;min-width:0;width:100%;height:36px;border-left:4px solid #57abcf;border-right:6px double #31486a;border-radius:5px;
+ background:linear-gradient(to bottom,#eaf5ff 0%,#eaf5ff 15%,#f8faff 15%,#f8faff 85%,#eaf5ff 85%,#eaf5ff 100%);
+ box-shadow:inset 0 0 0 1px #b4c2db;overflow:visible}
+.racing-track-lane::before{content:"";position:absolute;z-index:0;inset:50% 0 auto 0;border-top:2px dashed #b6c9dd;opacity:.9}
+.racing-track-finish{position:absolute;right:-16px;top:-8px;font-size:14px;pointer-events:none;z-index:1;filter:drop-shadow(0 1px 2px #fff)}
+.racing-track-car{position:absolute;z-index:2;top:50%;left:0;width:63px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 2px #34476c80);
+ transform:translate(0,-50%);transition:left .84s cubic-bezier(.2,.8,.2,1),transform .84s cubic-bezier(.2,.8,.2,1);will-change:left,transform;pointer-events:none}
+.racing-track-row .racing-track-meters{font-size:13px;white-space:nowrap;text-align:right;font-weight:900;color:#3b327b;font-variant-numeric:tabular-nums}
+.racing-track-row .racing-track-stats{font-size:11px;white-space:nowrap;color:#587390;text-align:right}
+.racing-lane-winner{border:2px solid #e8b948;background:#fff9dc}
+.racing-lane-winner .racing-track-car{filter:drop-shadow(0 0 6px #f7b52e)}
+.racing-play-focus .racing-play-ranking{gap:3px}
+.racing-play-focus .racing-track-row{grid-template-columns:minmax(130px,1.25fr) minmax(150px,6fr) 80px 75px;min-height:27px;padding:1px 7px;gap:8px}
+.racing-play-focus .racing-track-name{font-size:12px}
+.racing-play-focus .racing-track-lane{height:23px}
+.racing-play-focus .racing-track-car{height:25px;width:45px}
+.racing-play-focus .racing-track-finish{right:-13px;top:-8px;font-size:12px}
+.racing-play-focus .racing-track-row .racing-track-meters{font-size:11px}
+.racing-play-focus .racing-track-row .racing-track-stats{font-size:10px}
+/* v6 alpha7: three-reel animated arcade reward modal. */
+.racing-student-sound{display:block;margin:6px 0 11px;font-size:12px}
+.racing-roulette-overlay{position:fixed;inset:0;z-index:5000;display:grid;place-items:center;padding:15px;background:#080e2cc9;backdrop-filter:blur(7px)}
+.racing-roulette-overlay[hidden]{display:none!important}
+.racing-roulette-popup{width:min(94vw,475px);border:2px solid #ebd5ff;border-radius:22px;background:radial-gradient(ellipse at 50% -15%,#6e56ae,#342a66 72%,#251a48);
+ color:#fff;text-align:center;padding:23px 18px 22px;box-shadow:0 20px 80px #05041cbb,0 0 35px #a572eb8a}
+.racing-roulette-label{font-weight:900;letter-spacing:.18em;font-size:11px;color:#d4b7ff}
+.racing-roulette-popup h2{font-size:clamp(22px,5vw,29px);line-height:1.2;margin:10px 0 8px;color:#fff4bd}
+.racing-roulette-popup p{color:#dbd5f6;font-weight:700;min-height:25px}
+.racing-roulette-machine{display:grid;grid-template-columns:1fr 1.32fr 1fr;gap:7px;align-items:stretch;margin:20px 0 16px}
+.racing-reel-card{display:grid;place-items:center;min-height:116px;border:2px solid #887cbf;border-radius:13px;padding:11px 5px;font-size:clamp(14px,3.2vw,19px);font-weight:900;line-height:1.4;word-break:keep-all;background:linear-gradient(165deg,#6a569c,#303c7a);text-shadow:0 2px 2px #0005}
+.racing-reel-center{border:3px solid #ffe6a7;background:linear-gradient(170deg,#9161d9,#6044a4);transform:scale(1.05);box-shadow:0 0 24px #e6aaff50}
+.racing-roulette-overlay.is-spinning .racing-reel-card{animation:racingReelTurn .13s ease-in-out infinite alternate}
+.racing-roulette-overlay.is-spinning .racing-reel-center{animation:racingReelMiddle .13s ease-in-out infinite alternate}
+.racing-roulette-overlay.is-settled .racing-reel-center{border-color:#fff18d;box-shadow:0 0 28px #ffd765af;animation:racingJackpot .44s ease-in-out 2 alternate}
+.racing-reel-card[data-mood="good"]{color:#fff6b2}
+.racing-reel-card[data-mood="bad"]{color:#ffd4dc}
+.racing-roulette-result{font-size:clamp(18px,4.5vw,23px);font-weight:900;color:#ffeb87;min-height:33px}
+.racing-roulette-footnote{font-size:11px;color:#c9bde9}
+@keyframes racingReelTurn{from{filter:brightness(1);transform:translateY(-4px)}to{filter:brightness(1.14);transform:translateY(4px)}}
+@keyframes racingReelMiddle{from{filter:brightness(1);transform:scale(1.05) translateY(-5px)}to{filter:brightness(1.12);transform:scale(1.05) translateY(5px)}}
+@keyframes racingJackpot{from{transform:scale(1.05)}to{transform:scale(1.12)}}
+@media(max-width:750px){.racing-track-row{grid-template-columns:100px minmax(120px,1fr) 68px;gap:5px;padding:4px}
+ .racing-track-lane{height:32px}.racing-track-car{width:49px;height:33px}
+ .racing-track-row .racing-track-stats{display:none}.racing-track-row .racing-track-meters{font-size:11px}
+ .racing-play-focus .racing-track-row{grid-template-columns:105px minmax(120px,1fr) 63px}
+ .racing-play-focus .racing-track-row .racing-track-stats{display:none}
+}
+@media(prefers-reduced-motion:reduce){.racing-track-car{transition:none}.racing-roulette-overlay.is-spinning .racing-reel-card,.racing-roulette-overlay.is-spinning .racing-reel-center,.racing-roulette-overlay.is-settled .racing-reel-center{animation:none}}
+
+
+/* Keep the player's own car visually traveling along the meter track. */
+#racing-student-car-image{transition:left .7s cubic-bezier(.24,.8,.26,1);will-change:left}
+@media(prefers-reduced-motion:reduce){#racing-student-car-image{transition:none}}

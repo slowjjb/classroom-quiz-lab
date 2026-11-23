@@ -6,12 +6,15 @@ import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
+import {createRacingAudio} from './racing-audio.js';
 const $=id=>document.getElementById(id);
-let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='';
+let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='';
+const laneRows=new Map(),sound=createRacingAudio({role:'teacher'});
 function notice(text,bad=false){const e=$('racing-play-status');if(e){e.textContent=text;e.dataset.kind=bad?'error':'success'}}
 function stop(){
  token++;unsubs.forEach(fn=>{try{fn()}catch(_){}});
- unsubs=[];code='';room=null;run=null;pub=null;states={};answers={};garage=null;processing=false;operation=false;rankingSignature='';attempted.clear();
+ unsubs=[];code='';room=null;run=null;pub=null;states={};answers={};garage=null;processing=false;operation=false;rankingSignature='';lastRacePhase='';attempted.clear();
+ laneRows.clear();$('racing-play-ranking').replaceChildren();sound.setPlaying(false);
  setFocus(false);$('racing-play-controls').hidden=true;
 }
 const rosterOf=()=>Object.fromEntries(Object.entries(room?.members||{}).filter(([,m])=>m?.profile?.name).map(([uid,m])=>[uid,m.profile.name]));
@@ -53,6 +56,10 @@ function render(){
  const panel=$('racing-play-controls');if(!code){panel.hidden=true;return;}
  panel.hidden=false;
  const state=pub?.state||'lobby',ready=Boolean(run),scores=pub?.scores||{},rank=racingStandings(scores);
+ sound.setPlaying(state==='playing');
+ if(lastRacePhase==='playing'&&state==='finished')sound.play('finish');
+ lastRacePhase=state;
+ $('racing-play-audio').textContent=sound.isOn?'🔊 음악·효과음 끄기':'🔈 음악·효과음 켜기';
  const meters=Number(pub?.finishMeters||20);
  $('racing-play-badge').textContent=state==='finished'?'경기 종료':state==='playing'?'경기 중':ready?'준비 완료':'대기 중';
  $('racing-play-prepare').disabled=operation||ready||!room?.meta?.setId||!['lobby','locked'].includes(room?.meta?.state);
@@ -64,24 +71,50 @@ function render(){
  $('racing-play-summary').textContent=rank.length+'명 · 정답 '+rank.reduce((n,p)=>n+Number(p.correct||0),0)+'회 · 전체 풀이 '+rank.reduce((n,p)=>n+Number(p.answered||0),0)+'회 · 목표 '+meters+'m';
  const remain=state==='playing'?Math.max(0,Math.ceil((Number(pub?.endsAt||0)-Date.now())/1000)):state==='finished'?0:Number(run?.durationSec||300);
  $('racing-play-clock').textContent=state==='playing'||state==='lobby'&&ready?Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'):'—';
- $('racing-play-guide').textContent=state==='playing'?'진행 중 · 정답이면 +1m, 정답 3회마다 룰렛!':state==='finished'?'결승선 또는 제한 시간으로 종료되었습니다.':'학생이 차를 고르면 게임 준비를 누른 뒤 시작하세요.';
+ $('racing-play-guide').textContent=state==='playing'?'진행 중 · 실제 자동차가 주행합니다. 정답 +1m, 정답 3회마다 룰렛!':state==='finished'?'결승선 또는 제한 시간으로 종료되었습니다.':'학생이 차를 고르면 게임 준비를 누른 뒤 시작하세요.';
  // Hundreds of live answers should not recreate every vehicle image each time.
  const nextSignature=JSON.stringify({scores,meters});
  if(rankingSignature===nextSignature)return;
  rankingSignature=nextSignature;
- const list=$('racing-play-ranking');list.replaceChildren();
- for(let i=0;i<rank.length;i++){
-  const p=rank[i],item=document.createElement('div');item.className='racing-track-row';
-  const label=document.createElement('span');label.className='racing-track-name';label.textContent=(i<3?['🥇','🥈','🥉'][i]:(i+1)+'위')+' '+p.name;
-  const car=document.createElement('img');car.className='racing-track-car';car.alt='';car.loading='lazy';
-  const id=Number(p.carId);car.src=window.RACING_SPRITES?.[id]||'';
-  const progress=document.createElement('div');progress.className='racing-track-progress';
-  const fill=document.createElement('div');fill.className='racing-track-fill';fill.style.width=Math.max(0,Math.min(100,Number(p.meters||0)/meters*100))+'%';
-  progress.append(fill);const points=document.createElement('b');points.textContent=p.meters+' / '+meters+'m';
-  const stats=document.createElement('small');stats.textContent='정답 '+(p.correct||0)+' / '+(p.answered||0);
-  item.append(label,car,progress,points,stats);list.append(item);
+ const list=$('racing-play-ranking'),position=new Map(rank.map((entry,index)=>[entry.uid,index+1]));
+ // Each car stays in its fixed numbered lane. Reuse the same DOM node so its
+ // actual sprite animates forward/backward when the distance changes.
+ const racers=rank.slice().sort((a,b)=>Number(a.carId||0)-Number(b.carId||0)||a.name.localeCompare(b.name,'ko'));
+ // Remove the initial 'waiting for players' text before mounting the first lane.
+ if(racers.length&&laneRows.size===0)list.replaceChildren();
+ const visible=new Set(racers.map(p=>p.uid));
+ for(const p of racers){
+  let record=laneRows.get(p.uid);
+  if(!record){
+   const row=document.createElement('div');row.className='racing-track-row';row.dataset.uid=p.uid;
+   const name=document.createElement('span');name.className='racing-track-name';
+   const lane=document.createElement('div');lane.className='racing-track-lane';
+   const car=document.createElement('img');car.className='racing-track-car';car.alt='';car.decoding='async';
+   const finish=document.createElement('span');finish.className='racing-track-finish';finish.textContent='🏁';
+   lane.append(car,finish);
+   const distance=document.createElement('b');distance.className='racing-track-meters';
+   const stats=document.createElement('small');stats.className='racing-track-stats';
+   row.append(name,lane,distance,stats);list.append(row);
+   record={row,name,car,distance,stats};laneRows.set(p.uid,record);
+  }
+  const {row,name,car,distance,stats}=record,place=position.get(p.uid)||0;
+  const percent=Math.min(100,Math.max(0,Number(p.meters||0)/meters*100));
+  name.textContent=(place<=3?['🥇','🥈','🥉'][place-1]:place+'위')+' '+p.name;
+  name.title=p.name;
+  const sprite=window.RACING_SPRITES?.[Number(p.carId)];
+  if(sprite&&car.getAttribute('src')!==sprite)car.src=sprite;
+  // left 0% -> 100%; translateX from 0% -> -100% of the sprite width.
+  // The resulting physical car travels fully along the road and stops
+  // at the checkered line without leaving the lane.
+  car.style.left=percent+'%';
+  car.style.transform='translate(-'+percent+'%, -50%)';
+  distance.textContent=Number(p.meters||0)+'/'+meters+'m';
+  stats.textContent='✅'+Number(p.correct||0)+' · 📝'+Number(p.answered||0);
+  row.classList.toggle('racing-lane-winner',Number(p.meters||0)>=meters);
+  if(row.parentNode!==list)list.append(row);
  }
- if(!rank.length)list.textContent='게임을 준비하면 실시간 레이싱 순위가 표시됩니다.';
+ for(const [uid,record] of laneRows){if(!visible.has(uid)){record.row.remove();laneRows.delete(uid)}}
+ if(!racers.length)list.textContent='게임을 준비하면 자동차 30종이 각자의 레인에서 달립니다.';
 }
 function setFocus(value){
  focus=Boolean(value);const el=$('racing-play-controls');if(!el)return;el.classList.toggle('racing-play-focus',focus);
@@ -123,6 +156,8 @@ async function start(){
  if(!code||operation||!run||pub?.state!=='lobby')return;
  operation=true;render();const c=code;
  try{
+  // A blocked/suspended audio device must never delay the Firebase race start.
+  void sound.unlock().then(ok=>{if(ok)sound.play('start')});
   const now=Date.now(),changes={
    ['v6/public/'+c+'/state']:'playing',
    ['v6/public/'+c+'/startedAt']:serverTimestamp(),
@@ -215,6 +250,7 @@ function exportCsv(){
 }
 $('racing-play-prepare').addEventListener('click',()=>void prepare());
 $('racing-play-start').addEventListener('click',()=>void start());
+$('racing-play-audio').addEventListener('click',()=>void sound.toggle().then(()=>{if(code)render()}));
 $('racing-play-end').addEventListener('click',()=>{if(confirm('현재 레이싱 경주를 종료할까요?'))void finish()});
 $('racing-play-export').addEventListener('click',exportCsv);
 $('racing-play-focus-toggle').addEventListener('click',()=>setFocus(!focus));
