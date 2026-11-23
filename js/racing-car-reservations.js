@@ -2,6 +2,7 @@
 // Students send car requests, but ONLY the authenticated teacher client
 // commits the registry. All 30 cars + one car per UID are atomic together.
 import {ref, get, set, onValue, runTransaction, serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import {applyCarRequest,normalizedRacingGarage} from './racing-garage-core.js';
 
 const CODE_RE=/^\d{6}$/;
 const UID_RE=/^[A-Za-z0-9_-]{8,128}$/;
@@ -12,12 +13,7 @@ export const racingCarId=value=>{const n=Number(value);if(!Number.isInteger(n)||
 export const emptyRacingGarage=()=>({slots:{},byUid:{},lastAction:{}});
 const garagePath=code=>'v6/carRegistry/'+ensureCode(code);
 const requestPath=code=>'v6/carRequests/'+ensureCode(code);
-const emptyIfMissing=v=>v&&typeof v==='object'?v:{};
-const normalizeGarage=raw=>({
- slots:{...emptyIfMissing(raw?.slots)},
- byUid:{...emptyIfMissing(raw?.byUid)},
- lastAction:{...emptyIfMissing(raw?.lastAction)}
-});
+const normalizeGarage=normalizedRacingGarage;
 export function watchRacingCars(db,code,onUpdate,onError){
  return onValue(ref(db,garagePath(code)),snapshot=>onUpdate(normalizeGarage(snapshot.val())),onError);
 }
@@ -47,36 +43,6 @@ async function sendRacingCarRequest(db,code,uid,action,carId){
    if(attempt===2)throw error;
   }
  }
-}
-
-// Pure deterministic transition for a single request. This is used INSIDE
-// a transaction and can be unit-tested without a Firebase connection.
-export function applyCarRequest(previous,uid,request){
- ensureUid(uid);
- const current=normalizeGarage(previous),seq=Number(request?.seq||0);
- if(!Number.isSafeInteger(seq)||seq<=0||!['claim','cancel'].includes(request?.action))return undefined;
- const prevSeq=Number(current.lastAction[uid]?.seq||0);
- if(seq<=prevSeq)return undefined;
- let status,carId='00',held=current.byUid[uid]||null;
- if(request.action==='cancel'){
-  if(held){
-   if(current.slots[held]===uid)delete current.slots[held];
-   delete current.byUid[uid];status='canceled';carId=held;
-  }else status='not_selected';
- }else{
-  const desired=request.carId;
-  if(typeof desired!=='string'||!CAR_RE.test(desired))return undefined;
-  carId=desired;
-  if(held){status=held===desired?'selected':'cancel_first';carId=held;}
-  else if(current.slots[desired])status='already_taken';
-  else{
-   current.slots[desired]=uid;
-   current.byUid[uid]=desired;
-   status='selected';
-  }
- }
- current.lastAction[uid]={seq,status,carId};
- return current;
 }
 
 // Teacher-side automatic coordinator: process requests sequentially.
