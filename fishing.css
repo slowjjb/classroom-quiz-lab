@@ -257,3 +257,33 @@
   .fishing-focus-header .fishing-focus-summary strong{padding:5px 7px;font-size:11px}
   .fishing-focus .fishing-focus-pond{height:clamp(285px,46vh,410px)}
 }
+
+/* Fishing 28 species: balanced 14+14 codex; preserve center gameplay space. */
+@media (min-width:1001px){
+ .fishing-codex-rail{max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+ .fishing-codex-card{height:clamp(56px,calc((100dvh - 148px)/7),82px)}
+ .fishing-codex-card img{height:clamp(28px,4.5dvh,41px)}
+ .fishing-codex-grid{gap:5px}
+ .fishing-codex-heading{margin-bottom:7px}
+}
+@media (max-width:1000px){
+ .fishing-codex-rail{overflow-y:auto;overscroll-behavior:contain}
+}
+/* Rarity is evident in the *actual fish sprite*, not only its glow. */
+.fishing-swimming-catch{
+ width:var(--fish-size,92px);
+ margin:0;
+ grid-template-columns:minmax(0,1fr);
+}
+.fishing-swimming-catch img{
+ width:100%;
+ height:calc(var(--fish-size,92px) * .78);
+ max-height:none;
+ object-fit:contain;
+}
+.fishing-swimming-catch figcaption{max-width:190px;font-size:11px;line-height:1.2}
+.fishing-swimming-catch[data-tier="normal"]{z-index:1}
+.fishing-swimming-catch[data-tier="big"]{z-index:2}
+.fishing-swimming-catch[data-tier="rare"]{z-index:3}
+.fishing-swimming-catch[data-tier="legend"]{z-index:4;filter:drop-shadow(0 0 16px #ffd64b9c)}
+.fishing-swimming-catch[data-tier="legend"] img{width:100%;height:calc(var(--fish-size,198px) * .78);filter:drop-shadow(0 0 13px #ffd03b)}
