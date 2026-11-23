@@ -42,7 +42,7 @@ function renderQuestion(){
  $('racing-student-question-no').textContent='문제 '+Number(state?.number||1)+'번 · 정답은 1m 전진!';
  $('racing-student-question-text').textContent=String(state.prompt||'문제를 불러오는 중…');
  const image=$('racing-student-question-image'),wrap=$('racing-student-question-image-wrap');
- wrap.hidden=!state.imageUrl;if(state.imageUrl)image.src=fullQuestionImageUrl(state.imageUrl);
+ wrap.hidden=!state.imageUrl;if(state.imageUrl)image.src=fullQuestionImageUrl(state.imageUrl,location.href);
  const options=$('racing-student-options');options.replaceChildren();
  $('racing-student-input-wrap').hidden=state.type!=='typing';
  if(state.type==='typing'){
