@@ -1,10 +1,10 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.11';
+import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.4';
 import { createAvatarImage } from './avatars.js';
-import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=5.0.11';
-import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=5.0.11';
+import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=6.0.0-alpha.4';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=6.0.0-alpha.4';
 
 const $ = id => document.getElementById(id);
 const modeNames = {classic:'클래식',gold:'골드 퀘스트',fishing:'피싱 프렌지',racing:'레이싱'};
@@ -25,7 +25,7 @@ async function copyText(value) {
 }
 function downloadRules() {
   if (!teacher) return;
-  const b = new Blob([makeRulesV5(teacher.uid)], {type:'application/json;charset=utf-8'});
+  const b = new Blob([makeRulesV6(teacher.uid)], {type:'application/json;charset=utf-8'});
   const url = URL.createObjectURL(b); const a = document.createElement('a');
   a.href = url; a.download = 'database.rules.json'; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -153,7 +153,7 @@ function renderRoom(record) {
   $('room-code').textContent=selectedCode;
   $('room-state').textContent=stateText(meta.state);
   $('room-state').className=`pill pill-${meta.state==='ended'?'error':meta.state==='lobby'?'success':'neutral'}`;
-  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'?'클래식':meta.mode==='gold'?'골드 퀘스트 v4':meta.mode==='fishing'?'피싱 프렌지 v5':'대기실'}) · ${meta.minClientVersion?'입장 최소 v'+meta.minClientVersion:'기존 호환 방'}`;
+  $('room-meta-text').textContent=`${meta.title} · ${modeNames[meta.mode]||meta.mode} · ${meta.setTitle||'문제 미선택'} (${meta.mode==='classic'?'클래식':meta.mode==='gold'?'골드 퀘스트 v4':meta.mode==='fishing'?'피싱 프렌지 v5':'레이싱 v6 대기실'}) · ${meta.minClientVersion?'입장 최소 v'+meta.minClientVersion:'기존 호환 방'}`;
   $('room-toggle-lock').disabled = meta.state==='ended';
   $('room-toggle-lock').textContent = meta.state==='locked'?'입장 다시 허용':'입장 마감';
   $('room-end').disabled = meta.state==='ended';
@@ -180,12 +180,16 @@ async function createRoom() {
   creating=true;$('room-create').disabled=true;
   const mode=$('room-mode').value,setId=$('room-set').value;
   if(!versionRulesReady){creating=false;$('room-create').disabled=false;info('room-create-message','v4.12 Firebase 통합 보안 규칙을 게시한 뒤 권한 다시 확인을 눌러 주세요.','error');return;}
-  if(!['classic','gold','fishing'].includes(mode)){creating=false;$('room-create').disabled=false;info('room-create-message','선택한 게임 모드는 아직 개발 중입니다.','error');return;}
-  if(['gold','fishing'].includes(mode)&&!setId){creating=false;$('room-create').disabled=false;info('room-create-message','선택한 게임에 사용할 문제 세트를 먼저 선택해 주세요.','error');return;}
+  if(!['classic','gold','fishing','racing'].includes(mode)){creating=false;$('room-create').disabled=false;info('room-create-message','선택한 게임 모드는 아직 개발 중입니다.','error');return;}
+  if(['gold','fishing','racing'].includes(mode)&&!setId){creating=false;$('room-create').disabled=false;info('room-create-message','선택한 게임에 사용할 문제 세트를 먼저 선택해 주세요.','error');return;}
   try {
     if(mode==='fishing'){
       try{await get(ref(db,'v5/versionCheck'));}
       catch{throw new Error('피싱 프렌지를 이용하려면 먼저 v5 전체 통합 보안 규칙을 Firebase에 게시해 주세요.');}
+    }
+    if(mode==='racing'){
+      try{await get(ref(db,'v6/versionCheck'));}
+      catch{throw new Error('v6 통합 규칙이 확인되지 않았습니다. Firebase 규칙에 v6 경로를 게시했는지 확인해 주세요.');}
     }
     const published=await checkPublishedVersion();
     const versionReport=checkRoomVersion(null,published);
@@ -198,7 +202,14 @@ async function createRoom() {
       const meta={hostUid:teacher.uid,createdAt:now,state:'lobby',title,mode,target,setId,setTitle:setId?(questionSets[setId]?.title||'문제 세트'): '문제 미선택',minClientBuild:APP_BUILD,minClientVersion:APP_VERSION};
       const result=await runTransaction(ref(db,`v2/rooms/${code}`),current=>current === null?{meta}:undefined,{applyLocally:false});
       if (!result.committed) continue;
-      await set(ref(db,`v2/hostRooms/${teacher.uid}/${code}`),{createdAt:now,title,state:'lobby'});
+      try{
+        if(mode==='racing')await set(ref(db,`v6/public/${code}`),{state:'lobby',finishMeters:20});
+        await set(ref(db,`v2/hostRooms/${teacher.uid}/${code}`),{createdAt:now,title,state:'lobby'});
+      }catch(error){
+        if(mode==='racing')await remove(ref(db,`v6/public/${code}`)).catch(()=>{});
+        await remove(ref(db,`v2/rooms/${code}`)).catch(()=>{});
+        throw error;
+      }
       openRoom(code,mode);
       info('room-create-message',`방을 만들었습니다. 참여 코드: ${code}`,'success');return;
     }
@@ -346,17 +357,17 @@ else {
   $('avatar-copy-rules').addEventListener('click',async()=>{
     if(!teacher){info('avatar-rules-message','교사 Google 계정으로 로그인한 다음 다시 눌러 주세요.','error');return;}
     try{
-      const ok=await copyText(makeRulesV5(teacher.uid));
+      const ok=await copyText(makeRulesV6(teacher.uid));
       info('avatar-rules-message',ok
-        ?'v5 전체 규칙을 복사했습니다. Firebase Realtime Database → 규칙에 붙여넣고 게시하세요.'
+        ?'v6 전체 규칙을 복사했습니다. Firebase Realtime Database → 규칙에 붙여넣고 게시하세요.'
         :'자동 복사에 실패했습니다. 아래 기존 「규칙 JSON 다운로드」 기능을 이용하거나 브라우저 클립보드 권한을 확인해 주세요.',
         ok?'success':'error');
     }catch(error){info('avatar-rules-message',formatError(error),'error');}
   });
   $('room-copy-rules').addEventListener('click',async()=>{
     if(!teacher)return;
-    const ok=await copyText(makeRulesV5(teacher.uid));
-    info('room-rules-status',ok?'전체 v0~v5 통합 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
+    const ok=await copyText(makeRulesV6(teacher.uid));
+    info('room-rules-status',ok?'전체 v0~v6 통합 규칙을 복사했습니다. Firebase와 GitHub에 같은 내용을 게시하세요.':'자동 복사에 실패했습니다. JSON 다운로드 버튼을 이용하세요.',ok?'success':'error');
   });
   $('room-download-rules').addEventListener('click',downloadRules);
   $('room-create').addEventListener('click',createRoom);

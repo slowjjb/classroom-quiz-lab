@@ -6,7 +6,7 @@ import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=5.0.11';
-import {makeRulesV5} from './rules-v5.js';
+import {makeRulesV6} from './rules-v6.js?v=6.0.0-alpha.4';
 import {buildGoldAccuracy} from './gold-analytics.js?v=4.11';
 import {CREATURES} from './fishing-core.js?v=5.0.11';
 import {renderFishingPodium} from './fishing-podium.js?v=5.0.11';
@@ -404,12 +404,12 @@ $('fishing-results-mode').addEventListener('change',event=>{resultsMode=event.ta
 $('fishing-podium-toggle').addEventListener('click',()=>{podiumCollapsed=!podiumCollapsed;renderFinalResults();});
 $('fishing-copy-rules').addEventListener('click',async()=>{
   if(!teacher){status('교사 로그인이 필요합니다.',true);return;}
-  try{await navigator.clipboard.writeText(makeRulesV5(teacher.uid));status('v5 통합 규칙을 복사했습니다. Firebase Realtime Database 규칙에 게시해 주세요.');}
+  try{await navigator.clipboard.writeText(makeRulesV6(teacher.uid));status('v6 통합 규칙을 복사했습니다. Firebase Realtime Database 규칙에 게시해 주세요.');}
   catch(err){status('복사 실패: '+formatError(err),true);}
 });
 $('fishing-download-rules').addEventListener('click',()=>{
   if(!teacher)return;
-  const url=URL.createObjectURL(new Blob([makeRulesV5(teacher.uid)],{type:'application/json;charset=utf-8'}));
+  const url=URL.createObjectURL(new Blob([makeRulesV6(teacher.uid)],{type:'application/json;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download='database.rules.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 setInterval(()=>{

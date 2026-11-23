@@ -3,9 +3,10 @@
 export const ROOM_MODE_BUCKETS = Object.freeze({
   classic: Object.freeze(['privateRuns', 'public', 'answers', 'grades', 'scores']),
   gold: Object.freeze(['privateRuns', 'public', 'memberState', 'answers', 'picks', 'targets']),
-  fishing: Object.freeze(['privateRuns', 'public', 'memberState', 'answers', 'actions'])
+  fishing: Object.freeze(['privateRuns', 'public', 'memberState', 'answers', 'actions']),
+  racing: Object.freeze(['privateRuns', 'public', 'memberState', 'answers', 'carRegistry', 'carRequests'])
 });
-export const ROOM_MODE_PREFIX = Object.freeze({classic:'v3',gold:'v4',fishing:'v5'});
+export const ROOM_MODE_PREFIX = Object.freeze({classic:'v3',gold:'v4',fishing:'v5',racing:'v6'});
 export const ACTIVE_GAME_STATES = Object.freeze(['ready', 'playing', 'question', 'paused', 'reveal']);
 
 export function buildRoomDeletionUpdates(hostUid, code, mode) {

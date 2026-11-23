@@ -1,0 +1,25 @@
+/* Purplekit v6 Racing: scoped lobby-only styles; does not affect v5 modes. */
+.racing-lobby{margin:17px 0 15px;padding:15px;background:linear-gradient(140deg,#f4f0ff,#e7f7ff);border:2px solid #b7b1f0;border-radius:16px;color:#28245e}
+.racing-lobby[hidden],.racing-preview[hidden],.racing-host-panel[hidden]{display:none!important}
+.racing-lobby h3{margin:0 0 5px;font-size:clamp(18px,2.3vw,24px);color:#413287}
+.racing-lobby p{margin:5px 0 12px;line-height:1.45}
+.racing-lobby-status{font-size:13px;font-weight:750;min-height:22px;color:#294f83;margin:6px 0}
+.racing-lobby-counter{display:inline-block;font-weight:900;color:#5d4088;margin-left:8px}
+.racing-car-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:9px;margin-top:13px}
+.racing-car-choice{appearance:none;background:#fff;color:#29335c;border:2px solid #d2c9e8;border-radius:13px;padding:8px 5px;min-height:114px;display:grid;place-items:center;gap:4px;cursor:pointer;transition:border-color .14s,transform .14s}
+.racing-car-choice:hover:not(:disabled){border-color:#7151cd;transform:translateY(-2px)}
+.racing-car-choice img{width:100%;max-width:116px;height:73px;object-fit:contain}
+.racing-car-choice span{font-size:12px;font-weight:900}
+.racing-car-choice[aria-pressed=true]{background:#e2fff4;border-color:#278963}
+.racing-car-choice[data-taken=true]:not([aria-pressed=true]){background:#e7e7ed;opacity:.55}
+.racing-car-choice:disabled{cursor:not-allowed}
+.racing-preview{margin:12px 0;padding:12px;border:2px solid #7356bc;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.racing-preview img{width:155px;height:88px;object-fit:contain}
+.racing-preview strong{font-size:20px;color:#32236c}
+.racing-preview .btn{margin:4px}
+.racing-host-panel{border:2px solid #9898e7;background:linear-gradient(135deg,#f7f3ff,#f4fbff);border-radius:18px}
+.racing-host-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:12px 0}
+.racing-host-lanes .racing-host-slot{border:1px solid #bbb6da;background:#fff;border-radius:10px;padding:10px;font-size:13px;display:flex;justify-content:space-between;gap:6px}
+.racing-host-lanes .racing-host-slot.occupied{background:#e8f9f1;border-color:#8aceaa}
+.racing-host-lanes .racing-host-slot b{color:#4d3e92}
+@media(max-width:650px){.racing-car-gallery{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.racing-car-choice{min-height:105px}.racing-car-choice img{height:65px}.racing-preview img{width:120px}}

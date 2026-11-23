@@ -7,7 +7,7 @@ import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analyti
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.11';
+import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.4';
 
 const $=id=>document.getElementById(id);
 const arcade=createArcadeUi('gold-focus',{role:'teacher',mode:'gold'});
@@ -630,12 +630,12 @@ $('gold-focus-start').addEventListener('click',()=>void start());
 $('gold-focus-end').addEventListener('click',()=>{if(confirm('골드 퀘스트를 종료할까요?'))void finish();});
 $('gold-copy-rules').addEventListener('click',async()=>{
   if(!teacher)return;
-  try{await navigator.clipboard.writeText(makeRulesV5(teacher.uid));notify('v5 통합 규칙을 복사했습니다. Firebase Realtime Database → 규칙에 게시하세요.','success');}
+  try{await navigator.clipboard.writeText(makeRulesV6(teacher.uid));notify('v6 통합 규칙을 복사했습니다. Firebase Realtime Database → 규칙에 게시하세요.','success');}
   catch(err){notify('규칙 복사 실패: '+formatError(err),'error');}
 });
 $('gold-download-rules').addEventListener('click',()=>{
   if(!teacher)return;
-  const contents=makeRulesV5(teacher.uid);
+  const contents=makeRulesV6(teacher.uid);
   const url=URL.createObjectURL(new Blob([contents],{type:'application/json;charset=utf-8'}));
   const anchor=document.createElement('a');anchor.href=url;anchor.download='database.rules.json';
   document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
