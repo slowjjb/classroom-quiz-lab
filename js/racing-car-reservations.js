@@ -59,17 +59,19 @@ export function watchRacingCarRequestsAsTeacher(db,code,onError=console.error){
   while(pending!==null&&!closed){
    const batch=pending;pending=null;
    try{
-    const [meta,publicState,roster]=await Promise.all([
+    const [meta,publicState,roster,registry]=await Promise.all([
      get(ref(db,'v2/rooms/'+room+'/meta')),
      get(ref(db,'v6/public/'+room)),
-     get(ref(db,'v2/rooms/'+room+'/members'))
+     get(ref(db,'v2/rooms/'+room+'/members')),
+     get(registryRef)
     ]);
     if(meta.val()?.mode!=='racing'||meta.val()?.state!=='lobby'||publicState.val()?.state!=='lobby')continue;
-    const members=roster.val()||{};
+    const members=roster.val()||{},already=normalizedRacingGarage(registry.val()).lastAction;
     const ordered=Object.entries(batch).sort((a,b)=>Number(a[1]?.at||0)-Number(b[1]?.at||0)||a[0].localeCompare(b[0]));
     for(const [uid,req] of ordered){
      if(closed)break;
      if(!UID_RE.test(uid)||!members[uid]?.profile)continue;
+     if(Number(req?.seq||0)<=Number(already[uid]?.seq||0))continue;
      await runTransaction(registryRef,current=>applyCarRequest(current,uid,req),{applyLocally:false});
     }
    }catch(error){onError(error)}
