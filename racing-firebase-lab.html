@@ -51,6 +51,9 @@ button:disabled{opacity:.4;cursor:not-allowed}button.alt{background:#354262}
 <button id="joinRoomBtn">레이싱 테스트방 입장</button>
 <p id="selected">아직 선택한 탈것이 없습니다.</p>
 <div id="garage"></div>
+<div id="previewZone" hidden style="margin:14px 0;padding:13px;border:1px solid #bba4ff;border-radius:12px;background:#312950">
+<div class="row"><img id="previewCar" alt="확정 전 자동차 미리보기" style="max-width:150px;max-height:88px;object-fit:contain"><strong id="previewLabel">미리보기</strong><button id="confirmPreview">이 자동차 선택 확정</button></div>
+<small>미리보기 중에는 예약되지 않습니다. 확정 후에는 대기실에서 선택을 취소할 수 있습니다.</small></div>
 <div class="row" style="margin-top:14px"><button id="cancelSelection" class="alt" disabled>선택 취소 · 다른 차 고르기</button></div>
 <small>자동차를 누르면 선택 요청이 교사 화면에 전달됩니다. 교사 프로그램이 Firebase에서 확정하면 내 자동차가 표시됩니다. 취소하면 누구나 그 차를 다시 선택할 수 있습니다.</small></section>
 </div>
@@ -64,7 +67,7 @@ import {getDatabase,ref,get,set,update,runTransaction,onValue} from 'https://www
 import {makeRulesV6} from './js/rules-v6.js';
 import {watchRacingCars,watchRacingCarRequestsAsTeacher,requestRacingCar,cancelRacingCar,chosenCarFor} from './js/racing-car-reservations.js';
 const $=id=>document.getElementById(id),fatal=e=>{log(e?.message||String(e));console.error(e)};
-let db=null,auth=null,role='',uid='',code='',unwatch=null,stopCoordinator=null,currentGarage=null,joined=false,watchPublic=null,isLocked=false;
+let db=null,auth=null,role='',uid='',code='',unwatch=null,stopCoordinator=null,currentGarage=null,joined=false,watchPublic=null,isLocked=false,previewCarId=null,pendingCarRequest=null;
 function log(message){$('status').textContent=message}
 function getCode(){const s=$('roomCode').value.trim();if(!/^\d{6}$/.test(s))throw Error('6자리 숫자 코드를 입력해 주세요.');return s}
 $('connectBtn').onclick=()=>{
@@ -101,6 +104,8 @@ async function beginWatch(){
  unwatch?.();stopCoordinator?.();code=getCode();
  unwatch=watchRacingCars(db,code,registry=>{
   currentGarage=registry;
+  const ack=registry?.lastAction?.[uid];
+  if(pendingCarRequest&&Number(ack?.seq||0)>=pendingCarRequest){pendingCarRequest=null;if(ack?.status==='selected')previewCarId=null}
   $('roster').textContent=JSON.stringify({slots:registry.slots,byUid:registry.byUid,lastAction:registry.lastAction},null,2);
   if(role==='student'&&joined)renderGarage();
  },fatal);
@@ -146,14 +151,21 @@ function renderGarage(){
   const img=document.createElement('img');img.src=(window.RACING_SPRITES||{})[id];img.alt='';
   const label=document.createElement('small');label.textContent=key+(mine?' · 내 차':owner?' · 사용 중':' · 선택 가능');
   b.append(img,label);
-  b.disabled=isLocked||(Boolean(owner)&&!mine)||Boolean(selected&&!mine);
-  b.onclick=async()=>{if(selected){log('이미 확정된 자동차입니다. 바꾸려면 선택 취소를 눌러 주세요.');return}
-    try{const req=await requestRacingCar(db,code,uid,id);log(key+'번 선택 요청 중… 교사 화면의 자동 확정을 기다려 주세요. 요청 번호 '+req.seq)}catch(e){fatal(e)}};
+  b.disabled=isLocked||(Boolean(owner)&&!mine)||Boolean(selected&&!mine)||Boolean(pendingCarRequest);
+  b.onclick=()=>{if(selected){log('이미 확정된 자동차입니다. 바꾸려면 선택 취소를 눌러 주세요.');return}previewCarId=id;renderGarage()};
   area.append(b);
  }
+ const preview=$('previewZone'),previewAllowed=Boolean(previewCarId&&!currentGarage.slots[String(previewCarId).padStart(2,'0')]&&!selected&&!isLocked&&!pendingCarRequest);
+ preview.hidden=!previewAllowed;
+ if(previewAllowed){$('previewCar').src=(window.RACING_SPRITES||{})[previewCarId];$('previewLabel').textContent=String(previewCarId).padStart(2,'0')+'번 자동차'}
+ $('confirmPreview').disabled=!previewAllowed;
  const ack=currentGarage.lastAction[uid];
  if(ack&&ack.status==='already_taken')log('다른 학생이 먼저 선택한 차입니다. 다른 차를 골라 주세요.');
  if(ack&&ack.status==='cancel_first')log('먼저 기존 자동차 선택을 취소해 주세요.');
 }
+$('confirmPreview').onclick=async()=>{
+ if(!previewCarId||isLocked||pendingCarRequest)return;
+ try{const req=await requestRacingCar(db,code,uid,previewCarId);pendingCarRequest=req.seq;log(String(previewCarId).padStart(2,'0')+'번 자동차 확정 요청 중…');renderGarage()}catch(e){fatal(e)}
+};
 $('cancelSelection').onclick=async()=>{if(!confirm('취소하면 다른 친구가 바로 이 자동차를 선택할 수 있습니다. 취소할까요?'))return;try{await cancelRacingCar(db,code,uid);log('자동차 선택 취소 요청을 전송했습니다.')}catch(e){fatal(e)}};
 </script></body></html>
