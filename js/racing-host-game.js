@@ -157,7 +157,7 @@ async function pump(){
  try{
   let jobs=0;
   for(const [uid,st] of Object.entries(states)){
-   if(!code||jobs>=50)break;
+   if(!code||pub?.state!=='playing'||jobs>=50)break;
    const answer=answers?.[uid]?.[st?.nonce];
    if(st?.phase!=='question'||!answer||!run.roster?.[uid])continue;
    jobs++;await processAnswer(uid,st,answer);
@@ -194,7 +194,7 @@ function exportCsv(){
   for(const log of Object.values(run.answersLog?.[uid]||{}))rows.push([name,log.questionNumber,log.answer,log.correct?'정답':'오답',log.bonus||0,log.meters||0]);
  const csv='\ufeff'+rows.map(row=>row.map(escapeCsv).join(',')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
- const a=document.createElement('a');a.href=url;a.download='퍼플킷_레이싱_'+code+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+ const a=document.createElement('a');a.href=url;a.download='퍼플킷_레이싱_'+code+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 $('racing-play-prepare').addEventListener('click',()=>void prepare());
 $('racing-play-start').addEventListener('click',()=>void start());
