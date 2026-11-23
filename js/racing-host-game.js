@@ -80,6 +80,8 @@ function render(){
  // Each car stays in its fixed numbered lane. Reuse the same DOM node so its
  // actual sprite animates forward/backward when the distance changes.
  const racers=rank.slice().sort((a,b)=>Number(a.carId||0)-Number(b.carId||0)||a.name.localeCompare(b.name,'ko'));
+ // Remove the initial 'waiting for players' text before mounting the first lane.
+ if(racers.length&&laneRows.size===0)list.replaceChildren();
  const visible=new Set(racers.map(p=>p.uid));
  for(const p of racers){
   let record=laneRows.get(p.uid);
