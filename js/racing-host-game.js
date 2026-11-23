@@ -7,11 +7,11 @@ import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
 const $=id=>document.getElementById(id);
-let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false;
+let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='';
 function notice(text,bad=false){const e=$('racing-play-status');if(e){e.textContent=text;e.dataset.kind=bad?'error':'success'}}
 function stop(){
  token++;unsubs.forEach(fn=>{try{fn()}catch(_){}});
- unsubs=[];code='';room=null;run=null;pub=null;states={};answers={};garage=null;processing=false;operation=false;attempted.clear();
+ unsubs=[];code='';room=null;run=null;pub=null;states={};answers={};garage=null;processing=false;operation=false;rankingSignature='';attempted.clear();
  setFocus(false);$('racing-play-controls').hidden=true;
 }
 const rosterOf=()=>Object.fromEntries(Object.entries(room?.members||{}).filter(([,m])=>m?.profile?.name).map(([uid,m])=>[uid,m.profile.name]));
@@ -49,6 +49,10 @@ function render(){
  const remain=state==='playing'?Math.max(0,Math.ceil((Number(pub?.endsAt||0)-Date.now())/1000)):state==='finished'?0:Number(run?.durationSec||300);
  $('racing-play-clock').textContent=state==='playing'||state==='lobby'&&ready?Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'):'—';
  $('racing-play-guide').textContent=state==='playing'?'진행 중 · 정답이면 +1m, 정답 3회마다 룰렛!':state==='finished'?'결승선 또는 제한 시간으로 종료되었습니다.':'학생이 차를 고르면 게임 준비를 누른 뒤 시작하세요.';
+ // Hundreds of live answers should not recreate every vehicle image each time.
+ const nextSignature=JSON.stringify({scores,meters});
+ if(rankingSignature===nextSignature)return;
+ rankingSignature=nextSignature;
  const list=$('racing-play-ranking');list.replaceChildren();
  for(let i=0;i<rank.length;i++){
   const p=rank[i],item=document.createElement('div');item.className='racing-track-row';
