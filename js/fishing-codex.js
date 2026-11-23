@@ -11,7 +11,7 @@ export function createFishingCodex(left,right,creatures){
     const card=document.createElement('div');card.className='fishing-codex-card';
     card.dataset.found='false';card.dataset.tier=fish.tier;
     const img=document.createElement('img');img.src=`images/fishing/thumbs/${fish.id}.webp?v=6.0.0-alpha.10`;
-    img.alt='아직 발견하지 못한 생물의 실루엣';img.loading='lazy';img.decoding='async';
+    img.alt='아직 발견하지 못한 생물의 실루엣';img.loading='lazy';img.decoding='async';img.addEventListener('error',()=>{img.style.visibility='hidden';});
     const name=document.createElement('span');name.className='fishing-codex-card-name';name.textContent='???';
     const best=document.createElement('span');best.className='fishing-codex-card-best';best.textContent='-- kg';
     card.append(img,name,best);
