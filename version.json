@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.7",
-  "build": 603,
+  "version": "6.0.0-alpha.8",
+  "build": 604,
   "minSupportedBuild": 412,
-  "purpose": "레이싱 25레인 차량 실제 주행 · 슬롯 룰렛 연출 · 오리지널 BGM/효과음"
+  "purpose": "레이싱 미확정 학생 랜덤 탈것 배정 · 학생 화면 전환 안내 · 디벗 터치 스크롤 안정화"
 }
