@@ -141,3 +141,27 @@ body.racing-focus-active{overflow:hidden}
 /* Keep the player's own car visually traveling along the meter track. */
 #racing-student-car-image{transition:left .7s cubic-bezier(.24,.8,.26,1);will-change:left}
 @media(prefers-reduced-motion:reduce){#racing-student-car-image{transition:none}}
+
+/* v6 alpha8: stable touch layout for school tablets. */
+.racing-student-play{scroll-margin-top:8px;overflow-anchor:none}
+.racing-student-play #racing-student-question-zone{overflow-anchor:none}
+.racing-student-play #racing-student-question-image-wrap{margin:8px auto;min-height:0}
+.racing-student-play #racing-student-question-image{display:block;margin:auto;max-height:210px;max-width:100%;height:auto}
+.racing-student-play .racing-answer-button{
+ touch-action:manipulation;
+ -webkit-tap-highlight-color:transparent;
+ overscroll-behavior:contain;
+ align-items:center;
+}
+.racing-student-play .racing-answer-button:focus-visible{outline:3px solid #6855df;outline-offset:3px}
+.racing-student-play .racing-student-reward:not([hidden]){
+ position:fixed;left:50%;bottom:12px;transform:translateX(-50%);
+ z-index:2500;width:min(calc(100vw - 24px),510px);
+ margin:0;box-shadow:0 6px 25px #1b215c55;pointer-events:none;
+}
+@media(max-width:700px){
+ .racing-student-play .racing-student-question{min-height:2.9em}
+ .racing-student-play .racing-answer-options{gap:10px}
+ .racing-student-play .racing-answer-button{min-height:76px;padding:15px 13px}
+ .racing-student-play #racing-student-question-image-wrap:not([hidden]){min-height:165px;display:grid;place-items:center}
+}
