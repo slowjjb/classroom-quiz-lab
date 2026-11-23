@@ -3,7 +3,7 @@ import {db,formatError} from './firebase.js';
 import {ref,onValue} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import {watchRacingCars,chosenCarFor,requestRacingCar,cancelRacingCar} from './racing-car-reservations.js';
 const $=id=>document.getElementById(id);
-const NAMES=['빨강 스포츠카','파랑 스포츠카','노랑 슈퍼카','초록 스포츠카','보라 스포츠카','분홍 스포츠카','오렌지 스포츠카','검정 스포츠카','하늘 스포츠카','하양 스포츠카','미래 레이스카','네온 레이스카','로켓 자동차','사막 자동차','구름 자동차','눈꽃 자동차','무지개 자동차','행성 자동차','크리스탈 자동차','골드 잠수차','드래곤','페가수스','유니콘','늑대 탈것','황소 수레','해적선','달 탐사차','호버 바이크','마법 빗자루','허스키 썰매'];
+const NAMES=['레드 포뮬러','블루 터보','옐로 머슬','핑크 하트','그린 오프로더','경찰차','소방차','구급차','네온 스피더','레인보우 버스','블랙 팬텀','퍼플 번개','랠리 23','탐험 지프','옐로 택시','아이스크림 트럭','광산 덤프트럭','몬스터 트럭','통신 차량','골드 잠수차','드래곤','페가수스','유니콘','늑대 탈것','황소 수레','해적선','달 탐사차','호버 바이크','마법 빗자루','허스키 썰매'];
 let code='',uid='',garage=null,roomState='',gameState='',previewId=null,pendingSeq=0,unsubs=[],session=0,imagesLoading=null;
 const id=n=>String(n).padStart(2,'0');
 const note=(text,err=false)=>{const el=$('racing-lobby-status');if(el){el.textContent=text;el.dataset.kind=err?'error':'success'}};
