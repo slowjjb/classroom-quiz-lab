@@ -1,7 +1,7 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, update, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV5 } from './rules-v5.js?v=5.0.11';
+import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.4';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
@@ -266,8 +266,8 @@ function csvExport(){
 }
 async function copyRules(){
   if(!teacher)return;
-  const json=makeRulesV5(teacher.uid);
-  try{await navigator.clipboard.writeText(json);msg('v0~v5 통합 규칙 복사 완료. Firebase에 게시하고 GitHub 규칙 파일도 교체하세요.','success');}
+  const json=makeRulesV6(teacher.uid);
+  try{await navigator.clipboard.writeText(json);msg('v0~v6 통합 규칙 복사 완료. Firebase에 게시하고 GitHub 규칙 파일도 교체하세요.','success');}
   catch{const b=new Blob([json],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='database.rules.v3.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);msg('복사가 차단되어 규칙 JSON 파일을 다운로드했습니다.');}
 }
 function tick(){
