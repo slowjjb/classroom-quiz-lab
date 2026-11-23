@@ -34,14 +34,29 @@
       <div class="avatar-self-text"><strong>내 캐릭터: <span id="avatar-current-name">우주 탐험가</span></strong><small>친구 명단과 게임 순위에 표시됩니다.</small></div>
       <button id="avatar-choose" type="button" class="btn btn-outline btn-small">캐릭터 고르기</button>
     </div>
-    <section id="racing-lobby" class="racing-lobby" hidden aria-label="레이싱 탈것 선택"><h3>🏎️ 나만의 탈것 고르기 <span id="racing-lobby-count" class="racing-lobby-counter">0 / 30대 선택됨</span></h3><p>30종 중 하나를 골라 미리보기한 뒤 <b>선택 확정</b>을 눌러 주세요. 같은 자동차는 다른 친구가 고를 수 없어요.</p><p id="racing-lobby-selected" style="font-weight:900">아직 확정한 탈것이 없습니다.</p><p id="racing-lobby-status" class="racing-lobby-status" role="status">대기실 연결 중…</p><p id="racing-lobby-lock" class="helper" hidden>⛔ 레이싱이 시작되거나 선택이 마감되어 자동차를 바꿀 수 없습니다.</p><div id="racing-lobby-preview" class="racing-preview" hidden><img id="racing-lobby-preview-car" alt="고른 탈것 미리보기"><strong id="racing-lobby-preview-label">자동차 미리보기</strong><button id="racing-lobby-confirm" class="btn btn-primary" type="button">선택 확정</button></div><div id="racing-lobby-gallery" class="racing-car-gallery" aria-label="30종 탈것 목록"></div><button id="racing-lobby-cancel" class="btn btn-outline" type="button" disabled>선택 취소 · 다른 탈것 고르기</button><p class="helper">선생님이 경주 시작을 누르면 문제를 풀며 자동차가 실시간으로 달립니다!</p></section>
+    <section id="racing-lobby" class="racing-lobby" hidden aria-label="레이싱 탈것 선택"><h3>🏎️ 나만의 탈것 고르기 <span id="racing-lobby-count" class="racing-lobby-counter">0 / 30대 선택됨</span></h3><p>30종 중 하나를 골라 미리보기한 뒤 <b>선택 확정</b>을 눌러 주세요. 같은 자동차는 다른 친구가 고를 수 없어요.</p><p id="racing-lobby-selected" style="font-weight:900">아직 확정한 탈것이 없습니다.</p><p id="racing-lobby-status" class="racing-lobby-status" role="status">대기실 연결 중…</p><p id="racing-lobby-lock" class="helper" hidden>⛔ 레이싱이 시작되거나 선택이 마감되어 자동차를 바꿀 수 없습니다.</p><div id="racing-lobby-preview" class="racing-preview" hidden><img id="racing-lobby-preview-car" alt="고른 탈것 미리보기"><strong id="racing-lobby-preview-label">자동차 미리보기</strong><button id="racing-lobby-confirm" class="btn btn-primary" type="button">선택 확정</button></div><div id="racing-lobby-gallery" class="racing-car-gallery" aria-label="30종 탈것 목록"></div><button id="racing-lobby-cancel" class="btn btn-outline" type="button" disabled>선택 취소 · 다른 탈것 고르기</button><p class="helper">선생님이 경주 시작을 누르면 문제를 풀며 자동차가 실시간으로 달립니다!</p><button id="racing-lobby-sound-toggle" type="button" class="btn btn-outline">🔈 레이싱 소리 켜기</button></section>
     <section id="racing-student-play" class="racing-student-play" hidden aria-label="레이싱 실제 게임">
   <div class="racing-student-head"><div><span class="racing-mini-kicker">PURPLEKIT RACING · LIVE</span><h3>🏎️ 레이싱 퀴즈 대결!</h3></div><div class="racing-student-hud"><strong id="racing-student-clock">5:00</strong><span id="racing-student-place">—위</span></div></div>
   <div class="racing-student-progress-card">
     <div class="racing-student-meters"><strong id="racing-student-meters">0 / 20m</strong><span id="racing-student-hits">정답 0 / 0회</span></div>
     <div class="racing-student-meter-track"><div id="racing-student-progress" class="racing-student-meter-fill"></div><img id="racing-student-car-image" alt="내 자동차" decoding="async"></div>
   </div>
+  <button id="racing-student-sound-toggle" class="btn btn-outline racing-student-sound" type="button">🔈 레이싱 소리 켜기</button>
   <div id="racing-student-result" class="racing-student-reward" role="status" hidden></div>
+  <div id="racing-roulette-overlay" class="racing-roulette-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="racing-roulette-title">
+    <div class="racing-roulette-popup">
+      <div class="racing-roulette-label">PURPLEKIT · RACING BONUS</div>
+      <h2 id="racing-roulette-title">🎰 3연속 정답 보너스!</h2>
+      <p id="racing-roulette-caption">어떤 아이템이 나올까요?</p>
+      <div class="racing-roulette-machine" aria-hidden="true">
+        <div class="racing-reel-card" id="racing-reel-left">🚀</div>
+        <div class="racing-reel-card racing-reel-center" id="racing-reel-center">🎲</div>
+        <div class="racing-reel-card" id="racing-reel-right">⚡</div>
+      </div>
+      <div id="racing-roulette-result" class="racing-roulette-result" aria-live="polite">아이템 추첨 중…</div>
+      <small class="racing-roulette-footnote">정답 3회마다 자동으로 발동합니다.</small>
+    </div>
+  </div>
   <div id="racing-student-playing">
     <div id="racing-student-question-zone" hidden>
       <span id="racing-student-question-no" class="racing-question-number">문제를 불러오는 중…</span>
