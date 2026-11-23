@@ -207,6 +207,8 @@ window.addEventListener('quizlab-room-meta',e=>{
  const c=e.detail?.code||'',mode=e.detail?.meta?.mode||'';
  if(mode==='racing')bind(c,mode);else if(c===code)stop();
 });
+// Pick up answers that arrived while an earlier batch was being graded.
+setInterval(()=>{if(code&&pub?.state==='playing')void pump()},350);
 setInterval(()=>{if(pub?.state==='playing'&&code){
  $('racing-play-clock').textContent=Math.floor(Math.max(0,Math.ceil((Number(pub.endsAt||0)-Date.now())/1000))/60)+':'+String(Math.max(0,Math.ceil((Number(pub.endsAt||0)-Date.now())/1000))%60).padStart(2,'0');
  if(Number(pub.endsAt||0)>0&&Date.now()>Number(pub.endsAt||0)+500&&!operation)void finish();
