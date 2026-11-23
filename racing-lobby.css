@@ -136,3 +136,8 @@ body.racing-focus-active{overflow:hidden}
  .racing-play-focus .racing-track-row .racing-track-stats{display:none}
 }
 @media(prefers-reduced-motion:reduce){.racing-track-car{transition:none}.racing-roulette-overlay.is-spinning .racing-reel-card,.racing-roulette-overlay.is-spinning .racing-reel-center,.racing-roulette-overlay.is-settled .racing-reel-center{animation:none}}
+
+
+/* Keep the player's own car visually traveling along the meter track. */
+#racing-student-car-image{transition:left .7s cubic-bezier(.24,.8,.26,1);will-change:left}
+@media(prefers-reduced-motion:reduce){#racing-student-car-image{transition:none}}
