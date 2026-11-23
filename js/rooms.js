@@ -3,7 +3,7 @@ import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.4';
 import { createAvatarImage } from './avatars.js';
-import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=5.0.11';
+import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=6.0.0-alpha.4';
 import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=5.0.11';
 
 const $ = id => document.getElementById(id);
