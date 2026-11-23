@@ -100,7 +100,7 @@ function renderQuestion(){
  $('racing-student-question-no').textContent='문제 '+Number(state?.number||1)+'번 · 정답은 1m 전진!';
  $('racing-student-question-text').textContent=String(state.prompt||'문제를 불러오는 중…');
  const image=$('racing-student-question-image'),wrap=$('racing-student-question-image-wrap');
- wrap.hidden=!state.imageUrl;if(state.imageUrl)image.src=fullQuestionImageUrl(state.imageUrl,location.href);
+ wrap.hidden=!state.imageUrl;if(state.imageUrl)image.src=fullQuestionImageUrl(state.imageUrl,location.href);else image.removeAttribute('src');
  const options=$('racing-student-options');options.replaceChildren();
  $('racing-student-input-wrap').hidden=state.type!=='typing';
  if(state.type==='typing'){
@@ -125,6 +125,10 @@ function render(){
  lastPhase=state;
  syncAudioButtons();
  if(stage.hidden)return;
+ if(state==='playing'&&!stagePositioned){
+  stagePositioned=true;
+  requestAnimationFrame(()=>{if(code&&pub?.state==='playing')stage.scrollIntoView({block:'start',behavior:'instant'});});
+ }
  const scores=pub?.scores||{},me=scores[uid],ranking=racingStandings(scores);
  const meters=Number(me?.meters||0),goal=Number(pub?.finishMeters||20);
  $('racing-student-meters').textContent=meters+' / '+goal+'m';
@@ -141,7 +145,8 @@ function render(){
   $('racing-student-final').textContent='경주 종료! '+(ranking.findIndex(x=>x.uid===uid)+1||'—')+'위 · '+meters+'m 완주 기록';
  }else{
   timer();renderQuestion();
-  if(own?.phase==='waiting')notice('준비된 문제를 모두 풀었습니다. 경주 종료를 기다려 주세요.');
+  if(!me){$('racing-student-question-zone').hidden=true;notice('경기 참가 정보가 없습니다. 선생님께 참가 명단을 확인해 달라고 요청하세요.',true);}
+  else if(own?.phase==='waiting')notice('준비된 문제를 모두 풀었습니다. 경주 종료를 기다려 주세요.');
   else if(!own)notice('선생님이 출발 신호를 보내는 중입니다.');
  }
  showResult(me);
