@@ -69,7 +69,8 @@ function render(){
  $('racing-student-hits').textContent='정답 '+(me?.correct||0)+' / '+(me?.answered||0)+'회';
  $('racing-student-progress').style.width=Math.min(100,Math.max(0,meters/goal*100))+'%';
  $('racing-student-place').textContent=(ranking.findIndex(x=>x.uid===uid)+1||'—')+'위';
- $('racing-student-car-image').src=window.RACING_SPRITES?.[Number(me?.carId||0)]||'';
+ const car=$('racing-student-car-image');car.src=window.RACING_SPRITES?.[Number(me?.carId||0)]||'';
+ car.style.left='clamp(0px, calc('+Math.min(100,Math.max(0,meters/goal*100))+'% - 20px), calc(100% - 45px))';
  $('racing-student-playing').hidden=state!=='playing';
  $('racing-student-finished').hidden=state!=='finished';
  $('racing-student-rank-title').textContent=state==='finished'?'🏆 최종 순위':'🔥 실시간 상위 5명';
