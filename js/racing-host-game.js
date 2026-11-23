@@ -153,7 +153,7 @@ async function pump(){
  try{
   let jobs=0;
   for(const [uid,st] of Object.entries(states)){
-   if(code===' '||jobs>=50)break;
+   if(!code||jobs>=50)break;
    const answer=answers?.[uid]?.[st?.nonce];
    if(st?.phase!=='question'||!answer||!run.roster?.[uid])continue;
    jobs++;await processAnswer(uid,st,answer);
