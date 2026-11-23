@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>퍼플킷 v6 Firebase 레이싱 연결 실험실 (테스트 전용)</title>
+<style>
+:root{font-family:system-ui,'Malgun Gothic',sans-serif;color-scheme:dark;color:#f6f5ff;background:#11162d}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 0%,#372362,transparent 55%),#10162d}
+main{max-width:1100px;margin:auto;padding:24px 18px 55px}h1{margin:5px 0 6px;font-size:29px}h2{font-size:18px;margin:0 0 14px}
+p{line-height:1.65;color:#d0d7ef}.alert{border:1px solid #e4ae6a;border-radius:12px;padding:12px 16px;background:#5d451e50;color:#ffe0ab;margin:18px 0}
+section{background:#202747;border:1px solid #4b567e;border-radius:16px;padding:20px;margin:15px 0}
+label{display:block;font-size:13px;font-weight:800;margin:12px 0 5px}
+input,textarea,select{width:100%;background:#101a38;border:1px solid #6d7ba7;border-radius:9px;padding:12px;color:#fff;font:inherit}
+textarea{min-height:135px;font-family:monospace;font-size:12px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.row>*{flex:1}.row button{flex:0 1 auto}
+button{font:inherit;background:#6954b5;color:white;border:1px solid #9c88dd;border-radius:9px;padding:11px 15px;font-weight:850;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}button.alt{background:#354262}
+#status{background:#10192f;border-radius:8px;padding:10px 12px;min-height:44px;white-space:pre-wrap}
+#garage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.car{border:1px solid #61709a;background:#26345d;border-radius:10px;padding:8px 3px;min-height:92px;text-align:center}
+.car img{width:96%;height:65px;object-fit:contain;display:block;margin:auto}.car.used{opacity:.43}.car.mine{border-color:#95f4cc;background:#17544b}
+.car small{font-size:11px}#selected{font-weight:900;color:#adfbe0}small{color:#c3c8e1}
+#teacherArea,#studentArea{display:none}body.teacher #teacherArea,body.student #studentArea{display:block}
+#roster{white-space:pre-wrap;word-break:break-all;font:12px/1.8 monospace;background:#151c38;padding:12px;border-radius:9px;max-height:240px;overflow:auto}
+@media(max-width:700px){#garage{grid-template-columns:repeat(3,1fr)}h1{font-size:23px}}
+</style></head><body><main>
+<div style="font-weight:900;font-size:13px;color:#b8a7ff">PURPLEKIT · RACING v6 · FIREBASE LAB</div>
+<h1>레이싱 Firebase 연동 실험실</h1>
+<p>실제 2~25대 기기에서 자동차 선택 충돌, 취소, 새로고침 유지 여부를 확인하는 개발용 페이지입니다.</p>
+<div class="alert"><strong>운영 Firebase 연결 차단</strong> — 이 페이지는 기존 <code>classroom-quiz-lab</code> 운영 프로젝트에는 연결하지 않습니다. 반드시 <strong>별도 Firebase 테스트 프로젝트</strong>를 만든 뒤 웹 앱 설정을 넣어주세요. 테스트 단계의 운영 사이트를 변경하지 않습니다.</div>
+<section><h2>1. 테스트 Firebase 연결</h2>
+<label for="configInput">테스트 프로젝트의 웹 앱 SDK 구성(JSON)</label>
+<textarea id="configInput" spellcheck="false" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"https://...","projectId":"...","appId":"..."}'></textarea>
+<div class="row"><button id="connectBtn">테스트 프로젝트 연결</button><span id="connected">미연결</span></div></section>
+<section><h2>2. 계정과 테스트 방</h2>
+<div class="row"><button id="teacherBtn" disabled>교사 Google 로그인</button><button id="studentBtn" class="alt" disabled>학생 익명 로그인</button></div>
+<small>교사와 학생은 서로 다른 브라우저 프로필 또는 시크릿 창에서 접속해 주세요.</small>
+<div id="identity" style="padding-top:10px">로그인 전</div>
+<label for="roomCode">테스트 참여 코드 (6자리 숫자)</label><input id="roomCode" value="864201" maxlength="6" inputmode="numeric">
+<div id="status" role="status">테스트 Firebase를 연결하면 사용할 수 있습니다.</div></section>
+<div id="teacherArea">
+<section><h2>3A. 교사 — 규칙 생성 및 테스트방 준비</h2>
+<p>교사 로그인 UID에 맞춘 v0~v6 전체 규칙을 생성합니다. 먼저 <b>테스트 Firebase Realtime Database → 규칙</b>에 게시하세요.</p>
+<div class="row"><button id="makeRules">전체 보안 규칙 생성</button><button id="copyRules" class="alt">전체 규칙 복사</button></div>
+<textarea id="rulesOutput" rows="4" readonly placeholder="규칙 생성 후 이곳에 표시됩니다."></textarea>
+<div class="row"><button id="prepareRoom">테스트방 생성 · 20m 레이싱 대기</button><button id="lockRoom" class="alt">경주 시작 상태(선택 잠금) 테스트</button><button id="reopenRoom" class="alt">대기 상태로 복구</button></div>
+<p>교사 화면을 열어 둔 동안 학생 선택 요청을 자동으로 처리합니다. 별도의 수동 승인 버튼은 없습니다.</p>
+<pre id="roster">선택 기록 대기 중</pre></section>
+</div>
+<div id="studentArea">
+<section><h2>3B. 학생 — 입장하고 탈것 고르기</h2>
+<label for="studentName">테스트 학생 이름</label><input id="studentName" maxlength="20" placeholder="예: 테스트01">
+<button id="joinRoomBtn">레이싱 테스트방 입장</button>
+<p id="selected">아직 선택한 탈것이 없습니다.</p>
+<div id="garage"></div>
+<div class="row" style="margin-top:14px"><button id="cancelSelection" class="alt" disabled>선택 취소 · 다른 차 고르기</button></div>
+<small>자동차를 누르면 선택 요청이 교사 화면에 전달됩니다. 교사 프로그램이 Firebase에서 확정하면 내 자동차가 표시됩니다. 취소하면 누구나 그 차를 다시 선택할 수 있습니다.</small></section>
+</div>
+<p><a href="racing-lab.html" style="color:#c9baff">← 기존 v6 자동차 경주 화면 보기</a></p>
+</main>
+<script src="racing-assets/part1.js"></script><script src="racing-assets/part2.js"></script><script src="racing-assets/part3.js"></script>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
+import {getAuth,signInWithPopup,GoogleAuthProvider,signInAnonymously,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
+import {getDatabase,ref,get,set,update,runTransaction,onValue} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import {makeRulesV6} from './js/rules-v6.js';
+import {watchRacingCars,watchRacingCarRequestsAsTeacher,requestRacingCar,cancelRacingCar,chosenCarFor} from './js/racing-car-reservations.js';
+const $=id=>document.getElementById(id),fatal=e=>{log(e?.message||String(e));console.error(e)};
+let db=null,auth=null,role='',uid='',code='',unwatch=null,stopCoordinator=null,currentGarage=null,joined=false,watchPublic=null,isLocked=false;
+function log(message){$('status').textContent=message}
+function getCode(){const s=$('roomCode').value.trim();if(!/^\d{6}$/.test(s))throw Error('6자리 숫자 코드를 입력해 주세요.');return s}
+$('connectBtn').onclick=()=>{
+ try{
+  const raw=JSON.parse($('configInput').value);
+  for(const k of ['apiKey','authDomain','databaseURL','projectId','appId'])if(!raw[k]||typeof raw[k]!=='string')throw Error('Firebase 설정 누락: '+k);
+  if(raw.projectId==='classroom-quiz-lab'||String(raw.databaseURL).includes('classroom-quiz-lab-default-rtdb'))throw Error('운영 Firebase 연결을 차단했습니다. 별도의 테스트 프로젝트를 사용해 주세요.');
+  const app=initializeApp(raw,'racing-v6-lab');
+  auth=getAuth(app);db=getDatabase(app);
+  $('connected').textContent='연결됨: '+raw.projectId;
+  $('teacherBtn').disabled=false;$('studentBtn').disabled=false;
+  $('connectBtn').disabled=true;$('configInput').disabled=true;log('테스트 앱 연결 완료. 교사 또는 학생으로 로그인해 주세요.');
+ }catch(e){fatal(e)}
+};
+$('teacherBtn').onclick=async()=>{
+ try{
+  await setPersistence(auth,browserLocalPersistence);
+  const result=await signInWithPopup(auth,new GoogleAuthProvider());
+  uid=result.user.uid;role='teacher';document.body.classList.add('teacher');$('identity').textContent='교사 UID: '+uid;
+  $('studentBtn').disabled=true;log('교사 로그인 성공. 전체 규칙을 생성하고 테스트 프로젝트에 게시하세요.');
+ }catch(e){fatal(e)}
+};
+$('studentBtn').onclick=async()=>{
+ try{
+  await setPersistence(auth,browserLocalPersistence);
+  const result=await signInAnonymously(auth);
+  uid=result.user.uid;role='student';document.body.classList.add('student');$('identity').textContent='학생 UID: '+uid;
+  $('teacherBtn').disabled=true;log('학생 로그인 성공. 테스트 참여 코드와 이름을 입력하고 입장하세요.');
+ }catch(e){fatal(e)}
+};
+$('makeRules').onclick=()=>{try{$('rulesOutput').value=makeRulesV6(uid);log('교사 UID에 맞춘 v0~v6 전체 규칙을 생성했습니다. 테스트 프로젝트에만 게시하세요.')}catch(e){fatal(e)}};
+$('copyRules').onclick=async()=>{try{const s=$('rulesOutput').value;if(!s)throw Error('먼저 규칙을 생성하세요.');await navigator.clipboard.writeText(s);log('전체 규칙을 복사했습니다.')}catch(e){fatal(e)}};
+async function beginWatch(){
+ unwatch?.();stopCoordinator?.();code=getCode();
+ unwatch=watchRacingCars(db,code,registry=>{
+  currentGarage=registry;
+  $('roster').textContent=JSON.stringify({slots:registry.slots,byUid:registry.byUid,lastAction:registry.lastAction},null,2);
+  if(role==='student'&&joined)renderGarage();
+ },fatal);
+ if(role==='teacher')stopCoordinator=watchRacingCarRequestsAsTeacher(db,code,fatal);
+}
+$('prepareRoom').onclick=async()=>{
+ try{
+  code=getCode();
+  const r=ref(db,'v2/rooms/'+code);
+  const snapshot=await get(r);
+  if(snapshot.exists())throw Error('이미 존재하는 테스트 코드입니다. 다른 코드로 다시 시도해 주세요.');
+  await set(r,{meta:{hostUid:uid,createdAt:Date.now(),state:'lobby',title:'v6 레이싱 테스트방',mode:'racing',setTitle:'30문항 샘플',minClientBuild:511}});
+  await set(ref(db,'v6/public/'+code),{state:'lobby',finishMeters:20});
+  await beginWatch();log('레이싱 테스트방 준비 완료. 학생들의 자동차 선택 요청을 자동 처리하고 있습니다.');
+ }catch(e){fatal(e)}
+};
+$('lockRoom').onclick=async()=>{try{await update(ref(db,'v6/public/'+getCode()),{state:'playing'});log('경주 시작 상태: 자동차 변경 잠금.')}catch(e){fatal(e)}};
+$('reopenRoom').onclick=async()=>{try{await update(ref(db,'v6/public/'+getCode()),{state:'lobby'});log('테스트를 위해 자동차 선택을 다시 열었습니다.')}catch(e){fatal(e)}};
+$('joinRoomBtn').onclick=async()=>{
+ try{
+  code=getCode();const name=$('studentName').value.trim();
+  if(!name||name.length>20||/[.#$/\[\]]/.test(name))throw Error('학생 이름을 1~20자로 입력하고 특수문자 . # $ / [ ]는 사용하지 마세요.');
+  const meta=(await get(ref(db,'v2/rooms/'+code+'/meta'))).val();
+  if(meta?.mode!=='racing'||meta?.state!=='lobby')throw Error('현재 레이싱 테스트 대기방이 아닙니다.');
+  const claim=ref(db,'v2/rooms/'+code+'/nameClaims/'+name);
+  const result=await runTransaction(claim,old=>old===null||old===uid?uid:undefined,{applyLocally:false});
+  if(!result.committed)throw Error('다른 학생이 사용 중인 이름입니다.');
+  await set(ref(db,'v2/rooms/'+code+'/members/'+uid+'/profile'),{name,joinedAt:Date.now(),clientBuild:511});
+  joined=true;await beginWatch();
+  watchPublic?.();watchPublic=onValue(ref(db,'v6/public/'+code),snap=>{isLocked=snap.val()?.state!=='lobby';renderGarage()},fatal);
+  log('학생 입장 완료. 자동차 30종 중 원하는 차를 선택하세요.');
+ }catch(e){fatal(e)}
+};
+function renderGarage(){
+ if(!joined||!currentGarage)return;
+ const selected=chosenCarFor(currentGarage,uid),area=$('garage');
+ $('selected').textContent=selected?'내 자동차: '+selected+'번 확정 완료':'아직 선택한 탈것이 없습니다.';
+ $('cancelSelection').disabled=!selected||isLocked;
+ area.replaceChildren();
+ for(let id=1;id<=30;id++){
+  const key=String(id).padStart(2,'0'),owner=currentGarage.slots[key],mine=owner===uid;
+  const b=document.createElement('button');b.className='car'+(owner&&!mine?' used':'')+(mine?' mine':'');
+  const img=document.createElement('img');img.src=(window.RACING_SPRITES||{})[id];img.alt='';
+  const label=document.createElement('small');label.textContent=key+(mine?' · 내 차':owner?' · 사용 중':' · 선택 가능');
+  b.append(img,label);
+  b.disabled=isLocked||(Boolean(owner)&&!mine)||Boolean(selected&&!mine);
+  b.onclick=async()=>{if(selected){log('이미 확정된 자동차입니다. 바꾸려면 선택 취소를 눌러 주세요.');return}
+    try{const req=await requestRacingCar(db,code,uid,id);log(key+'번 선택 요청 중… 교사 화면의 자동 확정을 기다려 주세요. 요청 번호 '+req.seq)}catch(e){fatal(e)}};
+  area.append(b);
+ }
+ const ack=currentGarage.lastAction[uid];
+ if(ack&&ack.status==='already_taken')log('다른 학생이 먼저 선택한 차입니다. 다른 차를 골라 주세요.');
+ if(ack&&ack.status==='cancel_first')log('먼저 기존 자동차 선택을 취소해 주세요.');
+}
+$('cancelSelection').onclick=async()=>{if(!confirm('취소하면 다른 친구가 바로 이 자동차를 선택할 수 있습니다. 취소할까요?'))return;try{await cancelRacingCar(db,code,uid);log('자동차 선택 취소 요청을 전송했습니다.')}catch(e){fatal(e)}};
+</script></body></html>
