@@ -389,6 +389,108 @@
           }
         }
       }
+    },
+    "v6": {
+      "versionCheck": {
+        ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+        ".write": false
+      },
+      "privateRuns": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "public": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && root.child('v2/rooms/' + $code + '/members/' + auth.uid + '/profile').exists())",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".validate": "newData.hasChildren(['state','finishMeters']) && (newData.child('state').val() === 'lobby' || newData.child('state').val() === 'playing' || newData.child('state').val() === 'finished') && newData.child('finishMeters').isNumber() && newData.child('finishMeters').val() >= 20 && newData.child('finishMeters').val() <= 100 && newData.child('finishMeters').val() % 5 === 0",
+          "state": {
+            ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'finished')"
+          },
+          "finishMeters": {
+            ".validate": "newData.isNumber() && newData.val() >= 20 && newData.val() <= 100 && newData.val() % 5 === 0"
+          },
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "carRegistry": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && root.child('v2/rooms/' + $code + '/members/' + auth.uid + '/profile').exists())",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "carRequests": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$uid": {
+            ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous')",
+            ".write": "(auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous') && root.child('v2/rooms/' + $code + '/members/' + $uid + '/profile').exists() && (root.child('v2/rooms/' + $code + '/meta/mode').val() === 'racing') && (root.child('v2/rooms/' + $code + '/meta/state').val() === 'lobby' && root.child('v6/public/' + $code + '/state').val() === 'lobby') && newData.exists() && (!data.exists() || newData.child('seq').val() > data.child('seq').val())",
+            ".validate": "newData.hasChildren(['seq','action','carId','at']) && newData.child('seq').isNumber() && newData.child('seq').val() > 0 && newData.child('action').isString() && (newData.child('action').val() === 'claim' || newData.child('action').val() === 'cancel') && newData.child('carId').isString() && ((newData.child('action').val() === 'claim' && newData.child('carId').val().matches(/^(0[1-9]|[12][0-9]|30)$/)) || (newData.child('action').val() === 'cancel' && newData.child('carId').val() === '00')) && (newData.child('at').isNumber() && newData.child('at').val() >= now - 5000 && newData.child('at').val() <= now + 5000)",
+            "seq": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+            "action": {
+              ".validate": "newData.isString() && (newData.val() === 'claim' || newData.val() === 'cancel')"
+            },
+            "carId": {
+              ".validate": "newData.isString() && newData.val().matches(/^(0[0-9]|[12][0-9]|30)$/)"
+            },
+            "at": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "memberState": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$uid": {
+            ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous')",
+            ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+            ".validate": "newData.hasChildren(['phase','nonce','questionIndex','correct','answered']) && newData.child('phase').isString() && newData.child('nonce').isString() && newData.child('questionIndex').isNumber() && newData.child('correct').isNumber() && newData.child('answered').isNumber()",
+            "$other": {
+              ".validate": true
+            }
+          }
+        }
+      },
+      "answers": {
+        "$code": {
+          ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          ".write": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com'",
+          "$uid": {
+            ".read": "auth != null && auth.uid === 'OaI1FCuwa7droffj277NQsvjyw52' && auth.token.firebase.sign_in_provider === 'google.com' || (auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous')",
+            "$nonce": {
+              ".write": "(auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous') && root.child('v2/rooms/' + $code + '/members/' + $uid + '/profile').exists() && (root.child('v2/rooms/' + $code + '/meta/mode').val() === 'racing') && (root.child('v6/public/' + $code + '/state').val() === 'playing') && root.child('v6/memberState/' + $code + '/' + $uid + '/phase').val() === 'question' && root.child('v6/memberState/' + $code + '/' + $uid + '/nonce').val() === $nonce && !data.exists() && newData.exists()",
+              ".validate": "newData.hasChildren(['value','at']) && newData.child('value').isString() && newData.child('value').val().length >= 1 && newData.child('value').val().length <= 200 && (newData.child('at').isNumber() && newData.child('at').val() >= now - 5000 && newData.child('at').val() <= now + 5000)",
+              "value": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+              },
+              "at": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
