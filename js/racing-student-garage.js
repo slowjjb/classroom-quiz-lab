@@ -24,7 +24,9 @@ function loadImages(){
  return imagesLoading;
 }
 function render(){
- const container=$('racing-lobby');if(!container||container.hidden||!code)return;
+ const container=$('racing-lobby');if(!container||!code)return;
+ container.hidden=gameState==='playing'||gameState==='finished';
+ if(container.hidden)return;
  const locked=roomState!=='lobby'||gameState!=='lobby';
  const selected=chosenCarFor(garage,uid),taken=garage?.slots||{};
  const ack=garage?.lastAction?.[uid];
