@@ -2,8 +2,8 @@
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import {fullQuestionImageUrl} from './image-utils.js';
-import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.9';
-import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=5.0.11';
+import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.10';
+import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=6.0.0-alpha.10';
 const $=id=>document.getElementById(id),stage=$('fishing-student');
 let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
 let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',rewardNonce='';
@@ -33,9 +33,9 @@ function renderCodex(){
   if(!codex)return;
   const best=pub?.scores?.[uid]?.bestBySpecies||{};
   const count=updateFishingCodex(codex,best);
-  $('fishing-codex-left-count').textContent=`${count.left}/12`;
-  $('fishing-codex-right-count').textContent=`${count.right}/11`;
-  $('fishing-codex-total-mobile').textContent=`${count.total}/23종`;
+  $('fishing-codex-left-count').textContent=`${count.left}/14`;
+  $('fishing-codex-right-count').textContent=`${count.right}/14`;
+  $('fishing-codex-total-mobile').textContent=`${count.total}/28종`;
 }
 
 function setLureVisual(level){const icon=$('fishing-lure-icon');if(icon)icon.src=lureAsset(level);$('fishing-level').textContent=`Lv.${level||1}`;}
