@@ -24,14 +24,14 @@ export const CREATURES = Object.freeze([
   {id:'orca',name:'범고래',tier:'rare',emoji:'🐋',minLevel:4},
   {id:'ray',name:'가오리',tier:'rare',emoji:'🐠'},
   {id:'anglerfish',name:'아귀',tier:'rare',emoji:'🐡'},
-  {id:'megalodon',name:'메갈로돈',tier:'legend',emoji:'🦈',minLevel:5},
-  {id:'mosasaurus',name:'모사사우루스',tier:'legend',emoji:'🦕',minLevel:5},
-  {id:'manta',name:'만타가오리',tier:'legend',emoji:'🐠',minLevel:5},
-  {id:'bluewhale',name:'대왕고래',tier:'legend',emoji:'🐋',minLevel:5},
-  {id:'giantsquid',name:'대왕오징어',tier:'legend',emoji:'🦑',minLevel:5}
+  {id:'megalodon',name:'메갈로돈',tier:'legend',emoji:'🦈',minLevel:4},
+  {id:'mosasaurus',name:'모사사우루스',tier:'legend',emoji:'🦕',minLevel:4},
+  {id:'manta',name:'만타가오리',tier:'legend',emoji:'🐠',minLevel:4},
+  {id:'bluewhale',name:'대왕고래',tier:'legend',emoji:'🐋',minLevel:4},
+  {id:'giantsquid',name:'대왕오징어',tier:'legend',emoji:'🦑',minLevel:4}
 ]);
 const EARLY_RANGES=[[1,10],[5,20],[10,30],[20,50],[30,75],[45,100],[60,130],[80,165]];
-const LEGEND_ODDS=[0,0,0,0,0,0.01,0.02,0.04,0.07,0.10,0.12];
+const LEGEND_ODDS=[0,0,0,0,0.01,0.02,0.04,0.07,0.10,0.12,0.13,0.14,0.15];
 const randomIndex=(n,rng=Math.random)=>Math.min(n-1,Math.max(0,Math.floor(rng()*n)));
 export const rollInt=(min,max,rng=Math.random)=>min+randomIndex(max-min+1,rng);
 export function lureInterval(level){return level<=3?3:level<=6?4:5;}
@@ -44,7 +44,7 @@ export function weightRange(level){
   const hi=5*Math.round((165+35*k+2*k*(k-1))/5);
   return [lo,hi];
 }
-export function legendChance(level){const n=Math.max(1,Math.floor(Number(level)||1));return n<5?0:n<=10?LEGEND_ODDS[n]:Math.min(.15,.12+.01*(n-10));}
+export function legendChance(level){const n=Math.max(1,Math.floor(Number(level)||1));return n<4?0:LEGEND_ODDS[Math.min(n,12)];}
 export function tierOdds(level){
   const legend=legendChance(level),rare=Math.min(.31,.05+.028*(level-1));
   const big=Math.min(.43,.13+.033*(level-1));
