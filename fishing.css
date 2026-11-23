@@ -271,19 +271,22 @@
 }
 /* Rarity is evident in the *actual fish sprite*, not only its glow. */
 .fishing-swimming-catch{
- width:var(--fish-size,92px);
+ width:var(--fish-size,120px);
  margin:0;
  grid-template-columns:minmax(0,1fr);
 }
 .fishing-swimming-catch img{
  width:100%;
- height:calc(var(--fish-size,92px) * .78);
+ height:calc(var(--fish-size,120px) * .78);
  max-height:none;
  object-fit:contain;
 }
-.fishing-swimming-catch figcaption{max-width:190px;font-size:11px;line-height:1.2}
+.fishing-swimming-catch figcaption{box-sizing:border-box;max-width:100%;font-size:11px;line-height:1.25;white-space:nowrap}
 .fishing-swimming-catch[data-tier="normal"]{z-index:1}
 .fishing-swimming-catch[data-tier="big"]{z-index:2}
 .fishing-swimming-catch[data-tier="rare"]{z-index:3}
 .fishing-swimming-catch[data-tier="legend"]{z-index:4;filter:drop-shadow(0 0 16px #ffd64b9c)}
-.fishing-swimming-catch[data-tier="legend"] img{width:100%;height:calc(var(--fish-size,198px) * .78);filter:drop-shadow(0 0 13px #ffd03b)}
+.fishing-swimming-catch[data-tier="legend"] img{width:100%;height:calc(var(--fish-size,250px) * .78);filter:drop-shadow(0 0 13px #ffd03b)}
+
+/* v6 alpha11: visually distinct catch tiers; long student names remain within each swimmer. */
+.fishing-swimming-catch .fishing-swim-fallback{font-size:clamp(44px,calc(var(--fish-size,120px) * .50),110px);line-height:1.2}
