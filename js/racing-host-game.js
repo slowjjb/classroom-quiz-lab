@@ -7,6 +7,7 @@ import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
 import {createRacingAudio} from './racing-audio.js';
+import {normalizedRacingGarage} from './racing-garage-core.js';
 const $=id=>document.getElementById(id);
 let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='';
 const laneRows=new Map(),sound=createRacingAudio({role:'teacher'});
@@ -133,12 +134,30 @@ async function prepare(){
   ]);
   const questions=questionList(source.val());
   if(!questions.length)throw Error('사용할 수 있는 문제가 없습니다. 문제 세트를 확인해 주세요.');
-  const members=rosterSnap.val()||{},byUid=garageSnap.val()?.byUid||{};
-  const entries=Object.entries(members).filter(([uid,m])=>m?.profile?.name&&byUid[uid]&&Object.keys(m.connections||{}).length);
-  if(!entries.length)throw Error('자동차를 확정하고 접속 중인 학생이 한 명 이상 필요합니다.');
-  const missing=Object.values(members).filter(m=>m?.profile?.name&&Object.keys(m.connections||{}).length).length-entries.length;
+  const members=rosterSnap.val()||{};
+  // Include every connected student. Unconfirmed car choices are not exclusion criteria.
+  const entries=Object.entries(members).filter(([,m])=>m?.profile?.name&&Object.keys(m.connections||{}).length);
+  if(!entries.length)throw Error('접속 중인 학생이 한 명 이상 필요합니다.');
+  if(entries.length>30)throw Error('레이싱은 최대 30명까지 참여할 수 있습니다.');
+  const currentGarage=normalizedRacingGarage(garageSnap.val());
+  const unselected=entries.filter(([uid])=>!currentGarage.byUid[uid]).length;
   const durationSec=Number($('racing-play-duration').value)||300,finishMeters=Number($('racing-play-distance').value)||20;
-  if(!confirm(entries.length+'명, '+questions.length+'문항, 목표 '+finishMeters+'m, '+durationSec/60+'분으로 레이싱을 준비할까요?'+(missing?'\n자동차 미선택 '+missing+'명은 이번 경주에 참여하지 않습니다.':'')))return;
+  if(!confirm(entries.length+'명, '+questions.length+'문항, 목표 '+finishMeters+'m, '+durationSec/60+'분으로 레이싱을 준비할까요?'+(unselected?'\n자동차 미확정 '+unselected+'명은 남은 차량 중 자동 배정됩니다.':'')))return;
+  // Atomic allocation prevents duplicate cars even if a last-second claim is processed.
+  const allocation=await runTransaction(ref(db,'v6/carRegistry/'+c),raw=>{
+   const registry=normalizedRacingGarage(raw);
+   const used=new Set(Object.keys(registry.slots));
+   const free=Array.from({length:30},(_,i)=>String(i+1).padStart(2,'0')).filter(id=>!used.has(id));
+   for(const [uid] of entries){
+    if(registry.byUid[uid])continue;
+    if(!free.length)return undefined;
+    const index=Math.floor(Math.random()*free.length),carId=free.splice(index,1)[0];
+    registry.slots[carId]=uid;registry.byUid[uid]=carId;
+   }
+   return registry;
+  },{applyLocally:false});
+  if(!allocation.committed)throw Error('남은 자동차가 부족합니다. 교사 화면에서 학생 수와 선택 현황을 확인해 주세요.');
+  const byUid=normalizedRacingGarage(allocation.snapshot.val()).byUid;
   const roster=Object.fromEntries(entries.map(([uid,m])=>[uid,m.profile.name]));
   const decks=Object.fromEntries(entries.map(([uid])=>[uid,makeShuffleBag(questions.length,120)]));
   const scores=Object.fromEntries(entries.map(([uid,m])=>[uid,racingScore(m.profile.name,byUid[uid])]));
@@ -148,7 +167,7 @@ async function prepare(){
    ['v2/rooms/'+c+'/meta/state']:'locked',
    ['v2/hostRooms/'+auth.currentUser.uid+'/'+c+'/state']:'locked'
   });
-  notice('게임 준비 완료! 이제 「경주 시작」을 눌러 주세요.');
+  notice('게임 준비 완료! '+(unselected?unselected+'명에게 남은 차량을 자동 배정했습니다. ':'')+'이제 「경주 시작」을 눌러 주세요.');
  }catch(e){notice('준비 오류: '+formatError(e),true)}
  finally{operation=false;render();}
 }
