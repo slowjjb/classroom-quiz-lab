@@ -74,7 +74,7 @@ function render(){
  const remain=state==='playing'?Math.max(0,Math.ceil((Number(pub?.endsAt||0)-Date.now())/1000)):state==='finished'?0:Number(run?.durationSec||300);
  $('racing-play-clock').textContent=state==='playing'||state==='lobby'&&ready?Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'):'—';
  $('racing-play-guide').textContent=state==='playing'?'진행 중 · 실제 자동차가 주행합니다. 정답 +1m, 정답 3회마다 룰렛!':state==='finished'?'결승선 또는 제한 시간으로 종료되었습니다.':'학생이 차를 고르면 게임 준비를 누른 뒤 시작하세요.';
- renderRacingFinalResults({run,pub,mode:resultsMode});
+ renderRacingFinalResults({run,pub,mode:resultsMode,members:room?.members||{}});
  // Hundreds of live answers should not recreate every vehicle image each time.
  const nextSignature=JSON.stringify({scores,meters});
  if(rankingSignature===nextSignature)return;
@@ -274,7 +274,7 @@ $('racing-play-start').addEventListener('click',()=>void start());
 $('racing-play-audio').addEventListener('click',()=>void sound.toggle().then(()=>{if(code)render()}));
 $('racing-play-end').addEventListener('click',()=>{if(confirm('현재 레이싱 경주를 종료할까요?'))void finish()});
 $('racing-play-export').addEventListener('click',exportCsv);
-$('racing-results-mode').addEventListener('change',e=>{resultsMode=e.target.value==='all'?'all':'first';renderRacingFinalResults({run,pub,mode:resultsMode});});
+$('racing-results-mode').addEventListener('change',e=>{resultsMode=e.target.value==='all'?'all':'first';renderRacingFinalResults({run,pub,mode:resultsMode,members:room?.members||{}});});
 $('racing-play-focus-toggle').addEventListener('click',()=>setFocus(!focus));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&focus)setFocus(false)});
 window.addEventListener('quizlab-room-open',e=>bind(e.detail?.code||'',e.detail?.mode||''));
