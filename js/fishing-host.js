@@ -7,7 +7,7 @@ import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.9';
 import {makeRulesV6} from './rules-v6.js?v=6.0.0-alpha.4';
-import {buildGoldAccuracy} from './gold-analytics.js?v=4.11';
+import {buildGoldAccuracy} from './gold-analytics.js?v=6.0.0-alpha.14';
 import {CREATURES} from './fishing-core.js?v=6.0.0-alpha.9';
 import {renderFishingPodium} from './fishing-podium.js?v=5.0.11';
 const $=id=>document.getElementById(id);
