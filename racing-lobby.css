@@ -165,3 +165,37 @@ body.racing-focus-active{overflow:hidden}
  .racing-student-play .racing-answer-button{min-height:76px;padding:15px 13px}
  .racing-student-play #racing-student-question-image-wrap:not([hidden]){min-height:165px;display:grid;place-items:center}
 }
+
+/* Racing alpha12: teacher final results, separate game ranking and learning. */
+.racing-final-results[hidden],.racing-play-ranking[hidden],.racing-play-footer[hidden]{display:none!important}
+.racing-final-results{margin:14px 0 6px;min-width:0;color:#26345c}
+.racing-results-hero{border-radius:16px;background:linear-gradient(130deg,#272c72,#5944ad);padding:19px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 20px}
+.racing-results-hero h2{color:#fff;margin:0;font-size:clamp(21px,2.5vw,30px)}
+.racing-results-hero p{color:#e9e8ff;margin:0;flex:1 1 360px;font-weight:750}
+.racing-results-hero label{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:800}
+.racing-results-hero select{border-radius:9px;padding:8px;color:#2d2766;background:#fff;border:1px solid #d8d2ff;max-width:100%}
+.racing-results-podium-heading{text-align:center;margin:19px 0 8px;font-size:clamp(17px,2vw,23px);font-weight:950;color:#37318d}
+.racing-results-podium-wrap{max-width:780px;margin:0 auto 20px;overflow:visible}
+.racing-result-podium{justify-content:center;align-items:end}
+.racing-result-pair{display:flex;flex-direction:column;align-items:center;justify-content:end;gap:2px;min-height:128px}
+.racing-result-pair .avatar-art,.racing-result-pair img:not(.racing-result-car){max-height:78px;max-width:100%;object-fit:contain}
+.racing-result-car{display:block;width:130px;height:70px;max-width:100%;object-fit:contain;filter:drop-shadow(0 6px 6px #1e235a55)}
+.racing-result-car-small{width:42px;height:30px;flex-shrink:0}
+.racing-results-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.racing-results-card{border:1px solid #d4dcf1;border-radius:15px;background:#fff;padding:15px;min-width:0;box-shadow:0 5px 18px #19274b13}
+.racing-results-card h3{font-size:17px;color:#302d85;margin:0 0 4px}
+.racing-results-card>p{font-size:12px;color:#667392;margin:0 0 12px}
+.racing-results-list{max-height:450px;overflow:auto;scrollbar-width:thin;display:grid;gap:6px}
+.racing-result-row{min-width:0;padding:9px;background:#f2f6ff;border-radius:9px;border:1px solid #e0e7f6}
+.racing-result-row-head{display:flex;align-items:center;gap:7px;min-width:0;font-size:12px}
+.racing-result-name{font-weight:800;flex:1;overflow-wrap:anywhere;min-width:0}
+.racing-result-value{font-weight:950;color:#303d90;white-space:nowrap}
+.racing-result-mark{font-size:12px;flex:none}
+.racing-result-row small{display:block;margin:5px 0 0;color:#697591;font-size:11px;line-height:1.4}
+.racing-result-rate-track{background:#dce5f7;border-radius:20px;height:6px;margin-top:7px;overflow:hidden}
+.racing-result-rate-fill{display:block;height:100%;background:linear-gradient(90deg,#5ba5e8,#635bdb);border-radius:inherit}
+.racing-results-footnote{font-size:12px;color:#657397;margin:13px 0 4px}
+.racing-play-focus .racing-final-results{margin-top:10px}
+.racing-play-focus .racing-results-list{max-height:43vh}
+@media(max-width:1050px){.racing-results-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.racing-results-card:last-child{grid-column:1/-1}}
+@media(max-width:680px){.racing-results-hero{padding:13px}.racing-results-hero p{flex-basis:100%}.racing-results-grid{grid-template-columns:1fr}.racing-results-card:last-child{grid-column:auto}.racing-result-car{width:85px;height:53px}.racing-result-pair{min-height:90px}.racing-result-pair .avatar-art{max-height:52px}.racing-results-card{padding:11px}}
