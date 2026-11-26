@@ -7,15 +7,16 @@ import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
 import {createRacingAudio} from './racing-audio.js';
+import {buildGoldAccuracy} from './gold-analytics.js';
 import {normalizedRacingGarage} from './racing-garage-core.js';
 import {renderRacingFinalResults,resetRacingFinalResults} from './racing-results.js?v=6.0.0-alpha.12';
 const $=id=>document.getElementById(id);
-let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='',resultsMode='first';
+let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='',resultsMode='first',finalizing=false;
 const laneRows=new Map(),sound=createRacingAudio({role:'teacher'});
 function notice(text,bad=false){const e=$('racing-play-status');if(e){e.textContent=text;e.dataset.kind=bad?'error':'success'}}
 function stop(){
  token++;unsubs.forEach(fn=>{try{fn()}catch(_){}});
- unsubs=[];code='';room=null;run=null;pub=null;states={};answers={};garage=null;processing=false;operation=false;rankingSignature='';lastRacePhase='';attempted.clear();
+ unsubs=[];code='';room=null;run=null;pub=null;states={};answers={};garage=null;processing=false;operation=false;rankingSignature='';lastRacePhase='';finalizing=false;attempted.clear();
  laneRows.clear();$('racing-play-ranking').replaceChildren();sound.setPlaying(false);resetRacingFinalResults();resultsMode='first';$('racing-results-mode').value='first';
  setFocus(false);$('racing-play-controls').hidden=true;
 }
@@ -189,11 +190,43 @@ async function start(){
  }catch(e){notice('시작 오류: '+formatError(e),true)}
  finally{operation=false;render();}
 }
+function publicLearningSummary(record,logs){
+ const data={roster:record.roster||{},questions:record.questions||[],answersLog:logs||{}};
+ const summarize=mode=>{
+  const result=buildGoldAccuracy({...data,mode});
+  return {
+   summary:{correct:result.summary.correct,total:result.summary.total,rate:result.summary.rate},
+   questions:result.questions.map(({number,prompt,correct,total,rate,students})=>({number,prompt,correct,total,rate,students}))
+  };
+ };
+ // Only aggregate question statistics are public; never expose answers or other students' individual rates.
+ return {version:1,first:summarize('first'),all:summarize('all')};
+}
+async function publishRaceResults(c,{endRace=false}={}){
+ if(finalizing||!c||!run||!pub)return;
+ if(pub.state==='finished'&&pub.learningResults)return;
+ finalizing=true;
+ try{
+  const [privateSnap,publicSnap]=await Promise.all([
+   get(ref(db,'v6/privateRuns/'+c)),get(ref(db,'v6/public/'+c))
+  ]);
+  if(c!==code)return;
+  const record=privateSnap.val(),current=publicSnap.val();
+  if(!record||!current)return;
+  if(current.state!=='playing'&&current.state!=='finished')return;
+  const learningResults=publicLearningSummary(record,record.answersLog||{});
+  const changes={learningResults};
+  if(endRace&&current.state==='playing'){
+   changes.state='finished';changes.finishedAt=serverTimestamp();
+  }
+  await update(ref(db,'v6/public/'+c),changes);
+ }finally{finalizing=false}
+}
 async function finish(){
  if(!code||operation||pub?.state!=='playing')return;
  operation=true;
- try{await update(ref(db,'v6/public/'+code),{state:'finished',finishedAt:serverTimestamp()});notice('레이싱 종료! 학생들이 결과와 순위를 볼 수 있습니다.');}
- catch(e){notice('종료 오류: '+formatError(e),true)}
+ try{await publishRaceResults(code,{endRace:true});notice('레이싱 종료! 학생용 정답률과 문항별 결과가 공개되었습니다.');}
+ catch(e){notice('종료/결과 집계 오류: '+formatError(e),true)}
  finally{operation=false;render();}
 }
 async function processAnswer(uid,state,submission){
@@ -214,11 +247,11 @@ async function processAnswer(uid,state,submission){
   const next=nextQuestion(uid,Number(state.sequence||0)+1,{answered:score.answered,correct:score.correct});
   await runTransaction(ref(db,'v6/memberState/'+c+'/'+uid),old=>old?.nonce===nonce?next:undefined,{applyLocally:false});
   await update(ref(db),{['v6/privateRuns/'+c+'/answersLog/'+uid+'/'+nonce]:{
-   questionNumber:question.number,answer:String(submission.value),correct:!!correct,
+   questionIndex:Number(state.questionIndex),questionNumber:question.number,answer:String(submission.value),correct:!!correct,
    meters:Number(score.meters||0),bonus:Number(score.lastResult?.bonus||0),at:Number(submission.at||0)
   }});
   if(Number(score.meters||0)>=Number(pub.finishMeters||20)){
-   await update(ref(db,'v6/public/'+c),{state:'finished',finishedAt:serverTimestamp()});
+   await publishRaceResults(c,{endRace:true});
    notice(score.name+' 학생이 결승선에 도착했습니다! 🏁');
   }
  }catch(e){attempted.delete(key);notice('채점 처리 오류: '+formatError(e),true)}
@@ -249,6 +282,7 @@ function watch(c){
   else if(name==='answers')answers=value||{};
   else if(name==='garage')garage=value;
   render();if(name==='states'||name==='answers'||name==='pub')void pump();
+  if((name==='pub'||name==='run')&&pub?.state==='finished'&&!pub.learningResults&&run&&!finalizing){void publishRaceResults(c).catch(e=>notice('학생 학습 결과 게시 실패: '+formatError(e),true))}
  },err=>notice(name+' 읽기 실패: '+formatError(err),true)));
 }
 function bind(next,mode){
