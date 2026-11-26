@@ -5,7 +5,7 @@ import {racingStandings,RACING_REWARDS} from './racing-game-core.js';
 import {createRacingAudio} from './racing-audio.js';
 import {fullQuestionImageUrl} from './image-utils.js';
 const $=id=>document.getElementById(id);
-let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null,stagePositioned=false;
+let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null,stagePositioned=false,learningMode='first',learningSignature='';
 const sound=createRacingAudio({role:'student'});
 const notice=(text,bad=false)=>{const el=$('racing-student-message');if(el){el.textContent=text;el.dataset.kind=bad?'error':'success'}};
 const fmtTime=sec=>Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
@@ -90,6 +90,41 @@ function renderRanking(rank,finished){
   row.append(left,right);target.append(row);
  }
 }
+function learningTier(rate){return rate>=75?'high':rate>=50?'mid':'low'}
+function renderLearning(me){
+ const box=$('racing-student-finished');
+ if(box.hidden)return;
+ const attempts=Number(me?.answered||0),correct=Number(me?.correct||0);
+ const rate=attempts>0?Math.round(100*correct/attempts):null;
+ $('racing-my-rate').textContent=rate===null?'자료 없음':rate+'%';
+ $('racing-my-rate-detail').textContent=correct+'/'+attempts+'회 정답 · 실제 제출한 모든 답안 기준';
+ $('racing-my-rate-bar').style.width=(rate===null?0:rate)+'%';
+ $('racing-my-rate-bar').dataset.tier=rate===null?'none':learningTier(rate);
+ const data=pub?.learningResults?.[learningMode]?.questions||null;
+ const signature=JSON.stringify({learningMode,data});
+ if(signature===learningSignature)return;
+ learningSignature=signature;
+ const target=$('racing-my-question-results');target.replaceChildren();
+ if(!data){
+  const p=document.createElement('p');p.textContent='선생님이 문항별 결과를 집계하는 중입니다. 잠시 후 자동으로 표시됩니다.';target.append(p);return;
+ }
+ const entries=Array.isArray(data)?data:Object.values(data);
+ if(!entries.length){const p=document.createElement('p');p.textContent='문항별 기록이 없습니다.';target.append(p);return}
+ for(const q of entries){
+  const rate=q.rate===null||q.rate===undefined?null:Number(q.rate);
+  const row=document.createElement('div');row.className='racing-my-question-row';
+  if(rate!==null)row.dataset.tier=learningTier(rate);
+  const head=document.createElement('div');head.className='racing-my-question-head';
+  const title=document.createElement('strong');title.textContent=String(q.number||'')+'번. '+String(q.prompt||'');
+  const value=document.createElement('b');value.textContent=rate===null?'—':rate+'%';
+  head.append(title,value);row.append(head);
+  const details=document.createElement('small');details.textContent=Number(q.correct||0)+'/'+Number(q.total||0)+'회 정답 · 참여 '+Number(q.students||0)+'명';
+  row.append(details);
+  const track=document.createElement('div');track.className='racing-my-rate-track';
+  const fill=document.createElement('span');fill.style.width=(rate===null?0:Math.max(0,Math.min(100,rate)))+'%';
+  track.append(fill);row.append(track);target.append(row);
+ }
+}
 function renderQuestion(){
  const active=pub?.state==='playing',state=own,content=$('racing-student-question-zone');
  content.hidden=!active||state?.phase!=='question';
@@ -142,7 +177,8 @@ function render(){
  $('racing-student-rank-title').textContent=state==='finished'?'🏆 최종 순위':'🔥 실시간 상위 5명';
  renderRanking(ranking,state==='finished');
  if(state==='finished'){
-  $('racing-student-final').textContent='경주 종료! '+(ranking.findIndex(x=>x.uid===uid)+1||'—')+'위 · '+meters+'m 완주 기록';
+  $('racing-student-final').textContent='경주 종료! '+(ranking.findIndex(x=>x.uid===uid)+1||'—')+'위 · '+meters+'m 주행 기록';
+  renderLearning(me);
  }else{
   timer();renderQuestion();
   if(!me){$('racing-student-question-zone').hidden=true;notice('경기 참가 정보가 없습니다. 선생님께 참가 명단을 확인해 달라고 요청하세요.',true);}
@@ -171,12 +207,14 @@ async function submitAnswer(value){
 export function stopRacingGame(){
  session++;stopFns.forEach(fn=>{try{fn()}catch(_){}});
  stopFns=[];code='';uid='';pub=null;own=null;submitting=false;submittedNonce='';shownNonce='';
- clearTimeout(lastResultTimer);lastResultTimer=null;clearRoulette();sound.setPlaying(false);lastPhase='';stagePositioned=false;
+ clearTimeout(lastResultTimer);lastResultTimer=null;clearRoulette();sound.setPlaying(false);lastPhase='';stagePositioned=false;learningMode='first';learningSignature='';
  if(unlockListener){document.removeEventListener('pointerdown',unlockListener,true);unlockListener=null}
  $('racing-student-play').hidden=true;$('racing-student-question-zone').dataset.nonce='';
 }
 export function startRacingGame(nextCode,nextUid){
  stopRacingGame();code=nextCode;uid=nextUid;const token=session;
+ $('racing-my-question-mode').value='first';
+ $('racing-my-question-mode').onchange=e=>{learningMode=e.target.value==='all'?'all':'first';learningSignature='';renderLearning(pub?.scores?.[uid]);};
  $('racing-lobby-sound-toggle').onclick=()=>void toggleAudio();
  $('racing-student-sound-toggle').onclick=()=>void toggleAudio();
  // Audio may not autoplay on mobiles: unlock on the first car-choice tap.
