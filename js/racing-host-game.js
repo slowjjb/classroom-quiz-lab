@@ -8,14 +8,15 @@ import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
 import {createRacingAudio} from './racing-audio.js';
 import {normalizedRacingGarage} from './racing-garage-core.js';
+import {renderRacingFinalResults,resetRacingFinalResults} from './racing-results.js?v=6.0.0-alpha.12';
 const $=id=>document.getElementById(id);
-let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='';
+let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='',resultsMode='first';
 const laneRows=new Map(),sound=createRacingAudio({role:'teacher'});
 function notice(text,bad=false){const e=$('racing-play-status');if(e){e.textContent=text;e.dataset.kind=bad?'error':'success'}}
 function stop(){
  token++;unsubs.forEach(fn=>{try{fn()}catch(_){}});
  unsubs=[];code='';room=null;run=null;pub=null;states={};answers={};garage=null;processing=false;operation=false;rankingSignature='';lastRacePhase='';attempted.clear();
- laneRows.clear();$('racing-play-ranking').replaceChildren();sound.setPlaying(false);
+ laneRows.clear();$('racing-play-ranking').replaceChildren();sound.setPlaying(false);resetRacingFinalResults();resultsMode='first';$('racing-results-mode').value='first';
  setFocus(false);$('racing-play-controls').hidden=true;
 }
 const rosterOf=()=>Object.fromEntries(Object.entries(room?.members||{}).filter(([,m])=>m?.profile?.name).map(([uid,m])=>[uid,m.profile.name]));
@@ -58,7 +59,7 @@ function render(){
  panel.hidden=false;
  const state=pub?.state||'lobby',ready=Boolean(run),scores=pub?.scores||{},rank=racingStandings(scores);
  sound.setPlaying(state==='playing');
- if(lastRacePhase==='playing'&&state==='finished')sound.play('finish');
+ if(lastRacePhase==='playing'&&state==='finished'){sound.play('finish');setFocus(true);}
  lastRacePhase=state;
  $('racing-play-audio').textContent=sound.isOn?'🔊 음악·효과음 끄기':'🔈 음악·효과음 켜기';
  const meters=Number(pub?.finishMeters||20);
@@ -73,6 +74,7 @@ function render(){
  const remain=state==='playing'?Math.max(0,Math.ceil((Number(pub?.endsAt||0)-Date.now())/1000)):state==='finished'?0:Number(run?.durationSec||300);
  $('racing-play-clock').textContent=state==='playing'||state==='lobby'&&ready?Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'):'—';
  $('racing-play-guide').textContent=state==='playing'?'진행 중 · 실제 자동차가 주행합니다. 정답 +1m, 정답 3회마다 룰렛!':state==='finished'?'결승선 또는 제한 시간으로 종료되었습니다.':'학생이 차를 고르면 게임 준비를 누른 뒤 시작하세요.';
+ renderRacingFinalResults({run,pub,mode:resultsMode});
  // Hundreds of live answers should not recreate every vehicle image each time.
  const nextSignature=JSON.stringify({scores,meters});
  if(rankingSignature===nextSignature)return;
@@ -160,7 +162,7 @@ async function prepare(){
   const byUid=normalizedRacingGarage(allocation.snapshot.val()).byUid;
   const roster=Object.fromEntries(entries.map(([uid,m])=>[uid,m.profile.name]));
   const decks=Object.fromEntries(entries.map(([uid])=>[uid,makeShuffleBag(questions.length,120)]));
-  const scores=Object.fromEntries(entries.map(([uid,m])=>[uid,racingScore(m.profile.name,byUid[uid])]));
+  const scores=Object.fromEntries(entries.map(([uid,m])=>[uid,{...racingScore(m.profile.name,byUid[uid]),avatarId:m.profile.avatarId||'a01'}]));
   await update(ref(db),{
    ['v6/privateRuns/'+c]:{setId,title:source.val()?.title||'레이싱',questions,decks,roster,durationSec,finishMeters,createdAt:serverTimestamp(),answersLog:{}},
    ['v6/public/'+c]:{state:'lobby',ready:true,finishMeters,durationSec,scores,title:room.meta.title||'레이싱'},
@@ -272,6 +274,7 @@ $('racing-play-start').addEventListener('click',()=>void start());
 $('racing-play-audio').addEventListener('click',()=>void sound.toggle().then(()=>{if(code)render()}));
 $('racing-play-end').addEventListener('click',()=>{if(confirm('현재 레이싱 경주를 종료할까요?'))void finish()});
 $('racing-play-export').addEventListener('click',exportCsv);
+$('racing-results-mode').addEventListener('change',e=>{resultsMode=e.target.value==='all'?'all':'first';renderRacingFinalResults({run,pub,mode:resultsMode});});
 $('racing-play-focus-toggle').addEventListener('click',()=>setFocus(!focus));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&focus)setFocus(false)});
 window.addEventListener('quizlab-room-open',e=>bind(e.detail?.code||'',e.detail?.mode||''));
