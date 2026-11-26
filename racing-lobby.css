@@ -199,3 +199,45 @@ body.racing-focus-active{overflow:hidden}
 .racing-play-focus .racing-results-list{max-height:43vh}
 @media(max-width:1050px){.racing-results-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.racing-results-card:last-child{grid-column:1/-1}}
 @media(max-width:680px){.racing-results-hero{padding:13px}.racing-results-hero p{flex-basis:100%}.racing-results-grid{grid-template-columns:1fr}.racing-results-card:last-child{grid-column:auto}.racing-result-car{width:85px;height:53px}.racing-result-pair{min-height:90px}.racing-result-pair .avatar-art{max-height:52px}.racing-results-card{padding:11px}}
+
+/* v6 alpha13: readable final podium and achievement colors. */
+.racing-result-podium .arcade-podium-person{color:#202b55!important;text-shadow:none!important;min-width:0;padding-top:10px}
+.racing-result-podium .arcade-podium-person>strong,
+.racing-result-podium .arcade-podium-person>span{color:#1e2b55!important;text-shadow:none!important;font-weight:900}
+.racing-result-podium .arcade-podium-person>strong{font-size:clamp(14px,1.5vw,19px);overflow-wrap:anywhere;line-height:1.35}
+.racing-result-podium .arcade-podium-person>span{font-size:clamp(12px,1.15vw,15px);color:#425679!important}
+.racing-result-podium .arcade-podium-medal{filter:drop-shadow(0 1px 1px #fff);color:#202b55}
+.racing-result-podium .racing-result-pair .avatar-pixel{width:76px;height:76px;max-width:100%;object-fit:contain}
+.racing-result-podium .arcade-podium-base{color:#28365f}
+.racing-result-row[data-tier="high"] .racing-result-rate-fill,
+.racing-my-rate-track span[data-tier="high"],
+.racing-my-question-row[data-tier="high"] .racing-my-rate-track span{background:#178453}
+.racing-result-row[data-tier="mid"] .racing-result-rate-fill,
+.racing-my-rate-track span[data-tier="mid"],
+.racing-my-question-row[data-tier="mid"] .racing-my-rate-track span{background:#e58a19}
+.racing-result-row[data-tier="low"] .racing-result-rate-fill,
+.racing-my-rate-track span[data-tier="low"],
+.racing-my-question-row[data-tier="low"] .racing-my-rate-track span{background:#d94b4b}
+.racing-result-row[data-tier="high"] .racing-result-value,.racing-my-question-row[data-tier="high"] b{color:#116a42}
+.racing-result-row[data-tier="mid"] .racing-result-value,.racing-my-question-row[data-tier="mid"] b{color:#a45b0b}
+.racing-result-row[data-tier="low"] .racing-result-value,.racing-my-question-row[data-tier="low"] b{color:#b12b35}
+.racing-my-learning{margin-top:15px;text-align:left;display:grid;gap:12px}
+.racing-my-learning-summary,.racing-my-questions{background:#fff;border:1px solid #d4dcf0;border-radius:13px;padding:14px;color:#26365b}
+.racing-my-learning-summary{display:grid;gap:5px}
+.racing-my-learning-summary>span{font-weight:850;font-size:15px}
+.racing-my-learning-summary>strong{font-size:clamp(24px,6vw,36px);color:#2c327f}
+.racing-my-learning-summary small,.racing-my-question-row small{color:#596c87;font-size:12px}
+.racing-my-rate-track{height:9px;background:#e1e7f5;border-radius:20px;overflow:hidden}
+.racing-my-rate-track>span{display:block;height:100%;border-radius:inherit;background:#647add;transition:width .3s}
+.racing-my-questions-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.racing-my-questions-head h4{margin:0;color:#2f347a;font-size:17px}
+.racing-my-questions-head label{font-size:12px;font-weight:800}
+.racing-my-questions-head select{padding:6px 8px;border:1px solid #aab7d9;border-radius:8px;background:#fff;color:#273968}
+.racing-my-questions>p{color:#566780;font-size:12px;text-align:left;margin:8px 0 12px}
+.racing-my-question-results{max-height:min(48vh,390px);overflow-y:auto;display:grid;gap:7px;overscroll-behavior:contain}
+.racing-my-question-row{padding:10px;border-radius:10px;background:#f0f4fd;border:1px solid #dce3f4}
+.racing-my-question-head{display:flex;align-items:start;justify-content:space-between;gap:10px}
+.racing-my-question-head strong{font-size:13px;line-height:1.4;overflow-wrap:anywhere;font-weight:850}
+.racing-my-question-head b{white-space:nowrap;font-size:15px}
+.racing-my-question-row small{display:block;margin:4px 0 7px}
+@media(max-width:680px){.racing-result-podium .racing-result-pair .avatar-pixel{width:52px;height:52px}.racing-my-learning-summary,.racing-my-questions{padding:11px}}
