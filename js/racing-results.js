@@ -1,6 +1,6 @@
 // Teacher-only Racing results. Raw answer logs stay in v6/privateRuns.
 import {createAvatarImage} from './avatars.js';
-import {buildGoldAccuracy} from './gold-analytics.js';
+import {buildGoldAccuracy,goldTier} from './gold-analytics.js';
 import {racingStandings} from './racing-game-core.js';
 const $=id=>document.getElementById(id);
 let lastPodium='';
@@ -37,6 +37,7 @@ function podium(target,ranked){
 }
 function resultRow(parent,header,main,sub,rank='',rate=null){
  const row=document.createElement('div');row.className='racing-result-row';
+ if(rate!==null)row.dataset.tier=goldTier(rate);
  const head=document.createElement('div');head.className='racing-result-row-head';
  if(rank)addText(head,'b',rank,'racing-result-mark');
  addText(head,'span',header,'racing-result-name');
