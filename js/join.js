@@ -1,12 +1,12 @@
 import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
-import { startGoldView, stopGoldView } from './gold-student.js?v=6.0.0-alpha.14';
-import { startFishingView, stopFishingView } from './fishing-student.js?v=6.0.0-alpha.14';
-import { startRacingGarageView, stopRacingGarageView, releaseRacingCarOnExplicitLeave } from './racing-student-garage.js?v=6.0.0-alpha.14';
-import { startRacingGame, stopRacingGame } from './racing-student-game.js?v=6.0.0-alpha.14';
+import { startGoldView, stopGoldView } from './gold-student.js?v=6.0.0-alpha.15';
+import { startFishingView, stopFishingView } from './fishing-student.js?v=6.0.0-alpha.15';
+import { startRacingGarageView, stopRacingGarageView, releaseRacingCarOnExplicitLeave } from './racing-student-garage.js?v=6.0.0-alpha.15';
+import { startRacingGame, stopRacingGame } from './racing-student-game.js?v=6.0.0-alpha.15';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { normalizeStudentName as normalizeName } from './names.js';
-import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,showOutdatedNotice,openFreshPage} from './version-guard.js?v=6.0.0-alpha.14';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,showOutdatedNotice,openFreshPage} from './version-guard.js?v=6.0.0-alpha.15';
 import { browserLocalPersistence, setPersistence, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, set, remove, onValue, onDisconnect, push, serverTimestamp, runTransaction, update } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 
