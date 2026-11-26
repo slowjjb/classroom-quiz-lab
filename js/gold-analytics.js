@@ -71,8 +71,6 @@ export function makeGoldPublicLearningResults(data={}){
     const result=buildGoldAccuracy({...data,mode});
     return {
       summary:{correct:result.summary.correct,total:result.summary.total,rate:result.summary.rate},
-      students:result.students.map(({uid,name,correct,total,rate,tier,attempts,uniqueQuestions})=>
-        ({uid,name,correct,total,rate,tier,attempts,uniqueQuestions})),
       questions:result.questions.map(({number,prompt,correct,total,rate,tier,students})=>
         ({number,prompt,correct,total,rate,tier,students}))
     };
