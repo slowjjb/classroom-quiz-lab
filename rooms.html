@@ -200,7 +200,22 @@
     <p id="racing-play-status" class="feedback" role="status">문제 세트를 확인하고 있습니다.</p>
     <div class="racing-control-actions"><button type="button" id="racing-play-focus-toggle" class="btn btn-outline">🏁 경주 상황판 크게 보기</button><button type="button" id="racing-play-audio" class="btn btn-outline" aria-label="레이싱 배경음악 및 효과음 켜기">🔈 음악·효과음 켜기</button></div>
     <div id="racing-play-ranking" class="racing-play-ranking" aria-label="레이싱 거리별 실시간 순위"></div>
-    <p class="racing-play-footer">정답 +1m · 정답 3회마다 랜덤 룰렛 · 결승선 도착 또는 제한 시간 종료</p>
+    <p id="racing-play-footer" class="racing-play-footer">정답 +1m · 정답 3회마다 랜덤 룰렛 · 결승선 도착 또는 제한 시간 종료</p>
+    <section id="racing-final-results" class="racing-final-results" hidden aria-label="레이싱 최종 결과 및 학습 분석">
+      <div class="racing-results-hero">
+        <h2>🏆 레이싱 최종 결과!</h2>
+        <p id="racing-results-summary">결과를 집계하는 중입니다.</p>
+        <label>정답률 분석 기준 <select id="racing-results-mode" aria-label="레이싱 학습 분석 기준"><option value="first">첫 시도 (동일 문항 1회)</option><option value="all">전체 시도 (반복 포함)</option></select></label>
+      </div>
+      <div class="racing-results-podium-heading">🏁 최종 TOP 3 · 학생 캐릭터와 자동차</div>
+      <div id="racing-results-podium" class="racing-results-podium-wrap" aria-label="최종 1~3위 시상대"></div>
+      <div class="racing-results-grid">
+        <section class="racing-results-card"><h3>🏅 최종 거리 순위</h3><p>주행 거리와 보너스에 따른 게임 순위</p><div id="racing-results-ranking" class="racing-results-list"></div></section>
+        <section class="racing-results-card"><h3>📗 학생별 정답률</h3><p id="racing-results-learning-note">제출한 문항 기준</p><div id="racing-results-students" class="racing-results-list"></div></section>
+        <section class="racing-results-card"><h3>📊 문항별 정답률</h3><p>문항별 정답 및 실제 응답 횟수</p><div id="racing-results-questions" class="racing-results-list"></div></section>
+      </div>
+      <p class="racing-results-footnote">학습 정답률은 실제 제출된 답안만 계산하며 미제출은 오답으로 처리하지 않습니다. 게임 순위는 주행 보너스의 영향도 받습니다.</p>
+    </section>
   </section>
 </section>
 <section class="panel fishing-host-panel" id="fishing-panel" hidden>
