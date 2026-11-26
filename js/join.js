@@ -1,6 +1,6 @@
 import { startQuizView, stopQuizView, setAvatarRoster } from './classic-student.js?v=3.14';
-import { startGoldView, stopGoldView } from './gold-student.js?v=5.0.11';
-import { startFishingView, stopFishingView } from './fishing-student.js?v=5.0.11';
+import { startGoldView, stopGoldView } from './gold-student.js?v=6.0.0-alpha.14';
+import { startFishingView, stopFishingView } from './fishing-student.js?v=6.0.0-alpha.14';
 import { startRacingGarageView, stopRacingGarageView, releaseRacingCarOnExplicitLeave } from './racing-student-garage.js?v=6.0.0-alpha.13';
 import { startRacingGame, stopRacingGame } from './racing-student-game.js?v=6.0.0-alpha.13';
 import { AVATARS, avatarInfo, normalizeAvatarId, createAvatarImage } from './avatars.js';
