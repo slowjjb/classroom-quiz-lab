@@ -7,7 +7,7 @@ export function goldPercent(correct,total){
 export function goldTier(rate){
   if(rate===null||!Number.isFinite(rate))return 'none';
   if(rate>=75)return 'high';
-  if(rate>50)return 'mid';
+  if(rate>=50)return 'mid';
   return 'low';
 }
 function questionList(raw){
