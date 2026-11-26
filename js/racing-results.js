@@ -50,7 +50,7 @@ function resultRow(parent,header,main,sub,rank='',rate=null){
  }
  parent.append(row);
 }
-export function renderRacingFinalResults({run,pub,mode='first'}={}){
+export function renderRacingFinalResults({run,pub,mode='first',members={}}={}){
  const finished=pub?.state==='finished';
  const box=$('racing-final-results');if(!box)return;
  box.hidden=!finished;
@@ -58,7 +58,7 @@ export function renderRacingFinalResults({run,pub,mode='first'}={}){
  $('racing-play-footer').hidden=finished;
  $('racing-play-focus-toggle').textContent=finished?'🏆 결과 화면 크게 보기':'🏁 경주 상황판 크게 보기';
  if(!finished||!run)return;
- const rank=racingStandings(pub.scores||{});
+ const rank=racingStandings(pub.scores||{}).map(p=>({...p,avatarId:p.avatarId||members?.[p.uid]?.profile?.avatarId||'a01'}));
  const roster=run.roster||{};
  const results=buildGoldAccuracy({roster,scores:pub.scores||{},questions:run.questions||[],answersLog:run.answersLog||{},mode});
  const count=results.summary;
