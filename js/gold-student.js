@@ -75,9 +75,12 @@ function renderStudentStudy(){
     summary.textContent='이 방에는 공유된 학습 분석 자료가 없습니다. v4.9 이후 새로 종료한 게임부터 표시됩니다.';
     return;
   }
+  const me=pub?.scores?.[uid]||{};
+  const ownAnswered=Number(me.answered||0),ownCorrect=Number(me.correct||0);
+  const ownRate=ownAnswered?Math.round(100*ownCorrect/ownAnswered):null;
   const figures=report.summary||{};
   const kind=studentStudyMode==='first'?'첫 시도':'전체 시도';
-  summary.textContent=`${kind} 기준 · 정답 ${figures.correct||0}/${figures.total||0}회 · 전체 정답률 ${figures.rate==null?'—':figures.rate+'%'}`;
+  summary.textContent=`나의 정답률 ${ownRate===null?'—':ownRate+'%'} (${ownCorrect}/${ownAnswered}회) · ${kind} 기준 학급 문항별 정답률`;
   const toArray=value=>Array.isArray(value)?value:Object.values(value||{});
   function appendRow(container,label,detail,rate,tier,self=false){
     const row=element('div','gold-accuracy-row'+(self?' gold-study-self':''));
@@ -91,11 +94,7 @@ function renderStudentStudy(){
     track.append(fill);
     row.append(head,track,element('small','',detail));container.append(row);
   }
-  toArray(report.students).sort((a,b)=>a.rate==null?1:b.rate==null?-1:Number(b.rate)-Number(a.rate)||String(a.name).localeCompare(String(b.name),'ko'))
-    .forEach(entry=>appendRow(students,
-      (entry.uid===uid?'나 · ':'')+String(entry.name||'참가자'),
-      `${entry.correct||0}/${entry.total||0}회 정답 · 고유 ${entry.uniqueQuestions||0}문항`,
-      entry.rate,entry.tier,entry.uid===uid));
+  appendRow(students,'나의 정답률',ownAnswered?`${ownCorrect}/${ownAnswered}회 정답`:'아직 제출한 답안이 없습니다.',ownRate,ownRate===null?'none':ownRate>=75?'high':ownRate>=50?'mid':'low',true);
   toArray(report.questions).sort((a,b)=>Number(a.number)-Number(b.number)).forEach(entry=>{
     const prompt=String(entry.prompt||'');
     appendRow(questions,`${entry.number}번 · ${prompt}`,
