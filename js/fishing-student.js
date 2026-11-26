@@ -7,7 +7,7 @@ import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=6.0.0-
 const $=id=>document.getElementById(id),stage=$('fishing-student');
 let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
 let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',rewardNonce='';
-let audioEnabled=true,bgmStarted=false,codex=null,hitPlayedNonce='';
+let audioEnabled=true,bgmStarted=false,codex=null,hitPlayedNonce='',learningMode='first',learningSignature='';
 const now=()=>Date.now()+offset;
 function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
 function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.11`; }
@@ -149,6 +149,36 @@ function renderQuestion(){
     }
   }
 }
+function learningTier(rate){return rate>=75?'high':rate>=50?'mid':'low'}
+function renderFishingLearning(score){
+ const answered=Number(score.answered||0),correct=Number(score.correct||0);
+ const rate=answered?Math.round(correct*100/answered):null;
+ $('fishing-my-rate').textContent=rate===null?'자료 없음':rate+'%';
+ $('fishing-my-rate-detail').textContent=correct+'/'+answered+'회 정답 · 실제 제출한 모든 답안 기준';
+ const fill=$('fishing-my-rate-fill');fill.style.width=(rate===null?0:rate)+'%';fill.dataset.tier=rate===null?'none':learningTier(rate);
+ const data=pub?.learningResults?.[learningMode]?.questions;
+ const signature=JSON.stringify({learningMode,data});
+ if(signature===learningSignature)return;
+ learningSignature=signature;
+ const target=$('fishing-learning-list');target.replaceChildren();
+ if(!data){const p=document.createElement('p');p.textContent='교사 화면에서 학습 결과를 집계하는 중입니다.';target.append(p);return;}
+ const rows=Array.isArray(data)?data:Object.values(data);
+ if(!rows.length){const p=document.createElement('p');p.textContent='문항별 풀이 기록이 없습니다.';target.append(p);return;}
+ for(const entry of rows){
+  const rate=entry.rate==null?null:Number(entry.rate);
+  const row=document.createElement('div');row.className='fishing-learning-row';
+  if(rate!==null)row.dataset.tier=learningTier(rate);
+  const top=document.createElement('div');top.className='fishing-learning-row-head';
+  const title=document.createElement('strong');title.textContent=String(entry.number||'')+'번. '+String(entry.prompt||'');
+  const number=document.createElement('b');number.textContent=rate===null?'—':rate+'%';
+  top.append(title,number);row.append(top);
+  const detail=document.createElement('small');detail.textContent=Number(entry.correct||0)+'/'+Number(entry.total||0)+'회 정답 · 참여 '+Number(entry.students||0)+'명';
+  row.append(detail);
+  const track=document.createElement('div');track.className='fishing-learning-track';
+  const fill=document.createElement('span');fill.style.width=(rate===null?0:Math.max(0,Math.min(100,rate)))+'%';
+  track.append(fill);row.append(track);target.append(row);
+ }
+}
 function render(){
   if(!code||!uid||!pub){show(false);return;}
   const phase=pub.state||'lobby';
@@ -163,7 +193,7 @@ function render(){
   rankList();
   renderCodex();
   for(const id of ['fishing-wait','fishing-cast-view','fishing-question-view','fishing-reward','fishing-finished'])$(id).hidden=true;
-  if(phase==='finished'){$('fishing-finished').hidden=false;$('fishing-finish-weight').textContent=`${Number(score.kg||0).toFixed(1)} kg`;return;}
+  if(phase==='finished'){$('fishing-finished').hidden=false;$('fishing-finish-weight').textContent=`${Number(score.kg||0).toFixed(1)} kg`;renderFishingLearning(score);return;}
   if(phase==='ready'||phase==='lobby'||!own){$('fishing-wait').hidden=false;return;}
   if(own.phase==='waiting'){$('fishing-wait').hidden=false;$('fishing-wait').textContent='준비한 문제를 모두 풀었어요! 선생님의 종료 안내를 기다려 주세요.';return;}
   if(own.phase==='cast'||own.phase==='bite'){
@@ -217,12 +247,14 @@ function showPenalty(evt){
 }
 export function stopFishingView(){
   subs.forEach(fn=>fn());subs=[];code='';uid='';pub=null;own=null;answer=null;
-  questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;hitPlayedNonce='';
+  questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;hitPlayedNonce='';learningMode='first';learningSignature='';
   if(eventTimer)clearTimeout(eventTimer);if(animTimer)clearTimeout(animTimer);
   $('fishing-penalty').hidden=true;stage.classList.remove('fishing-shrunken');setCodexOpen(false);stopBgm();show(false);
 }
 export function startFishingView(roomCode,userUid){
   stopFishingView();code=roomCode;uid=userUid;
+  $('fishing-learning-mode').value='first';
+  $('fishing-learning-mode').onchange=e=>{learningMode=e.target.value==='all'?'all':'first';learningSignature='';renderFishingLearning(pub?.scores?.[uid]||{});};
   codex=createFishingCodex($('fishing-codex-left'),$('fishing-codex-right'),CREATURES);
   try{audioEnabled=(localStorage.getItem('purplekit_fishing_audio')||'on')!=='off';}catch{audioEnabled=true;}
   setAudioToggle();
