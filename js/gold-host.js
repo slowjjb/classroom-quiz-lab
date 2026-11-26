@@ -3,7 +3,7 @@ import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/fi
 import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.11';
 import { optionsArray, escapeCsv } from './classic-core.js';
-import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=4.11';
+import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=6.0.0-alpha.14';
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
 import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
