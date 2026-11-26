@@ -290,3 +290,30 @@
 
 /* v6 alpha11: visually distinct catch tiers; long student names remain within each swimmer. */
 .fishing-swimming-catch .fishing-swim-fallback{font-size:clamp(44px,calc(var(--fish-size,120px) * .50),110px);line-height:1.2}
+
+/* v6 alpha14: student-only Fishing learning summary, readable on tablets. */
+.fishing-learning-summary,.fishing-learning-questions{margin:13px auto;padding:14px;border:1px solid #c8d8ef;border-radius:13px;background:#fff;color:#20385a;text-align:left}
+.fishing-learning-summary h3,.fishing-learning-questions h3{font-size:16px;margin:0 0 6px;color:#263974}
+.fishing-learning-summary>strong{display:block;color:#213875;font-size:32px;line-height:1.2;margin:3px 0}
+.fishing-learning-summary>p,.fishing-learning-questions>p{font-size:12px;line-height:1.5;color:#5d6d82;margin:5px 0 10px}
+.fishing-learning-track{height:9px;background:#e0e6f2;border-radius:20px;overflow:hidden}
+.fishing-learning-track span{display:block;height:100%;border-radius:inherit;background:#697ad6;transition:width .3s}
+.fishing-learning-summary .fishing-learning-track span[data-tier=high],
+.fishing-learning-row[data-tier=high] .fishing-learning-track span{background:#178453}
+.fishing-learning-summary .fishing-learning-track span[data-tier=mid],
+.fishing-learning-row[data-tier=mid] .fishing-learning-track span{background:#e58a19}
+.fishing-learning-summary .fishing-learning-track span[data-tier=low],
+.fishing-learning-row[data-tier=low] .fishing-learning-track span{background:#d94b4b}
+.fishing-learning-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.fishing-learning-head label{font-size:12px;font-weight:800}
+.fishing-learning-head select{background:#fff;border:1px solid #91a7cf;border-radius:8px;padding:6px;color:#24365a}
+.fishing-learning-list{display:grid;gap:7px;max-height:min(46vh,390px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.fishing-learning-row{padding:10px;border:1px solid #dce5f3;background:#f2f6fd;border-radius:10px;text-align:left}
+.fishing-learning-row-head{display:flex;align-items:start;gap:10px;justify-content:space-between}
+.fishing-learning-row-head strong{font-size:13px;font-weight:800;overflow-wrap:anywhere;line-height:1.45;color:#26375b}
+.fishing-learning-row-head b{white-space:nowrap;font-size:15px;color:#435ab4}
+.fishing-learning-row[data-tier=high] .fishing-learning-row-head b{color:#116a42}
+.fishing-learning-row[data-tier=mid] .fishing-learning-row-head b{color:#9d580b}
+.fishing-learning-row[data-tier=low] .fishing-learning-row-head b{color:#b12b35}
+.fishing-learning-row small{display:block;margin:5px 0 7px;color:#526680;font-size:11px}
+@media(max-width:700px){.fishing-learning-summary,.fishing-learning-questions{padding:11px}.fishing-learning-list{max-height:44vh}}
