@@ -285,13 +285,32 @@ async function start(){
     status('낚시를 시작했습니다! 교사 화면을 게임 종료까지 열어 두세요.');
   }catch(err){status('시작 실패: '+formatError(err),true);}finally{operation=false;render();}
 }
+function publicFishingLearning(record){
+  const common={roster:record.roster||{},questions:record.questions||[],answersLog:record.answersLog||{}};
+  const summarize=mode=>{
+    const analysis=buildGoldAccuracy({...common,mode});
+    return {questions:analysis.questions.map(({number,prompt,correct,total,rate,students})=>({number,prompt,correct,total,rate,students}))};
+  };
+  return {version:1,first:summarize('first'),all:summarize('all')};
+}
+async function publishFishingResults(c,{endGame=false}={}){
+  if(!c||!teacher)return;
+  const [recordSnap,publicSnap]=await Promise.all([get(ref(db,'v5/privateRuns/'+c)),get(ref(db,'v5/public/'+c))]);
+  if(c!==code)return;
+  const record=recordSnap.val(),current=publicSnap.val();
+  if(!record||!current||!['playing','finished'].includes(current.state))return;
+  if(current.state==='finished'&&current.learningResults)return;
+  const changes={learningResults:publicFishingLearning(record)};
+  if(endGame&&current.state==='playing'){changes.state='finished';changes.finishedAt=serverTimestamp();}
+  await update(ref(db,'v5/public/'+c),changes);
+}
 async function finish(){
   if(operation||pub?.state!=='playing')return;
   operation=true;
   try{
-    // Block fresh submissions before processing the final leaderboard.
-    await update(ref(db,`v5/public/${code}`),{state:'finished',finishedAt:serverTimestamp()});
-    status('피싱 프렌지가 종료됐습니다. 누적 무게 순위와 CSV를 확인해 주세요.');
+    // Publish only aggregate question accuracy; answer logs remain teacher-only.
+    await publishFishingResults(code,{endGame:true});
+    status('피싱 프렌지 종료! 학생에게 개인 정답률과 문항별 집계가 표시됩니다.');
   }catch(err){status('종료 실패: '+formatError(err),true);}finally{operation=false;render();}
 }
 async function handleAction(uid,state,type){
