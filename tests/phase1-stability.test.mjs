@@ -12,13 +12,14 @@ test('three individual-play modes continue after question 120 without a hard lim
  }
  for(const count of [1,2,3,10,11,20,50]){
   const deck=makeShuffleBag(count,120,()=>0.41);
-  let recent=deck.slice(-Math.min(10,count-1));
+  const window=Math.min(10,count-1);
+  let recent=window?deck.slice(-window):[];
   for(let seq=120;seq<350;seq++){
    const idx=continuingGoldQuestionIndex(deck,seq,count,'student:game');
    assert.ok(Number.isInteger(idx)&&idx>=0&&idx<count);
    assert.equal(idx,continuingGoldQuestionIndex(deck,seq,count,'student:game'));
    assert.equal(recent.includes(idx),false,'recent question repeat with count='+count);
-   recent=[...recent,idx].slice(-Math.min(10,count-1));
+   recent=window?[...recent,idx].slice(-window):[];
   }
  }
 });
