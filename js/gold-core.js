@@ -7,11 +7,12 @@ export const GOLD_MAX_PLAYERS = 200;
 export const GOLD_MAX_QUESTION_SEQUENCE = 120;
 export const GOLD_CHESTS = 3;
 
-export function makeShuffleBag(questionCount, length=GOLD_MAX_QUESTION_SEQUENCE, random=Math.random){
+export function makeShuffleBag(questionCount, length=GOLD_MAX_QUESTION_SEQUENCE, random=Math.random, previous=[]){
   const count=Math.trunc(Number(questionCount));
   if(!Number.isInteger(count)||count<1||count>2000)throw new Error('문항 수가 올바르지 않습니다.');
-  const output=[], recent=[];
+  const output=[];
   const avoid=Math.min(10,Math.max(0,count-1));
+  const recent=Array.isArray(previous)?previous.slice(-avoid).filter(i=>Number.isInteger(i)&&i>=0&&i<count):[];
   let pool=[];
   const shuffle=arr=>{
     const a=[...arr];
@@ -27,6 +28,24 @@ export function makeShuffleBag(questionCount, length=GOLD_MAX_QUESTION_SEQUENCE,
     output.push(index);recent.push(index);if(recent.length>avoid)recent.shift();
   }
   return output;
+}
+
+// Continue a completed question sequence without storing an ever-growing Firebase deck.
+// A stable, per-player PRNG makes the extension survive teacher reloads/reconnections.
+// The original 120-item deck is never changed and the last ten are avoided across the boundary.
+export function continuingGoldQuestionIndex(deck,sequence,questionCount,seed=''){
+ const original=Array.isArray(deck)?deck:[];
+ const seq=Math.trunc(Number(sequence));
+ if(!Number.isSafeInteger(seq)||seq<0)throw new Error('문항 순서가 올바르지 않습니다.');
+ if(seq<original.length)return Number(original[seq]);
+ const extra=seq-original.length+1;
+ let hash=2166136261;
+ for(const char of String(seed)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);}
+ // An LCG has a reproducible Fisher-Yates stream in every browser.
+ let state=(hash>>>0)||1;
+ const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+ const generated=makeShuffleBag(questionCount,extra,random,original);
+ return generated[generated.length-1];
 }
 
 export function verifyGoldAnswer(question,answer,optionOrder=null){
