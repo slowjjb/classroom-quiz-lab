@@ -204,7 +204,8 @@ function publicLearningSummary(record,logs){
  return {version:1,first:summarize('first'),all:summarize('all')};
 }
 async function publishRaceResults(c,{endRace=false}={}){
- if(finalizing||!c||!run||!pub)return;
+ if(finalizing)throw Error('다른 결과 집계가 진행 중입니다. 다시 시도해 주세요.');
+ if(!c||!run||!pub)return;
  if(pub.state==='finished'&&pub.learningResults)return;
  finalizing=true;
  try{
@@ -226,7 +227,17 @@ async function publishRaceResults(c,{endRace=false}={}){
 async function finish(){
  if(!code||operation||pub?.state!=='playing')return;
  operation=true;
- try{await publishRaceResults(code,{endRace:true});notice('레이싱 종료! 학생용 정답률과 문항별 결과가 공개되었습니다.');}
+ try{
+  for(let i=0;i<100&&processing;i++)await new Promise(resolve=>setTimeout(resolve,40));
+  if(processing)throw Error('진행 중인 채점이 완료되지 않았습니다. 다시 종료해 주세요.');
+  const c=code;
+  const [latestStates,latestAnswers]=await Promise.all([get(ref(db,'v6/memberState/'+c)),get(ref(db,'v6/answers/'+c))]);
+  if(c!==code)throw Error('방이 변경되었습니다.');
+  states=latestStates.val()||{};answers=latestAnswers.val()||{};
+  await pump();
+  await publishRaceResults(c,{endRace:true});
+  notice('레이싱 종료! 학생용 정답률과 문항별 결과가 공개되었습니다.');
+ }
  catch(e){notice('종료/결과 집계 오류: '+formatError(e),true)}
  finally{operation=false;render();}
 }
