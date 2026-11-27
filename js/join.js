@@ -14,7 +14,7 @@ const $ = id => document.getElementById(id);
 const NAME_KEY='quizlab-v2-display-name', SESSION_KEY='quizlab-v2-active-room';
 const params=new URLSearchParams(location.search);
 let activeCode='', activeUser=null, sessionRef=null, unsubRoom=null, unsubConnection=null, joining=false, active=false, ended=false;
-let currentAvatarId='a01', avatarSaving=false;
+let currentAvatarId='a01', avatarSaving=false, leaving=false;
 const savedName=localStorage.getItem(NAME_KEY); if(savedName)$('join-name').value=savedName;
 const fromUrl=params.get('code')||'';if(/^\d{6}$/.test(fromUrl))$('join-code').value=fromUrl;
 function feedback(value,kind=''){$('join-feedback').textContent=value;$('join-feedback').dataset.kind=kind;}
@@ -61,8 +61,14 @@ function renderRoom(data){
   }
   const roster=data.members||{};
   if(activeUser&&!roster[activeUser.uid]?.profile){
-    // Teacher removed this UID. Stop all game listeners and release local room state.
-    void leaveRoom(false).then(()=>feedback('선생님이 대기실에서 내보냈습니다. 이름을 확인하고 다시 참여할 수 있습니다.','error'));
+    // The server may deliver a stale roster during a transient resubscribe.
+    // A confirmed removal must terminate all game subscriptions once.
+    if(!leaving){
+      leaving=true;
+      void leaveRoom(false).then(()=>{
+        feedback('선생님이 대기실에서 내보냈습니다. 이름을 확인하고 다시 참여할 수 있습니다.','error');
+      }).finally(()=>{leaving=false;});
+    }
     return;
   }
   const avatars=Object.fromEntries(Object.entries(roster).map(([memberUid,m])=>[memberUid,normalizeAvatarId(m?.profile?.avatarId)]));
@@ -208,7 +214,7 @@ async function joinRoom(automatic=false){
     onlineStatus('실시간 서버 연결 중…');
     unsubRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),err=>{
       if(active&&(/permission.denied/i.test(String(err?.code||''))||/PERMISSION_DENIED/i.test(String(err?.message||'')))){
-        void leaveRoom(false).then(()=>feedback('교사가 참가 기록을 정리했거나 방에 대한 접근 권한이 해제됐습니다. 다시 입장해 주세요.','error'));
+        if(!leaving){leaving=true;void leaveRoom(false).then(()=>feedback('교사가 참가 기록을 정리했거나 방에 대한 접근 권한이 해제됐습니다. 다시 입장해 주세요.','error')).finally(()=>{leaving=false;});}
         return;
       }
       feedback(`대기실 조회 실패: ${formatError(err)}`,'error');
