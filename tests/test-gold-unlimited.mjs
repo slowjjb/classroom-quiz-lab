@@ -6,13 +6,14 @@ import {makeShuffleBag,continuingGoldQuestionIndex} from '../js/gold-core.js';
 for(const count of [1,2,5,10,11,20,50]){
  const deck=makeShuffleBag(count,120,()=>0.47);
  const seed='member-A:2026-11-27';
- let history=deck.slice(-Math.min(10,count-1));
+ const window=Math.min(10,count-1);
+ let history=window?deck.slice(-window):[];
  for(let seq=120;seq<265;seq++){
   const next=continuingGoldQuestionIndex(deck,seq,count,seed);
   assert.ok(Number.isInteger(next)&&next>=0&&next<count);
   assert.equal(next,continuingGoldQuestionIndex(deck,seq,count,seed),'repeat/reconnect deterministic');
   assert.ok(!history.includes(next),'recent ten should not repeat where sufficient alternatives exist');
-  history.push(next);history=history.slice(-Math.min(10,count-1));
+  history.push(next);history=window?history.slice(-window):[];
  }
  assert.equal(continuingGoldQuestionIndex(deck,119,count,seed),deck[119]);
 }
