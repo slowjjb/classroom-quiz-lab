@@ -52,6 +52,7 @@ function setWorkspace(enabled) {
   $('sets-workspace').classList.toggle('workspace-locked', !enabled);
   $('sets-workspace').setAttribute('aria-disabled', String(!enabled));
   refreshSaveState();
+  $('download-all-json').disabled=!enabled||!Object.keys(savedSets).length;
 }
 function refreshSaveState() { $('save-set').disabled = !authorized || draftRows.length === 0; $('download-draft').disabled = draftRows.length === 0; $('check-images').disabled = draftRows.length === 0; }
 function handleAuth(next) {
@@ -91,6 +92,7 @@ function renderSaved() {
   const list = $('saved-list'); list.replaceChildren();
   const entries = Object.entries(savedSets).sort((a,b) => (b[1].updatedAt || 0)-(a[1].updatedAt || 0));
   $('saved-count').textContent = `${entries.length}개`;
+  $('download-all-json').disabled=!authorized||!entries.length;
   if (!entries.length) { const empty = document.createElement('p'); empty.className='empty-state'; empty.textContent='저장된 문제 세트가 없습니다.'; list.append(empty); return; }
   for (const [id, record] of entries) {
     const row = document.createElement('div'); row.className = 'saved-set';
@@ -103,6 +105,7 @@ function renderSaved() {
     actions.append(makeButton('불러오기', () => loadSet(id)));
     actions.append(makeButton('퍼플킷 CSV', () => downloadSavedCSV(id, 'purplekit')));
     actions.append(makeButton('블루킷 CSV', () => downloadSavedCSV(id, 'blooket')));
+    actions.append(makeButton('검토용 JSON', () => downloadSavedJSON(id)));
     actions.append(makeButton('삭제', () => deleteSet(id), 'btn btn-danger btn-small'));
     row.append(label, actions); list.append(row);
   }
@@ -113,6 +116,23 @@ function downloadSavedCSV(id, format) {
   if (format === 'blooket' && !confirmImageLoss(questions)) return;
   const basename = safeFileName(rec.title);
   downloadText(basename + (format === 'blooket' ? '_블루킷' : '_퍼플킷') + '.csv', toCSV(questions.map(questionToDraft), { format }), 'text/csv;charset=utf-8');
+}
+function downloadSavedJSON(id){
+  if(!authorized||!user)return;
+  const record=savedSets[id];if(!record)return;
+  const payload={format:'purplekit-question-set',version:1,exportedAt:new Date().toISOString(),
+    title:record.title||'',sourceName:record.sourceName||'',
+    questions:Object.values(record.questions||{}).sort((a,b)=>a.number-b.number)};
+  downloadText(safeFileName(record.title)+'_검토용.json',JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+}
+function downloadAllJSON(){
+  if(!authorized||!user)return;
+  const sets=Object.entries(savedSets).map(([id,rec])=>({
+    id,title:rec.title||'',sourceName:rec.sourceName||'',createdAt:rec.createdAt||null,updatedAt:rec.updatedAt||null,
+    questions:Object.values(rec.questions||{}).sort((a,b)=>a.number-b.number)
+  }));
+  const payload={format:'purplekit-question-backup',version:1,exportedAt:new Date().toISOString(),sets};
+  downloadText('퍼플킷_문제세트_전체백업_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(payload,null,2),'application/json;charset=utf-8');
 }
 function confirmImageLoss(rows){
   return !rows.some(q=>Boolean(q.imageUrl)) || confirm('블루킷 CSV는 10열이므로 K열 이미지 파일명이 제외됩니다. 이미지 연결은 Firebase와 퍼플킷 CSV에 보존됩니다. 블루킷용으로 내보낼까요?');
@@ -362,6 +382,7 @@ $('download-draft').addEventListener('click',()=>{
   const basename=safeFileName($('set-title').value || 'quiz-v1-draft');
   downloadText(basename+(format==='blooket'?'_블루킷':'_퍼플킷')+'.csv',toCSV(draftRows,{format}),'text/csv;charset=utf-8');
 });
+$('download-all-json').addEventListener('click',downloadAllJSON);
 $('sets-retry').addEventListener('click',listenSets);
 $('rules-copy').addEventListener('click',async()=>{
   if(!user)return;
