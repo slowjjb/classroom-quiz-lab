@@ -31,7 +31,10 @@ function setActive(flag){active=flag;$('join-room-btn').hidden=flag;$('leave-roo
 async function stopPresence() {
   if(unsubConnection){unsubConnection();unsubConnection=null;}
   const old=sessionRef;sessionRef=null;
-  if(old){try{await remove(old);await onDisconnect(old).cancel();}catch(_){/* 서버가 연결 종료 시 정리합니다. */}}
+  if(old){
+    try{await onDisconnect(old).cancel();}catch(_){/* 연결 종료 명령이 이미 해제됐을 수 있습니다. */}
+    try{await remove(old);}catch(_){/* 교사가 회원을 제거한 뒤에는 삭제 권한이 없을 수 있습니다. */}
+  }
 }
 async function leaveRoom(showMessage=true){
   if(showMessage)await releaseRacingCarOnExplicitLeave();
@@ -57,6 +60,11 @@ function renderRoom(data){
     ended=true;feedback('선생님이 방을 종료했습니다. 대기실 나가기를 눌러 주세요.');stopQuizView();stopGoldView();stopFishingView();stopRacingGarageView();stopRacingGame();stopPresence();onlineStatus('방이 종료되었습니다.');
   }
   const roster=data.members||{};
+  if(activeUser&&!roster[activeUser.uid]?.profile){
+    // Teacher removed this UID. Stop all game listeners and release local room state.
+    void leaveRoom(false).then(()=>feedback('선생님이 대기실에서 내보냈습니다. 이름을 확인하고 다시 참여할 수 있습니다.','error'));
+    return;
+  }
   const avatars=Object.fromEntries(Object.entries(roster).map(([memberUid,m])=>[memberUid,normalizeAvatarId(m?.profile?.avatarId)]));
   setAvatarRoster(avatars);
   const own=roster[activeUser?.uid]?.profile;
@@ -199,6 +207,10 @@ async function joinRoom(automatic=false){
     else startQuizView(code,user.uid);
     onlineStatus('실시간 서버 연결 중…');
     unsubRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),err=>{
+      if(active&&(/permission.denied/i.test(String(err?.code||''))||/PERMISSION_DENIED/i.test(String(err?.message||'')))){
+        void leaveRoom(false).then(()=>feedback('교사가 참가 기록을 정리했거나 방에 대한 접근 권한이 해제됐습니다. 다시 입장해 주세요.','error'));
+        return;
+      }
       feedback(`대기실 조회 실패: ${formatError(err)}`,'error');
     });
     watchConnection(user.uid,displayName);
