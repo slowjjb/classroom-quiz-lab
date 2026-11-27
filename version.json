@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.16",
-  "build": 612,
+  "version": "6.0.0-alpha.17",
+  "build": 613,
   "minSupportedBuild": 412,
-  "purpose": "피싱 전설 무게 2배·교사 바다 전설 375px·벌칙 6초 및 차별화된 해파리/먹물/축소 효과"
+  "purpose": "골드 퀘스트 120회 문제 제한 제거 · 게임 종료까지 무제한 셔플백 반복 출제"
 }
