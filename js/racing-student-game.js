@@ -68,6 +68,8 @@ function runRoulette(result){
 function showResult(score){
  const result=score?.lastResult;
  if(!result?.nonce||result.nonce===shownNonce)return;
+ // The score is public, but the answer is delivered only through this student's private state.
+ if(!result.correct&&own?.lastFeedback?.nonce!==result.nonce)return;
  shownNonce=result.nonce;
  sound.play(result.correct?'correct':'wrong');
  const pane=$('racing-student-result');
@@ -75,8 +77,10 @@ function showResult(score){
  if(result.spin&&result.reward){
   pane.hidden=true;runRoulette(result);
  }else{
-  pane.textContent=(result.correct?'✅ 정답! +1m':'❌ 다음 문제에 도전!')+' · 현재 '+Number(result.meters||0)+'m';
-  pane.hidden=false;lastResultTimer=setTimeout(()=>{pane.hidden=true},2600);
+  pane.textContent=result.correct
+   ?'✅ 정답! +1m · 현재 '+Number(result.meters||0)+'m'
+   :'❌ 오답! 정답: '+String(own?.lastFeedback?.correctAnswer||'확인 중')+' · 다음 문제에 도전!';
+  pane.hidden=false;lastResultTimer=setTimeout(()=>{pane.hidden=true},result.correct?2600:4800);
  }
 }
 
