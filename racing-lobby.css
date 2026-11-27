@@ -241,3 +241,6 @@ body.racing-focus-active{overflow:hidden}
 .racing-my-question-head b{white-space:nowrap;font-size:15px}
 .racing-my-question-row small{display:block;margin:4px 0 7px}
 @media(max-width:680px){.racing-result-podium .racing-result-pair .avatar-pixel{width:52px;height:52px}.racing-my-learning-summary,.racing-my-questions{padding:11px}}
+
+/* v6 alpha18: legible incorrect-answer toast for school tablets. */
+.racing-student-play .racing-student-reward:not([hidden]){white-space:normal;overflow-wrap:anywhere;text-align:center;font-size:clamp(16px,2.4vw,21px);line-height:1.45;padding:14px 18px;border-width:3px;background:#fff1c9;color:#773914;max-height:min(40dvh,220px);overflow-y:auto}
