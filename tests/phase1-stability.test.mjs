@@ -55,4 +55,21 @@ test('public student results do not include private answer keys or student-level
  assert.match(fishing,/return \{version:1,first:summarize\('first'\),all:summarize\('all'\)\}/);
 });
 
+test('Firebase rules protect answer keys and limit member state to teacher / owner',()=>{
+ const rules=JSON.parse(load('database.rules.json')).rules;
+ for(const version of ['v3','v4','v5','v6']){
+  const priv=rules[version]?.privateRuns?.['$code'];
+  assert.ok(priv,'privateRuns rules absent: '+version);
+  assert.ok(priv['.read'].includes('google.com'),'private key must be teacher-only');
+  assert.ok(!priv['.read'].includes('anonymous'),'private key anonymous access rejected');
+ }
+ for(const version of ['v4','v5','v6']){
+  const member=rules[version]?.memberState?.['$code'];
+  assert.ok(member,'memberState rules absent: '+version);
+  assert.ok(!String(member['.read']||'').includes('anonymous'),'anonymous access at parent would reveal other students');
+  const own=member['$uid'];
+  assert.ok(own&&String(own['.read']).includes('$uid'),'individual memberState requires owner uid');
+ }
+});
+
 console.log('Purplekit phase1 unit and static regression checks passed.');
