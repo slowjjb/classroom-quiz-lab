@@ -1,0 +1,26 @@
+name: Purplekit Phase 1 Stability
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'js/**'
+      - 'tests/phase1-stability.test.mjs'
+      - 'tests/test-gold-unlimited.mjs'
+      - 'tests/racing-game.test.mjs'
+      - '.github/workflows/phase1-stability.yml'
+  workflow_dispatch:
+jobs:
+  stability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse JavaScript modules
+        run: |
+          for f in js/*.js; do node --check "$f"; done
+      - name: Run core scoring, question sequence and regression tests
+        run: |
+          node --test tests/phase1-stability.test.mjs tests/test-gold-unlimited.mjs tests/racing-game.test.mjs
