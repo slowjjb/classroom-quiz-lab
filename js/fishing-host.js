@@ -2,7 +2,7 @@
 import {auth,db,formatError} from './firebase.js';
 import {onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js';
+import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.17';
@@ -367,7 +367,10 @@ async function handleAnswer(uid,state,answer){
 }
 async function publishResult(uid,state,q,answer,score,correct){
   if(score.lastAnswerNonce!==state.nonce)return;
-  const next={...state,phase:'result',phaseAt:serverNow(),result:score.lastResult};
+  const correctAnswer=!correct?(q.type==='typing'
+    ?q.options.filter(Boolean).join(' / ')
+    :`${displayedGoldCorrectIndex(q,state.optionOrder)}번 · ${q.options[Number(q.correctIndex)-1]||''}`):'';
+  const next={...state,phase:'result',phaseAt:serverNow(),result:{...score.lastResult,...(!correct?{correctAnswer}:{})}};
   await update(ref(db),{
     [`v5/memberState/${code}/${uid}`]:next,
     [`v5/privateRuns/${code}/answersLog/${uid}/${state.nonce}`]:{
