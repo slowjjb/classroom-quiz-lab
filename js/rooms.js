@@ -1,6 +1,7 @@
+import {chooseReviewQuestions} from './review-set.js?v=6.0.0-alpha.22';
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
-import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import { ref, set, get, push, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.21';
 import { createAvatarImage } from './avatars.js';
 import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=6.0.0-alpha.21';
@@ -307,6 +308,33 @@ async function deleteRoomCodes(codes) {
   }catch(err){status(`삭제 확인 중 오류: ${formatError(err)}`,'error');}
   finally {deletingRooms=false;renderSavedRooms();}
 }
+let generatingReviewSet=false;
+async function createReviewSet(){
+ if(generatingReviewSet||!authorized||!selectedCode||!currentRoom?.meta)return;
+ const c=selectedCode,mode=currentRoom.meta.mode;
+ const prefix={classic:'v3',gold:'v4',fishing:'v5',racing:'v6'}[mode];
+ if(!prefix){info('room-review-message','지원하지 않는 게임 모드입니다.','error');return;}
+ generatingReviewSet=true;$('room-review-create').disabled=true;
+ try{
+  const [runSnap,pubSnap,gradesSnap]=await Promise.all([
+   get(ref(db,prefix+'/privateRuns/'+c)),get(ref(db,prefix+'/public/'+c)),
+   mode==='classic'?get(ref(db,'v3/grades/'+c)):Promise.resolve(null)
+  ]);
+  const run=runSnap.val(),publicState=pubSnap.val();
+  if(c!==selectedCode)throw Error('선택한 방이 변경되었습니다.');
+  if(!run||publicState?.state!=='finished')throw Error('게임이 종료된 방에서만 복습 세트를 만들 수 있습니다.');
+  const threshold=Number($('room-review-threshold').value)||60;
+  const selected=chooseReviewQuestions({mode,run,grades:gradesSnap?.val()||{},publicState,threshold});
+  if(!selected.length){info('room-review-message','제출된 문항 중 정답률 '+threshold+'% 미만인 문제가 없습니다. 미제출 문항은 오답으로 취급하지 않습니다.');return;}
+  const title=(String(run.title||run.setTitle||currentRoom.meta.title||'학습')+' · '+threshold+'% 미만 복습').slice(0,80);
+  if(!confirm(title+'\\n'+selected.length+'문항을 새 문제 세트로 저장할까요? 원본은 그대로 보존됩니다.'))return;
+  const id=push(ref(db,'v1/questionSets')).key,now=Date.now();
+  const questions=Object.fromEntries(selected.map(q=>['q'+String(q.number).padStart(4,'0'),q]));
+  await set(ref(db,'v1/questionSets/'+id),{title,sourceName:'퍼플킷 게임 결과 '+c,createdAt:now,updatedAt:now,questions});
+  info('room-review-message','복습 세트 '+selected.length+'문항 저장 완료. 문제 세트 관리에서 확인하고 필요하면 편집하세요.','success');
+ }catch(e){info('room-review-message','복습 세트 생성 실패: '+formatError(e),'error');}
+ finally{generatingReviewSet=false;$('room-review-create').disabled=false;}
+}
 async function deleteRoom() {
   if(!authorized||!selectedCode||currentRoom?.meta?.state!=='ended')return;
   await deleteRoomCodes([selectedCode]);
@@ -388,6 +416,7 @@ else {
   });
   $('room-download-rules').addEventListener('click',downloadRules);
   $('room-create').addEventListener('click',createRoom);
+  $('room-review-create').addEventListener('click',()=>void createReviewSet());
   $('room-copy-code').addEventListener('click',async()=>info('room-live-message',(await copyText(selectedCode))?'참여 코드를 복사했습니다.':'클립보드 복사에 실패했습니다. 코드를 직접 복사해 주세요.'));
   $('room-copy-link').addEventListener('click',async()=>info('room-live-message',(await copyText(joinLink(selectedCode)))?'학생 참여 링크를 복사했습니다.':'클립보드 복사에 실패했습니다.'));
   $('room-toggle-lock').addEventListener('click',()=>changeRoomState(currentRoom?.meta?.state==='locked'?'lobby':'locked'));
