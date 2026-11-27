@@ -12,7 +12,7 @@ export function makeShuffleBag(questionCount, length=GOLD_MAX_QUESTION_SEQUENCE,
   if(!Number.isInteger(count)||count<1||count>2000)throw new Error('문항 수가 올바르지 않습니다.');
   const output=[];
   const avoid=Math.min(10,Math.max(0,count-1));
-  const recent=Array.isArray(previous)?previous.slice(-avoid).filter(i=>Number.isInteger(i)&&i>=0&&i<count):[];
+  const recent=avoid>0&&Array.isArray(previous)?previous.slice(-avoid).filter(i=>Number.isInteger(i)&&i>=0&&i<count):[];
   let pool=[];
   const shuffle=arr=>{
     const a=[...arr];
