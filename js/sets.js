@@ -1,7 +1,7 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { onValue, ref, push, set, remove } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV, imageFileName } from './csv.js?v=4.4';
+import { parseCSV, makeDraftRows, validateRows, reviewQuestionWarnings, questionToDraft, decodeFile, toCSV, imageFileName } from './csv.js?v=4.4';
 import { makeRulesV5 } from './rules-v5.js?v=5.0.11';
 import { normalizeQuestionImage, siteRootFromPage, scanQuestionImages } from './image-utils.js?v=4.4';
 
@@ -359,6 +359,15 @@ function validateAndDisplay() {
     }catch(e){result.issues.push({line:row.line,message:`문제 이미지: ${e.message}`});}
   });
   if(result.issues.length)result.problems=null;
+  const warnings=reviewQuestionWarnings(draftRows);
+  if(warnings.length){
+    const section=document.createElement('section');section.className='validation-warnings';
+    const header=document.createElement('strong');header.textContent='내용 재검토 권장 · '+warnings.length+'건 (저장은 가능)';
+    const list=document.createElement('ul');list.className='error-list';
+    warnings.slice(0,80).forEach(warning=>{const li=document.createElement('li');li.textContent='CSV '+warning.line+'행: '+warning.message;list.append(li);});
+    section.append(header,list);holder.append(section);
+    if(warnings.length>80){const p=document.createElement('p');p.textContent='추가 확인사항 '+(warnings.length-80)+'개';section.append(p);}
+  }
   const title=$('set-title').value.trim();
   if (!title) result.issues.push({line:0,message:'세트 이름을 입력해 주세요.'});
   if (title.length > 80) result.issues.push({line:0,message:'세트 이름은 최대 80자입니다.'});
