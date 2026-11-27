@@ -107,6 +107,39 @@ export function validateRows(draftRows) {
   return { issues, problems: issues.length ? null : problems };
 }
 
+// Non-blocking semantic lint: heuristics only, never proof of factual correctness.
+export function reviewQuestionWarnings(rows=[]){
+ const warnings=[],seen=new Map();
+ const normalized=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s.,!?·~()[\]{}'"]/g,'');
+ rows.forEach((row,i)=>{
+  const fields=row.fields||[],line=Number(row.line)||i+1;
+  const prompt=String(fields[1]||'').trim(),opts=fields.slice(2,6).map(v=>String(v||'').trim());
+  const label=normalized(prompt);
+  if(label){
+   if(seen.has(label))warnings.push({line,message:'다른 문항과 질문 내용이 동일합니다. (앞 문항 '+seen.get(label)+'행)'});
+   else seen.set(label,line);
+  }
+  const nonempty=opts.map((value,index)=>({value,index})).filter(x=>x.value);
+  for(let j=0;j<nonempty.length;j++)for(let k=j+1;k<nonempty.length;k++){
+   if(normalized(nonempty[j].value)===normalized(nonempty[k].value))
+    warnings.push({line,message:(nonempty[j].index+1)+'번과 '+(nonempty[k].index+1)+'번 보기/허용 정답이 동일하거나 띄어쓰기만 다릅니다.'});
+  }
+  const subjective=String(fields[9]||'').trim()==='typing';
+  if(!subjective){
+   const correct=Number(fields[7]);
+   const correctText=String(opts[correct-1]||'');
+   if(nonempty.some(x=>x.index!==correct-1&&normalized(x.value)&&normalized(correctText) &&
+       (normalized(correctText).includes(normalized(x.value))||normalized(x.value).includes(normalized(correctText)))))
+    warnings.push({line,message:'정답과 다른 보기의 표현이 포함 관계입니다. 부분 정답이나 복수 해석 가능성을 확인하세요.'});
+   if(nonempty.some(x=>/^(?:오직|반드시|항상|전혀|무조건)|(?:만|뿐)$/.test(x.value)))
+    warnings.push({line,message:'일부 보기의 절대적·제한적 표현 때문에 정답이 드러나거나 해석이 달라질 수 있습니다.'});
+  }else if(nonempty.length===1){
+   warnings.push({line,message:'주관식 허용 정답이 하나뿐입니다. 동의어·다른 명칭·띄어쓰기 가능성을 확인하세요.'});
+  }
+ });
+ return warnings;
+}
+
 export function questionToDraft(question, index) {
   return {
     line: index + 1, columnCount: 10, acknowledged: true, imageUrl: question.imageUrl || '',
