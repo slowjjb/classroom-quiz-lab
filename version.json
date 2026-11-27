@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.19",
-  "build": 615,
+  "version": "6.0.0-alpha.20",
+  "build": 616,
   "minSupportedBuild": 412,
-  "purpose": "문제 관리: 개별 검토용 JSON·전체 세트 백업·이미지 일괄 파일명 대조 및 GitHub 업로드 안내"
+  "purpose": "교사 대기실 학생 강제 퇴장 및 이름 예약 일괄 해제 · 학생 화면 자동 퇴장"
 }
