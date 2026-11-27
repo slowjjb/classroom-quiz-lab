@@ -1,7 +1,7 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { onValue, ref, push, set, remove } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV } from './csv.js?v=4.4';
+import { parseCSV, makeDraftRows, validateRows, questionToDraft, decodeFile, toCSV, imageFileName } from './csv.js?v=4.4';
 import { makeRulesV5 } from './rules-v5.js?v=5.0.11';
 import { normalizeQuestionImage, siteRootFromPage, scanQuestionImages } from './image-utils.js?v=4.4';
 
@@ -9,6 +9,7 @@ const $ = id => document.getElementById(id);
 let user = null, unsubscribe = null, authorized = false, savedSets = {};
 let draftRows = [], draftId = null, createdAt = null, sourceName = '', dirty = false;
 let imageAuditSeq = 0;
+let selectedImageFiles = [];
 const q = sel => document.querySelector(sel);
 function text(id, value, kind = '') { $(id).textContent = value; $(id).dataset.kind = kind; }
 function badge(textValue, kind = 'neutral') { $('sets-auth-badge').textContent = textValue; $('sets-auth-badge').className = `pill pill-${kind}`; }
@@ -134,6 +135,44 @@ function downloadAllJSON(){
   const payload={format:'purplekit-question-backup',version:1,exportedAt:new Date().toISOString(),sets};
   downloadText('퍼플킷_문제세트_전체백업_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(payload,null,2),'application/json;charset=utf-8');
 }
+function checkLocalImageBatch(){
+  const holder=$('image-batch-results');if(!holder)return;
+  holder.replaceChildren();
+  const files=selectedImageFiles,declared=draftRows.map((row,i)=>({number:i+1,name:imageFileName(row.imageUrl||'')})).filter(x=>x.name);
+  const names=new Map(),invalid=[];
+  for(const file of files){
+    if(!/\.(png|jpe?g|webp)$/i.test(file.name)){invalid.push(file.name);continue;}
+    const list=names.get(file.name)||[];list.push(file);names.set(file.name,list);
+  }
+  const missing=declared.filter(x=>!names.has(x.name));
+  const extras=[...names.keys()].filter(name=>!declared.some(x=>x.name===name));
+  const duplicates=[...names.entries()].filter(([,list])=>list.length>1).map(([name])=>name);
+  const status=document.createElement('strong');
+  status.textContent=`선택한 이미지 ${files.length}개 · K열 참조 ${declared.length}문항 · 일치 ${declared.length-missing.length}문항`;
+  holder.append(status);
+  const note=document.createElement('p');note.className='helper';
+  note.textContent=files.length
+    ?'이 단계에서는 로컬 파일과 CSV 이름만 비교합니다. 실제 GitHub 업로드는 아래 버튼으로 이동해 선택한 이미지들을 한꺼번에 올려야 합니다.'
+    :'K열에 이미지 파일명을 기재한 CSV를 불러온 다음, 해당 이미지 파일을 여러 개 선택하세요. 파일 선택만으로 GitHub에 업로드되지는 않습니다.';
+  holder.append(note);
+  const warnings=[
+    ...missing.map(x=>`${x.number}번 문제: ${x.name} 파일 미선택`),
+    ...extras.map(x=>`CSV 미참조 이미지: ${x}`),
+    ...duplicates.map(x=>`같은 이름을 중복 선택: ${x}`),
+    ...invalid.map(x=>`지원하지 않는 파일 형식: ${x}`)
+  ];
+  if(warnings.length){
+    const list=document.createElement('ul');list.className='image-check-list';
+    for(const value of warnings.slice(0,50)){const li=document.createElement('li');li.textContent=value;list.append(li);}
+    holder.append(list);
+    if(warnings.length>50){const small=document.createElement('p');small.className='helper';small.textContent=`추가 확인 항목 ${warnings.length-50}개`;holder.append(small);}
+  }else if(files.length&&declared.length){
+    const ok=document.createElement('p');ok.className='validation-ok';
+    ok.textContent='모든 K열 이미지 파일명이 선택한 로컬 파일과 일치합니다. GitHub에 일괄 업로드한 뒤 「이미지 파일 다시 확인」을 눌러 배포 상태를 검사하세요.';
+    holder.append(ok);
+  }
+  holder.hidden=!files.length&&!declared.length;
+}
 function confirmImageLoss(rows){
   return !rows.some(q=>Boolean(q.imageUrl)) || confirm('블루킷 CSV는 10열이므로 K열 이미지 파일명이 제외됩니다. 이미지 연결은 Firebase와 퍼플킷 CSV에 보존됩니다. 블루킷용으로 내보낼까요?');
 }
@@ -144,7 +183,7 @@ function loadSet(id) {
   draftId = id; createdAt = record.createdAt || Date.now(); sourceName = record.sourceName || '';
   draftRows = Object.values(record.questions || {}).sort((a,b)=>a.number-b.number).map(questionToDraft);
   $('set-title').value = record.title; dirty = false;
-  invalidateImageAudit(); renderEditor(); validateAndDisplay();
+  invalidateImageAudit(); renderEditor(); validateAndDisplay();checkLocalImageBatch();
   void auditImages();
   text('editor-status', `저장된 '${record.title}' 문제 세트를 불러왔습니다.`);
   q('#questions-editor')?.scrollIntoView({behavior:'smooth', block:'start'});
@@ -158,7 +197,7 @@ async function deleteSet(id) {
 function newDraft() {
   if (!warnDiscard()) return;
   draftRows=[]; draftId=null; createdAt=null; sourceName=''; dirty=false; $('set-title').value=''; $('csv-file').value='';
-  invalidateImageAudit(); renderEditor(); validateAndDisplay(); text('editor-status', '새 세트입니다. CSV를 업로드해 주세요.');
+  invalidateImageAudit(); renderEditor(); validateAndDisplay();checkLocalImageBatch(); text('editor-status', '새 세트입니다. CSV를 업로드해 주세요.');
 }
 function markEdited() { dirty = true; draftBadge(draftId ? '수정 중' : '미저장 초안'); }
 function changeField(row, pos, value) { row.fields[pos] = value; markEdited(); }
@@ -218,7 +257,7 @@ function renderEditor(expandIndex = null) {
     imageDetails.append(imageSummary);
     const imageField=formBlock('input', 'GitHub images/questions 폴더의 파일명 또는 주소',row.imageUrl||'',value=>{
       imageSummary.textContent=value.trim()?'문제 이미지 · 등록됨':'문제 이미지 추가 (선택 사항)';
-      row.imageUrl=value;markEdited();invalidateImageAudit();
+      row.imageUrl=value;markEdited();invalidateImageAudit();checkLocalImageBatch();
       const auditStatus=card.querySelector('.question-image-check');
       if(auditStatus)auditStatus.textContent=value.trim()?'이미지를 수정했습니다. 「이미지 파일 다시 확인」을 눌러주세요.':'이미지 없음';
       const warning=card.querySelector('.question-image-warning');
@@ -344,7 +383,7 @@ async function importFile(file) {
     const parsed=parseCSV(content);
     draftRows=makeDraftRows(parsed); draftId=null; createdAt=null; sourceName=file.name; dirty=true;
     $('set-title').value=file.name.replace(/\.csv$/i,'').slice(0,80);
-    invalidateImageAudit();renderEditor(); const result=validateAndDisplay();
+    invalidateImageAudit();renderEditor();checkLocalImageBatch(); const result=validateAndDisplay();
     const imageCount=draftRows.filter(row=>Boolean(row.imageUrl.trim())).length;
     text('editor-status',`${file.name} · ${encoding} · ${draftRows.length}문항 파싱 완료 · K열 이미지 ${imageCount}개 · 검증 오류 ${result.issues.length}개`,result.issues.length?'error':'success');
     void auditImages();
@@ -372,6 +411,7 @@ async function saveSet() {
 }
 $('set-title').addEventListener('input',()=>{markEdited();});
 $('csv-file').addEventListener('change',e=>importFile(e.target.files?.[0]));
+$('image-batch-files').addEventListener('change',e=>{selectedImageFiles=Array.from(e.target.files||[]);checkLocalImageBatch();});
 $('new-draft').addEventListener('click',newDraft);
 $('check-draft').addEventListener('click',()=>{const r=validateAndDisplay();text('editor-status',r.issues.length?`수정할 오류 ${r.issues.length}개가 있습니다.`:'모든 문항 검증을 통과했습니다.',r.issues.length?'error':'success');});
 $('check-images').addEventListener('click',()=>{void auditImages();});
