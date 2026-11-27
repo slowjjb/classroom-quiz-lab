@@ -3,7 +3,7 @@ import {gameIsPaused,gameRemainingSeconds,renderStudentPause} from './game-pause
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import {fullQuestionImageUrl} from './image-utils.js';
-import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.21';
+import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.22';
 import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=6.0.0-alpha.10';
 const $=id=>document.getElementById(id),stage=$('fishing-student');
 let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
