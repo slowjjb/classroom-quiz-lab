@@ -3,7 +3,7 @@
 export const FISHING_DURABILITY = 5;
 export const FISHING_PENALTY_CHANCE = 0.045;
 export const FISHING_PENALTY_COOLDOWN_MS = 30000;
-export const FISHING_PENALTY_DURATION_MS = 2700;
+export const FISHING_PENALTY_DURATION_MS = 6000;
 export const FISHING_LURE_HEAL = 0; // 0 by default; adjust to 1 after classroom tests.
 export const CREATURES = Object.freeze([
   {id:'mackerel',name:'고등어',tier:'normal',emoji:'🐟'},
@@ -62,7 +62,8 @@ export function pickCreature(level,rng=Math.random){
   if(!pool.length){tier='normal';pool=CREATURES.filter(x=>x.tier===tier);}
   const fish=pool[randomIndex(pool.length,rng)];
   const [min,max]=weightRange(level);
-  const kg=Math.round((min+(max-min)*Math.pow(rng(),1.5))*10)/10;
+  // Legendary catches are worth twice the usual weight at the same lure level.
+  const kg=Math.round((min+(max-min)*Math.pow(rng(),1.5))*(fish.tier==='legend'?2:1)*10)/10;
   const juvenile=(fish.tier==='big'||fish.tier==='rare')&&level<=3;
   return {...fish,kg,displayName:juvenile?`어린 ${fish.name}`:fish.name,level};
 }
