@@ -2,7 +2,7 @@
 import {auth,db,formatError} from './firebase.js';
 import {onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js';
+import {makeShuffleBag,continuingGoldQuestionIndex,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js?v=6.0.0-alpha.21';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.20';
@@ -234,8 +234,8 @@ function questionsFromSet(source){
 }
 function makeCast(uid,index,score,previous=null){
   const deck=run?.decks?.[uid]||[],questions=Array.isArray(run?.questions)?run.questions:Object.values(run?.questions||{});
-  if(index>=deck.length)return {phase:'waiting',nonce:`done_${index}`,sequence:index,questionIndex:-1};
-  const qIndex=Number(deck[index]),q=questions[qIndex];
+  const qIndex=continuingGoldQuestionIndex(deck,index,questions.length,uid+':'+String(run?.createdAt||''));
+  const q=questions[qIndex];
   if(!q)return {phase:'waiting',nonce:`done_${index}`,sequence:index,questionIndex:-1};
   const optionHistory={...(previous?.optionHistory||{})};
   const shuffled=q.type==='typing'?null:shuffleGoldChoices(q.options,optionHistory[qIndex],Math.random,q.correctIndex);
