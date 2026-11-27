@@ -417,7 +417,7 @@ async function toggleGamePause(){
 }
 async function finish(){
   if(operation||pub?.state!=='playing')return;
-  if(pub?.pauseStartedAt)throw Error('일시정지를 해제한 뒤 종료해 주세요.');
+  if(pub?.pauseStartedAt){notify('일시정지를 해제한 뒤 종료해 주세요.','error');return;}
   operation=true;
   try{
     // Credit pending chest interactions at the timer, even if a student did not pick a target.
