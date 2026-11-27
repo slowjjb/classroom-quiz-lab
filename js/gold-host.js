@@ -1,7 +1,7 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeShuffleBag, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.11';
+import { makeShuffleBag, continuingGoldQuestionIndex, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=4.11';
 import { optionsArray, escapeCsv } from './classic-core.js';
 import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=6.0.0-alpha.14';
 import { normalizeQuestionImage } from './image-utils.js';
@@ -325,8 +325,10 @@ function messageForState(question,uid,seq,previous){
 function nextQuestionFor(uid,seq,old){
   const deck=run?.decks?.[uid]||[];
   const questions=Array.isArray(run?.questions)?run.questions:Object.values(run?.questions||{});
-  if(seq>=deck.length)return {...old,phase:'waiting',nonce:`done_${seq}`,lastMessage:'준비한 문제를 모두 풀었습니다.',questionIndex:-1};
-  const index=Number(deck[seq]);const q=questions[index];
+  // The original 120-entry deck is a precomputed buffer, not a gameplay cap.
+  // Continue deterministically after its end, preserving recent-10 avoidance.
+  const index=continuingGoldQuestionIndex(deck,seq,questions.length,uid+':'+String(run?.createdAt||''));
+  const q=questions[index];
   if(!q)return {...old,phase:'waiting',nonce:`done_${seq}`,questionIndex:-1};
   return messageForState({index,...q},uid,seq,old);
 }
