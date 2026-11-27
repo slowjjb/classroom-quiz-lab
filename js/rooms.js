@@ -96,19 +96,32 @@ function makeQR(link) {
     output.append(image);
   } catch (error) {output.textContent='QR 생성에 실패했습니다. 참여 링크를 복사해 주세요.';}
 }
-async function releaseOfflineName(uid,name){
-  if(!authorized||!selectedCode||!currentRoom||currentRoom.meta?.state==='ended')return;
-  const member=currentRoom.members?.[uid];
-  if(Object.keys(member?.connections||{}).length>0){info('room-live-message','접속 중인 참가자의 이름은 해제할 수 없습니다.','error');return;}
-  const claimOwner=currentRoom.nameClaims?.[name];
-  if(claimOwner&&claimOwner!==uid){info('room-live-message','이름 소유자가 변경됐습니다. 다시 확인해 주세요.','error');return;}
-  if(!confirm(`오프라인 학생 '${name}'의 이름 예약을 해제할까요? 해당 기기에서 다시 참여하려면 재입장해야 합니다.`))return;
+const memberRemovalBusy=new Set();
+// Teacher command: remove membership and the matching name claim in one update.
+// Existing game score/answer logs intentionally remain available to the teacher.
+async function removeRoomMember(uid,name){
+  const code=selectedCode;
+  if(!authorized||!teacher||!code||!uid||memberRemovalBusy.has(uid))return;
+  const member=currentRoom?.members?.[uid];
+  const online=Boolean(member&&Object.keys(member.connections||{}).length);
+  const wording=online?'접속 중인 학생을 즉시 퇴장시키고 이름 예약도 해제합니다.':'오프라인 학생의 이름 예약과 참가 기록을 해제합니다.';
+  if(!confirm(`'${name}' 학생을 내보내고 이름을 해제할까요?\\n${wording}\\n진행 중인 게임의 기존 점수와 정답 기록은 유지됩니다.`))return;
+  memberRemovalBusy.add(uid);
   try{
-    const paths={[`members/${uid}`]:null};
-    if(claimOwner===uid)paths[`nameClaims/${name}`]=null;
-    await update(ref(db,`v2/rooms/${selectedCode}`),paths);
-    info('room-live-message',`'${name}'의 오프라인 예약을 해제했습니다.`,'success');
-  }catch(err){info('room-live-message',`이름 해제 실패: ${formatError(err)}`,'error');}
+    // Refresh the room before deletion so a reused name is not deleted from its new owner.
+    const roomSnap=await get(ref(db,`v2/rooms/${code}`));
+    const current=roomSnap.val();
+    if(!current?.meta)throw Error('방이 삭제되었습니다.');
+    const profile=current.members?.[uid]?.profile;
+    const ownedNames=Object.entries(current.nameClaims||{}).filter(([,owner])=>owner===uid).map(([value])=>value);
+    if(profile&&profile.name!==name)throw Error('학생 이름이 변경됐습니다. 목록을 새로 확인해 주세요.');
+    if(!profile&&!ownedNames.includes(name))throw Error('이미 해제되었거나 다른 학생이 사용 중인 이름입니다.');
+    const changes={[`members/${uid}`]:null};
+    for(const owned of ownedNames)changes[`nameClaims/${owned}`]=null;
+    await update(ref(db,`v2/rooms/${code}`),changes);
+    info('room-live-message',`'${name}' 학생을 내보내고 이름 예약을 해제했습니다.`,'success');
+  }catch(err){info('room-live-message',`학생 내보내기 실패: ${formatError(err)}`,'error');}
+  finally{memberRemovalBusy.delete(uid);}
 }
 function renderMembers(record) {
   const members=record?.members||{};
@@ -130,7 +143,10 @@ function renderMembers(record) {
     const num=createAvatarImage(item.avatarId,{size:'sm',decorative:true});
     const name=document.createElement('span');name.textContent=item.name;
     const more=document.createElement('small');more.textContent=item.sessions>1?`(${item.sessions}개 창)`:'';
-    el.append(num,name,more);list.append(el);
+    const btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-small';
+    btn.textContent='내보내기·이름 해제';btn.disabled=memberRemovalBusy.has(item.uid);
+    btn.addEventListener('click',()=>void removeRoomMember(item.uid,item.name));
+    el.append(num,name,more,btn);list.append(el);
   });
   // 이전 기기에서 나간 학생은 재접속을 위해 이름을 유지합니다. 교사가 오프라인인 경우에만 해제할 수 있습니다.
   if(offline.length){
@@ -139,8 +155,8 @@ function renderMembers(record) {
     offline.forEach(item=>{
       const el=document.createElement('div');el.className='student-item';
       const text=document.createElement('span');text.textContent=`${item.name} · 오프라인`;
-      const btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-small';btn.textContent='이름 해제';
-      btn.disabled=record?.meta?.state==='ended';btn.addEventListener('click',()=>releaseOfflineName(item.uid,item.name));
+      const btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-small';btn.textContent='내보내기·이름 해제';
+      btn.disabled=memberRemovalBusy.has(item.uid);btn.addEventListener('click',()=>void removeRoomMember(item.uid,item.name));
       el.append(text,btn);list.append(el);
     });
   }
