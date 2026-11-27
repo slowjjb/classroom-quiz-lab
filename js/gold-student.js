@@ -231,6 +231,9 @@ function render(){
     ?`⚠️ 다른 친구가 보물을 가져갔어요. ${event.message}`
     :(own?.lastMessage||'문제를 맞히고 보물상자를 열어 보세요!');
   $('gold-my-last').classList.toggle('gold-notice-win',own?.lastCorrect==='reward'||own?.lastCorrect==='yes');
+  const wrong=$('gold-wrong-review');
+  wrong.hidden=!(phase==='playing'&&own?.lastCorrect==='no'&&own?.lastWrongAnswer);
+  if(!wrong.hidden)wrong.textContent='❌ 방금 푼 문제의 정답: '+String(own.lastWrongAnswer);
   const rank=ranked();const position=rank.findIndex(x=>x.uid===uid);
   $('gold-my-place').textContent=position>=0?`${position+1}위 / ${rank.length}명`:'순위 계산 중';
   if(own?.phase==='question'){
