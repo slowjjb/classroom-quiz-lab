@@ -166,9 +166,11 @@ function render(){
   $('fishing-prepare').disabled=!rights||operation||!!run||!room?.meta?.setId||room.meta.state==='ended';
   $('fishing-start').disabled=!rights||operation||!run||phase!=='ready';
   $('fishing-end').disabled=!rights||operation||phase!=='playing';
+  $('fishing-pause').disabled=!rights||operation||phase!=='playing';
+  $('fishing-pause').textContent=pub?.pauseStartedAt?'▶️ 계속하기':'⏸️ 일시정지';
   $('fishing-export').disabled=!run;
   $('fishing-rules').hidden=rights;
-  const sec=phase==='playing'?(Number(pub?.endsAt||0)-serverNow())/1000:phase==='ready'?Number(run?.durationSec||0):0;
+  const sec=phase==='playing'?(Number(pub?.endsAt||0)-(Number(pub?.pauseStartedAt)||serverNow()))/1000:phase==='ready'?Number(run?.durationSec||0):0;
   $('fishing-host-clock').textContent=formatClock(sec);
   $('fishing-host-count').textContent=`${Object.keys(pub?.scores||{}).length}명`;
   $('fishing-host-solved').textContent=`${Object.values(pub?.scores||{}).reduce((n,s)=>n+Number(s.answered||0),0)}회 풀이`;
@@ -306,8 +308,36 @@ async function publishFishingResults(c,{endGame=false}={}){
   if(endGame&&current.state==='playing'){changes.state='finished';changes.finishedAt=serverTimestamp();}
   await update(ref(db,'v5/public/'+c),changes);
 }
+
+async function toggleGamePause(){
+ if(!code||operation||!pub||pub.state!=='playing')return;
+ operation=true;
+ try{
+  for(let i=0;i<125&&working;i++)await new Promise(r=>setTimeout(r,40));
+  if(working)throw Error('처리 중인 답안이 있습니다. 다시 눌러 주세요.');
+  const c=code;
+  const snap=await get(ref(db,'v5/public/'+c)),live=snap.val();
+  if(c!==code||live?.state!=='playing')throw Error('게임이 이미 종료되었거나 방이 바뀌었습니다.');
+  if(!live.pauseStartedAt){
+   await update(ref(db,'v5/public/'+c),{pauseStartedAt:serverNow()});
+   status('게임을 일시정지했습니다.');
+  }else{
+   const delta=Math.max(0,serverNow()-Number(live.pauseStartedAt));
+   const changes={['v5/public/'+c+'/pauseStartedAt']:null,['v5/public/'+c+'/endsAt']:Number(live.endsAt||0)+delta};
+   const membersSnap=await get(ref(db,'v5/memberState/'+c));
+   for(const [uid,state] of Object.entries(membersSnap.val()||{})){
+    if(state?.phase==='bite'&&Number(state.biteAt||0)>0)
+     changes['v5/memberState/'+c+'/'+uid+'/biteAt']=Number(state.biteAt)+delta;
+   }
+   if(Number(live.lastPenaltyAt||0)>0)changes['v5/public/'+c+'/lastPenaltyAt']=Number(live.lastPenaltyAt)+delta;
+   await update(ref(db),changes);
+   status('일시정지를 해제하고 게임을 재개했습니다.');
+  }
+ }catch(e){status('일시정지 처리 오류: '+formatError(e),true);}
+ finally{operation=false;render();}
+}
 async function finish(){
-  if(operation||pub?.state!=='playing')return;
+  if(operation||pub?.state!=='playing'||pub?.pauseStartedAt)return;
   operation=true;
   try{
     for(let i=0;i<100&&working;i++)await new Promise(resolve=>setTimeout(resolve,40));
@@ -325,6 +355,7 @@ async function finish(){
   }catch(err){status('종료 실패: '+formatError(err),true);}finally{operation=false;render();}
 }
 async function handleAction(uid,state,type){
+  if(pub?.pauseStartedAt)return;
   const now=serverNow();
   if(type==='hook'&&now<Number(state.biteAt||Infinity))return;
   const expected=type==='cast'?'cast':type==='hook'?'bite':'result';
@@ -350,7 +381,7 @@ async function handleAnswer(uid,state,answer){
   const seededRandom=()=>{let s=seed>>>0;return ()=>{s=(Math.imul(1664525,s)+1013904223)>>>0;return s/4294967296;};};
   const now=serverNow();
   const tx=await runTransaction(ref(db,`v5/public/${code}`),current=>{
-    if(!current||current.state!=='playing'||Number(answer.at||0)>Number(current.endsAt||0)+200||Number(answer.at||0)<Number(current.startedAt||0)-200)return;
+    if(!current||current.state!=='playing'||current.pauseStartedAt||Number(answer.at||0)>Number(current.endsAt||0)+200||Number(answer.at||0)<Number(current.startedAt||0)-200)return;
     const score=current.scores?.[uid];
     if(!score||score.lastAnswerNonce===nonce)return;
     const rng=seededRandom();
@@ -403,7 +434,7 @@ function nextJob(seen){
   return null;
 }
 async function pump(){
-  if(working||!rights||!run||!code||pub?.state!=='playing')return;
+  if(working||!rights||!run||!code||pub?.state!=='playing'||pub?.pauseStartedAt)return;
   working=true;const seen=new Set();
   try{
     const limit=Math.max(40,Object.keys(run.roster||{}).length*4);
@@ -440,6 +471,7 @@ $('fishing-start').addEventListener('click',()=>void start());
 $('fishing-focus-open').addEventListener('click',()=>focus(true));
 $('fishing-focus-close').addEventListener('click',()=>focus(false));
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)focus(false);});
+$('fishing-pause').addEventListener('click',()=>void toggleGamePause());
 $('fishing-end').addEventListener('click',()=>{if(confirm('피싱 프렌지를 지금 종료할까요?'))void finish();});
 $('fishing-export').addEventListener('click',exportCsv);
 $('fishing-results-mode').addEventListener('change',event=>{resultsMode=event.target.value==='all'?'all':'first';renderFinalResults();});
@@ -456,10 +488,10 @@ $('fishing-download-rules').addEventListener('click',()=>{
 });
 setInterval(()=>{
   if(pub?.state==='playing'){
-    const left=(Number(pub.endsAt||0)-serverNow())/1000;
+    const left=(Number(pub.endsAt||0)-(Number(pub.pauseStartedAt)||serverNow()))/1000;
     $('fishing-host-clock').textContent=formatClock(left);
     if(focusOpen)$('fishing-focus-clock').textContent=formatClock(left);
-    if(left<=-1.5&&!operation&&!working)void finish();else void pump();
+    if(!pub.pauseStartedAt){if(left<=-1.5&&!operation&&!working)void finish();else void pump();}
   }
 },250);
 // Keep teacher fish animations entirely local: no extra polling or database subscriptions.
