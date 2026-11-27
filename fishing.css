@@ -317,3 +317,60 @@
 .fishing-learning-row[data-tier=low] .fishing-learning-row-head b{color:#b12b35}
 .fishing-learning-row small{display:block;margin:5px 0 7px;color:#526680;font-size:11px}
 @media(max-width:700px){.fishing-learning-summary,.fishing-learning-questions{padding:11px}.fishing-learning-list{max-height:44vh}}
+
+/* v6 alpha16: stronger, visually distinct six-second penalties.
+   Cosmetic only: all overlays remain pointer-events:none; scoring and input remain active. */
+.fishing-penalty{pointer-events:none;isolation:isolate;background:#062b6552}
+.fishing-penalty[hidden]{display:none!important}
+.fishing-penalty-creatures{animation-duration:6s;top:43%;z-index:2;font-size:clamp(60px,11vw,150px);letter-spacing:clamp(8px,2vw,32px)}
+.fishing-penalty>strong{z-index:8;align-self:start;margin-top:max(24px,7dvh);animation:fishing-penalty-pop-extended 6s ease-in-out both;box-shadow:0 9px 30px #112b667a}
+.fishing-penalty-jellies,.fishing-penalty-ink{display:none;position:absolute;inset:0;pointer-events:none}
+.fishing-penalty[data-effect="school"]{background:#116aab52}
+.fishing-penalty[data-effect="school"] .fishing-penalty-creatures{animation:fishing-penalty-sweep 6s linear both}
+.fishing-penalty[data-effect="jelly"]{background:linear-gradient(135deg,#123c9aaa,#00bbefa6)}
+.fishing-penalty[data-effect="jelly"] .fishing-penalty-creatures{display:none}
+.fishing-penalty[data-effect="jelly"] .fishing-penalty-jellies{display:block}
+.fishing-penalty-jellies span{position:absolute;top:110%;font-size:clamp(95px,18vw,230px);filter:drop-shadow(0 0 25px #72d7ffe8);animation:fishing-jelly-float 6s ease-in-out both}
+.fishing-penalty-jellies span:nth-child(1){left:3%;animation-delay:0s}
+.fishing-penalty-jellies span:nth-child(2){left:24%;animation-delay:.5s;font-size:clamp(110px,20vw,250px)}
+.fishing-penalty-jellies span:nth-child(3){left:49%;animation-delay:1s}
+.fishing-penalty-jellies span:nth-child(4){left:70%;animation-delay:.25s;font-size:clamp(85px,15vw,190px)}
+.fishing-penalty-jellies span:nth-child(5){left:86%;animation-delay:.9s}
+.fishing-penalty[data-effect="ink"]{background:#0a06249c}
+.fishing-penalty[data-effect="ink"] .fishing-penalty-creatures{display:none}
+.fishing-penalty[data-effect="ink"] .fishing-penalty-ink{display:block}
+.fishing-penalty-ink i{position:absolute;border-radius:47% 53% 65% 35% / 42% 40% 60% 58%;background:radial-gradient(ellipse at 35% 30%,#342b66f5 0%,#0c0a2cf5 58%,#07071ccc 83%,transparent 100%);filter:blur(3px);width:clamp(170px,34vw,540px);height:clamp(155px,30vw,420px);animation:fishing-ink-spread 6s ease-out both}
+.fishing-penalty-ink i:nth-child(1){left:-7%;top:5%}
+.fishing-penalty-ink i:nth-child(2){right:-12%;top:-5%;animation-delay:.25s}
+.fishing-penalty-ink i:nth-child(3){left:32%;bottom:-20%;animation-delay:.45s}
+.fishing-penalty-ink i:nth-child(4){left:55%;top:28%;animation-delay:.1s}
+.fishing-penalty-ink i:nth-child(5){left:10%;top:60%;animation-delay:.6s}
+.fishing-penalty[data-effect="shrink"]{background:#276dd866}
+.fishing-penalty[data-effect="shrink"] .fishing-penalty-creatures{display:none}
+/* The question is inside .fishing-main-column, not a direct child of .fishing-stage-inner. */
+.fishing-student.fishing-shrunken #fishing-question-view{transform:scale(.57);transform-origin:top center;transition:transform .25s ease;filter:drop-shadow(0 10px 18px #113e7677)}
+.fishing-student:not(.fishing-shrunken) #fishing-question-view{transition:transform .25s ease}
+@keyframes fishing-penalty-pop-extended{
+  0%,100%{opacity:0;transform:scale(.78)}
+  8%,87%{opacity:1;transform:scale(1)}
+}
+@keyframes fishing-jelly-float{
+  0%{transform:translateY(0) rotate(-10deg);opacity:0}
+  12%{opacity:.95}
+  50%{transform:translateY(-85vh) rotate(12deg);opacity:.95}
+  90%{opacity:.95}
+  100%{transform:translateY(-165vh) rotate(-8deg);opacity:0}
+}
+@keyframes fishing-ink-spread{
+  0%{transform:scale(.08) rotate(-20deg);opacity:0}
+  15%{opacity:.96}
+  45%,80%{transform:scale(1.5) rotate(12deg);opacity:.96}
+  100%{transform:scale(1.7) rotate(18deg);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+ .fishing-penalty-creatures,.fishing-penalty>strong,
+ .fishing-penalty-jellies span,.fishing-penalty-ink i{animation:none!important}
+ .fishing-penalty-jellies span{top:25%;opacity:.9}
+ .fishing-penalty-ink i{transform:scale(1.5);opacity:.85}
+ .fishing-student.fishing-shrunken #fishing-question-view{transition:none}
+}
