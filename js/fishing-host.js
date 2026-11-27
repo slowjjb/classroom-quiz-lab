@@ -310,8 +310,17 @@ async function finish(){
   if(operation||pub?.state!=='playing')return;
   operation=true;
   try{
+    for(let i=0;i<100&&working;i++)await new Promise(resolve=>setTimeout(resolve,40));
+    if(working)throw Error('진행 중인 채점이 완료되지 않았습니다. 다시 종료해 주세요.');
+    const c=code;
+    const [latestAnswers,latestActions,latestStates]=await Promise.all([
+      get(ref(db,'v5/answers/'+c)),get(ref(db,'v5/actions/'+c)),get(ref(db,'v5/memberState/'+c))
+    ]);
+    if(c!==code)throw Error('방이 변경되었습니다.');
+    answers=latestAnswers.val()||{};actions=latestActions.val()||{};states=latestStates.val()||{};
+    await pump();
     // Publish only aggregate question accuracy; answer logs remain teacher-only.
-    await publishFishingResults(code,{endGame:true});
+    await publishFishingResults(c,{endGame:true});
     status('피싱 프렌지 종료! 학생에게 개인 정답률과 문항별 집계가 표시됩니다.');
   }catch(err){status('종료 실패: '+formatError(err),true);}finally{operation=false;render();}
 }
