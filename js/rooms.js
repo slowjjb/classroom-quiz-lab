@@ -1,10 +1,10 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, set, get, onValue, remove, update, runTransaction } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.16';
+import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.17';
 import { createAvatarImage } from './avatars.js';
-import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=6.0.0-alpha.16';
-import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=6.0.0-alpha.16';
+import { buildRoomDeletionUpdates,canSafelyDeleteRoom,ROOM_MODE_PREFIX } from './room-bulk-delete.js?v=6.0.0-alpha.17';
+import {APP_VERSION,APP_BUILD,checkPublishedVersion,checkRoomVersion,openFreshPage} from './version-guard.js?v=6.0.0-alpha.17';
 
 const $ = id => document.getElementById(id);
 const modeNames = {classic:'클래식',gold:'골드 퀘스트',fishing:'피싱 프렌지',racing:'레이싱'};
