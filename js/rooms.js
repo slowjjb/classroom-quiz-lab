@@ -105,12 +105,13 @@ async function removeRoomMember(uid,name){
   const member=currentRoom?.members?.[uid];
   const online=Boolean(member&&Object.keys(member.connections||{}).length);
   const wording=online?'접속 중인 학생을 즉시 퇴장시키고 이름 예약도 해제합니다.':'오프라인 학생의 이름 예약과 참가 기록을 해제합니다.';
-  if(!confirm(`'${name}' 학생을 내보내고 이름을 해제할까요?\\n${wording}\\n진행 중인 게임의 기존 점수와 정답 기록은 유지됩니다.`))return;
+  if(!confirm(`'${name}' 학생을 내보내고 이름을 해제할까요?\n${wording}\n진행 중인 게임의 기존 점수와 정답 기록은 유지됩니다.`))return;
   memberRemovalBusy.add(uid);
   try{
     // Refresh the room before deletion so a reused name is not deleted from its new owner.
     const roomSnap=await get(ref(db,`v2/rooms/${code}`));
     const current=roomSnap.val();
+    if(code!==selectedCode)throw Error('선택한 방이 변경되었습니다. 다시 시도해 주세요.');
     if(!current?.meta)throw Error('방이 삭제되었습니다.');
     const profile=current.members?.[uid]?.profile;
     const ownedNames=Object.entries(current.nameClaims||{}).filter(([,owner])=>owner===uid).map(([value])=>value);
