@@ -146,6 +146,8 @@ function render(){
   $('gold-prepare').disabled=!ready||operation||Boolean(run)||room?.meta?.state==='ended'||!room?.meta?.setId;
   $('gold-start').disabled=!ready||operation||!run||state!=='ready';
   $('gold-end').disabled=!ready||operation||state!=='playing';
+  $('gold-pause').disabled=!ready||operation||state!=='playing';
+  $('gold-pause').textContent=pub?.pauseStartedAt?'▶️ 계속하기':'⏸️ 일시정지';
   $('gold-export').disabled=!run;
   $('gold-focus-open').disabled=!run;
   $('gold-settings').hidden=Boolean(run);
@@ -230,7 +232,7 @@ function renderFocus(){
   $('gold-focus').classList.toggle('gold-is-finished',state==='finished');
   arcade.sync({state:state==='playing'?'question':state==='finished'?'finished':'ready',questionId:'gold-'+(pub?.startedAt||'')});
   $('gold-focus-state').textContent=state==='playing'?'보물 찾는 중!':state==='finished'?'게임 종료':'시작 준비';
-  const time=state==='playing'?Math.max(0,Math.ceil((Number(pub.endsAt||0)-(Date.now()+offset))/1000)):0;
+  const time=state==='playing'?Math.max(0,Math.ceil((Number(pub.endsAt||0)-(Number(pub.pauseStartedAt||0)||(Date.now()+offset)))/1000)):0;
   $('gold-focus-clock').textContent=state==='playing'?`${Math.floor(time/60)}:${String(time%60).padStart(2,'0')}`:'—';
   const names=Object.keys(run?.roster||{}).sort();
   const alias=uid=>`참가자 ${Math.max(0,names.indexOf(uid))+1}`;
@@ -239,6 +241,8 @@ function renderFocus(){
   $('gold-focus-prepare').disabled=$('gold-prepare').disabled;
   $('gold-focus-start').disabled=$('gold-start').disabled;
   $('gold-focus-end').disabled=$('gold-end').disabled;
+  $('gold-focus-pause').disabled=$('gold-pause').disabled;
+  $('gold-focus-pause').textContent=$('gold-pause').textContent;
   rankRows($('gold-focus-ranking'),true);
   $('gold-focus-podium').hidden=state!=='finished';
   $('gold-focus-top3').hidden=state==='finished';
@@ -384,8 +388,36 @@ async function start(){
     focus(true);notify('게임을 시작했습니다! 교사 브라우저를 열어 두세요.','success');
   }catch(err){notify('시작 오류: '+formatError(err),'error');}finally{operation=false;render();}
 }
+
+async function toggleGamePause(){
+ if(!code||operation||!pub||pub.state!=='playing')return;
+ operation=true;
+ try{
+  for(let i=0;i<125&&processLock;i++)await new Promise(r=>setTimeout(r,40));
+  if(processLock)throw Error('처리 중인 답안이 있습니다. 다시 눌러 주세요.');
+  const c=code;
+  const snap=await get(ref(db,'v4/public/'+c)),live=snap.val();
+  if(c!==code||live?.state!=='playing')throw Error('게임이 이미 종료되었거나 방이 바뀌었습니다.');
+  if(!live.pauseStartedAt){
+   await update(ref(db,'v4/public/'+c),{pauseStartedAt:Date.now()+offset});
+   notify('게임을 일시정지했습니다.','success');
+  }else{
+   const delta=Math.max(0,Date.now()+offset-Number(live.pauseStartedAt));
+   const changes={['v4/public/'+c+'/pauseStartedAt']:null,['v4/public/'+c+'/endsAt']:Number(live.endsAt||0)+delta};
+   const targetsSnap=await get(ref(db,'v4/memberState/'+c));
+   for(const [uid,state] of Object.entries(targetsSnap.val()||{})){
+    if(state?.phase==='target'&&Number(state.targetDeadline||0)>0)
+     changes['v4/memberState/'+c+'/'+uid+'/targetDeadline']=Number(state.targetDeadline)+delta;
+   }
+   await update(ref(db),changes);
+   notify('일시정지를 해제하고 게임을 재개했습니다.','success');
+  }
+ }catch(e){notify('일시정지 처리 오류: '+formatError(e),'error');}
+ finally{operation=false;render();}
+}
 async function finish(){
   if(operation||pub?.state!=='playing')return;
+  if(pub?.pauseStartedAt)throw Error('일시정지를 해제한 뒤 종료해 주세요.');
   operation=true;
   try{
     // Credit pending chest interactions at the timer, even if a student did not pick a target.
@@ -427,7 +459,7 @@ function pickTarget(actorUid){
 }
 function newNonce(){return `a${crypto.randomUUID().replace(/-/g,'').slice(0,15)}`;}
 async function processAnswer(uid,state,submission){
-  if(pub?.state!=='playing'||!run||!submission?.value||!run.questions?.[state.questionIndex]||!pub?.scores?.[uid])return;
+  if(pub?.state!=='playing'||pub?.pauseStartedAt||!run||!submission?.value||!run.questions?.[state.questionIndex]||!pub?.scores?.[uid])return;
   const key=`answer/${uid}/${state.nonce}`;
   if(processingKeys.has(key))return;
   processingKeys.add(key);
@@ -508,7 +540,7 @@ async function payGoldReward(uid,state,outcome,target,choice){
   states[uid]=next;
 }
 async function processTreasure(uid,state,pick){
-  if(pub?.state!=='playing'||!run||!pick?.choice||!pub?.scores?.[uid])return;
+  if(pub?.state!=='playing'||pub?.pauseStartedAt||!run||!pick?.choice||!pub?.scores?.[uid])return;
   const key=`pick/${uid}/${state.nonce}`;
   if(processingKeys.has(key))return;
   processingKeys.add(key);
@@ -532,7 +564,7 @@ async function processTreasure(uid,state,pick){
   }catch(err){processingKeys.delete(key);notify('보물 처리 오류: '+formatError(err),'error');}
 }
 async function processTarget(uid,state,selection,{force=false}={}){
-  if(!run||!pub?.scores?.[uid]||!state?.pendingOutcome)return;
+  if(!run||pub?.pauseStartedAt||!pub?.scores?.[uid]||!state?.pendingOutcome)return;
   const key=`target/${uid}/${state.nonce}`;
   if(processingKeys.has(key))return;
   const now=Date.now()+offset;
@@ -571,7 +603,7 @@ function nextGoldJob(attempted){
   return jobs[0];
 }
 async function pump(){
-  if(processLock||!ready||!run||pub?.state!=='playing'||!code)return;
+  if(processLock||!ready||!run||pub?.state!=='playing'||pub?.pauseStartedAt||!code)return;
   processLock=true;
   const attempted=new Set();
   try{
@@ -592,10 +624,10 @@ async function pump(){
 
 function clockTick(){
   if(!ready||!code||!run||pub?.state!=='playing')return;
-  const seconds=Math.ceil((Number(pub.endsAt||0)-(Date.now()+offset))/1000);
+  const seconds=Math.ceil((Number(pub.endsAt||0)-(Number(pub.pauseStartedAt||0)||(Date.now()+offset)))/1000);
   $('gold-time').textContent=`${Math.floor(Math.max(0,seconds)/60)}:${String(Math.max(0,seconds)%60).padStart(2,'0')}`;
   if(focusOpen)$('gold-focus-clock').textContent=$('gold-time').textContent;
-  if(seconds<=0&&!operation&&!processLock){void finish();}
+  if(seconds<=0&&!pub?.pauseStartedAt&&!operation&&!processLock){void finish();}
 }
 function downloadCsv(){
   if(!run)return;
@@ -629,6 +661,8 @@ $('gold-retry-rights').addEventListener('click',()=>void checkRights());
 $('gold-prepare').addEventListener('click',()=>void prepare());
 $('gold-interactions').addEventListener('change',render);
 $('gold-start').addEventListener('click',()=>void start());
+$('gold-pause').addEventListener('click',()=>void toggleGamePause());
+$('gold-focus-pause').addEventListener('click',()=>void toggleGamePause());
 $('gold-end').addEventListener('click',()=>{if(confirm('골드 퀘스트를 지금 종료할까요?'))void finish();});
 $('gold-export').addEventListener('click',downloadCsv);
 $('gold-focus-open').addEventListener('click',()=>focus(true));
@@ -655,5 +689,5 @@ $('gold-download-rules').addEventListener('click',()=>{
 setInterval(clockTick,500);
 // Process answers arriving while a prior batch is in flight.
 // Firebase callbacks can fire during an awaited write; polling closes that small scheduling gap.
-setInterval(()=>{if(pub?.state==='playing')void pump();},250);
+setInterval(()=>{if(pub?.state==='playing'&&!pub?.pauseStartedAt)void pump();},250);
 render();
