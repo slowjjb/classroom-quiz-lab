@@ -69,6 +69,8 @@ function render(){
  $('racing-play-prepare').disabled=operation||ready||!room?.meta?.setId||!['lobby','locked'].includes(room?.meta?.state);
  $('racing-play-start').disabled=operation||!ready||state!=='lobby';
  $('racing-play-end').disabled=operation||state!=='playing';
+ $('racing-play-pause').disabled=operation||state!=='playing';
+ $('racing-play-pause').textContent=pub?.pauseStartedAt?'▶️ 계속하기':'⏸️ 일시정지';
  $('racing-play-export').disabled=!ready;
  $('racing-play-distance').disabled=ready;$('racing-play-duration').disabled=ready;
  if(run){$('racing-play-distance').value=String(run.finishMeters||20);$('racing-play-duration').value=String(run.durationSec||300);}
