@@ -92,6 +92,9 @@ function revealContent(){
   $('fishing-reward-title').textContent=title;
   $('fishing-reward-detail').textContent=desc;
   $('fishing-reward-total').textContent=`현재 누적 ${Number(score.kg||0).toFixed(1)} kg`;
+  const review=$('fishing-correct-review');
+  review.hidden=!(result.correct===false&&result.correctAnswer);
+  if(!review.hidden)review.textContent='📖 이번 문제의 정답: '+String(result.correctAnswer);
   playResultSound(result.type,result.tier);
 }
 function renderQuestion(){
