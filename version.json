@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.18",
-  "build": 614,
+  "version": "6.0.0-alpha.19",
+  "build": 615,
   "minSupportedBuild": 412,
-  "purpose": "골드·피싱·레이싱 오답 정답 안내: 학생 전용 정답 표시 및 가독성 개선"
+  "purpose": "문제 관리: 개별 검토용 JSON·전체 세트 백업·이미지 일괄 파일명 대조 및 GitHub 업로드 안내"
 }
