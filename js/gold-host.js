@@ -392,6 +392,11 @@ async function finish(){
     if(processLock){
       for(let attempts=0;attempts<100&&processLock;attempts++)await new Promise(resolve=>setTimeout(resolve,50));
     }
+    if(processLock)throw Error('진행 중인 채점이 완료되지 않았습니다. 잠시 후 종료를 다시 시도해 주세요.');
+    // Drain already-received valid answers before publishing the final statistics.
+    const pendingAnswers=(await get(ref(db,`v4/answers/${code}`))).val()||{};
+    answers=pendingAnswers;
+    await pump();
     for(const uid of Object.keys(run?.roster||{})){
       let member=states?.[uid];
       if(member?.phase==='treasure'&&picks?.[uid]?.[member.nonce]){
