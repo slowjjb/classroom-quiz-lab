@@ -188,7 +188,7 @@
           <p>아래에서 전체 무게 순위를 확인해 보세요!</p></section>
         <p id="fishing-message" class="fishing-status" role="status" aria-live="polite"></p>
         <section class="fishing-leaderboard"><h3>🏆 실시간 순위</h3><div id="fishing-leaders" class="fishing-rank-list"></div></section>
-        <div id="fishing-penalty" class="fishing-penalty" data-effect="school" hidden aria-live="polite"><div class="fishing-penalty-creatures">🐟 🐠 🐟 🪼 🐟 🐠 🐟</div><strong id="fishing-penalty-description">🐟 물고기 떼!</strong></div>
+        <div id="fishing-penalty" class="fishing-penalty" data-effect="school" hidden aria-live="polite"><div class="fishing-penalty-creatures" aria-hidden="true">🐟 🐠 🐟 🐠 🐟 🐠 🐟</div><div class="fishing-penalty-jellies" aria-hidden="true"><span>🪼</span><span>🪼</span><span>🪼</span><span>🪼</span><span>🪼</span></div><div class="fishing-penalty-ink" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><strong id="fishing-penalty-description">🐟 물고기 떼!</strong></div>
         <audio id="fishing-bgm" src="audio/fishing-bgm.wav" preload="auto" loop></audio>
         <audio id="fishing-sfx-catch" src="audio/fishing-catch.wav" preload="auto"></audio>
         <audio id="fishing-sfx-miss" src="audio/fishing-miss.wav" preload="auto"></audio>
