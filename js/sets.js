@@ -1,7 +1,7 @@
 import { auth, db, isConfigured, formatError } from './firebase.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { onValue, ref, push, set, remove } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { parseCSV, makeDraftRows, validateRows, reviewQuestionWarnings, questionToDraft, decodeFile, toCSV, imageFileName } from './csv.js?v=4.4';
+import { parseCSV, makeDraftRows, validateRows, reviewQuestionWarnings, questionToDraft, decodeFile, toCSV, imageFileName } from './csv.js?v=6.0.0-alpha.22';
 import { makeRulesV5 } from './rules-v5.js?v=5.0.11';
 import { normalizeQuestionImage, siteRootFromPage, scanQuestionImages } from './image-utils.js?v=4.4';
 
