@@ -1,3 +1,4 @@
+import {gameIsPaused,gameRemainingSeconds,renderStudentPause} from './game-pause.js?v=6.0.0-alpha.22';
 import { db, formatError } from './firebase.js';
 import { ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import { createAvatarImage } from './avatars.js';
@@ -146,7 +147,7 @@ function renderQuestion(){
 }
 function updateSubmitButton(){
   const btn=$('gold-submit');
-  btn.disabled=Boolean(ownAnswer||submitting||!String(selected||'').trim()||pub?.state!=='playing');
+  btn.disabled=Boolean(ownAnswer||submitting||!String(selected||'').trim()||pub?.state!=='playing'||gameIsPaused(pub));
   btn.textContent=ownAnswer||submitting?'채점을 기다리고 있어요…':'정답 제출하고 보물 찾기';
   $('gold-answer-choices').querySelectorAll('button,input').forEach(el=>el.disabled=Boolean(ownAnswer||submitting));
 }
@@ -187,12 +188,12 @@ function renderTarget(){
 }
 function updateTargetButton(){
   const expired=Number(own?.targetDeadline||0)<=clientTime();
-  const locked=Boolean(ownTarget||targetSubmitting||targetSentNonce===own?.nonce||expired);
+  const locked=Boolean(ownTarget||targetSubmitting||targetSentNonce===own?.nonce||expired||gameIsPaused(pub));
   $('gold-target-submit').disabled=Boolean(!targetSelected||locked);
   $('gold-target-options').querySelectorAll('button').forEach(btn=>btn.disabled=locked);
 }
 async function selectTarget(){
-  if(!code||!uid||own?.phase!=='target'||!targetSelected||ownTarget||targetSubmitting||targetSentNonce===own?.nonce||clientTime()>Number(own.targetDeadline||0))return;
+  if(gameIsPaused(pub)||!code||!uid||own?.phase!=='target'||!targetSelected||ownTarget||targetSubmitting||targetSentNonce===own?.nonce||clientTime()>Number(own.targetDeadline||0))return;
   const nonce=own.nonce,targetUid=targetSelected;targetSubmitting=true;render();
   try{
     await set(ref(db,`v4/targets/${code}/${uid}/${nonce}`),{targetUid,at:serverTimestamp()});
@@ -204,8 +205,10 @@ async function selectTarget(){
 function render(){
   if(!code||!uid)return;
   const phase=pub?.state||'ready';
+  renderStudentPause(pub,!stage.hidden);
   if(phase==='ready'||!pub){if(showingRewardNonce)closeReward({rerender:false});show(false);return;}
   show(true);
+  renderStudentPause(pub,true);
   if(phase==='finished'&&showingRewardNonce)closeReward({rerender:false});
   if(phase==='playing')maybeRevealReward();
   $('gold-student-state').textContent=phase==='finished'?'게임 종료':'골드 퀘스트';
@@ -251,7 +254,7 @@ function render(){
   rankList($('gold-student-leaders'),5);
 }
 async function submit(){
-  if(!code||!uid||!own?.nonce||own.phase!=='question'||ownAnswer||submitting||!String(selected).trim())return;
+  if(gameIsPaused(pub)||!code||!uid||!own?.nonce||own.phase!=='question'||ownAnswer||submitting||!String(selected).trim())return;
   const nonce=own.nonce;submitting=true;render();sound.submit();
   try{await set(ref(db,`v4/answers/${code}/${uid}/${nonce}`),{value:String(selected).trim(),at:serverTimestamp()});
     message('제출했습니다! 선생님 화면에서 채점하는 중입니다.');
@@ -259,7 +262,7 @@ async function submit(){
   finally{submitting=false;render();}
 }
 async function pick(choice){
-  if(!code||!uid||!own?.nonce||own.phase!=='treasure'||ownPick||picking)return;
+  if(gameIsPaused(pub)||!code||!uid||!own?.nonce||own.phase!=='treasure'||ownPick||picking)return;
   const nonce=own.nonce;picking=true;pendingPickNonce=nonce;sound.choice();render();
   try{await set(ref(db,`v4/picks/${code}/${uid}/${nonce}`),{choice,at:serverTimestamp()});
     $('gold-chest-feedback').textContent='보물상자를 열고 있습니다…';
@@ -269,6 +272,7 @@ async function pick(choice){
 export function stopGoldView(){
   for(const un of stopListeners)un();stopListeners=[];
   closeReward({rerender:false});revealedRewardNonce='';
+  renderStudentPause(null,false);
   code='';uid='';pub=null;own=null;ownAnswer=null;ownPick=null;ownTarget=null;selected='';selectedNonce='';submitting=false;picking=false;targetSelected='';targetSubmitting=false;targetSentNonce='';finishedShown=false;
   studentStudyMode='first';$('gold-student-study-mode').value='first';
   $('gold-target-options').dataset.nonce='';
@@ -303,11 +307,11 @@ $('gold-reward-next').addEventListener('click',()=>closeReward());
 $('gold-chest-buttons').querySelectorAll('[data-chest]').forEach(button=>button.addEventListener('click',()=>void pick(Number(button.dataset.chest))));
 setInterval(()=>{
   if(!code||!uid||pub?.state!=='playing')return;
-  const remain=Math.max(0,Math.ceil((Number(pub.endsAt||0)-clientTime())/1000));
+  const remain=gameRemainingSeconds(pub,clientTime());
   $('gold-student-clock').textContent=`${Math.floor(remain/60)}:${String(remain%60).padStart(2,'0')}`;
   if(own?.phase==='target'){
     // The countdown changes every half-second, but all 20 avatars do not.
-    const remaining=Math.max(0,Math.ceil((Number(own.targetDeadline||0)-clientTime())/1000));
+    const remaining=Math.max(0,Math.ceil((Number(own.targetDeadline||0)-(gameIsPaused(pub)?Number(pub.pauseStartedAt):clientTime()))/1000));
     $('gold-target-clock').textContent=remaining>0?`${remaining}초 안에 선택`:'자동 선택 중…';
     if(remaining<=0)updateTargetButton();
   }
