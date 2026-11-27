@@ -2,7 +2,7 @@
 // Reuses existing QR rooms, Firebase identities, question sets and v6 rules.
 import {db,auth,formatError} from './firebase.js';
 import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js';
+import {makeShuffleBag,continuingGoldQuestionIndex,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js?v=6.0.0-alpha.21';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
@@ -31,7 +31,8 @@ function questionList(source){
  })).filter(q=>q.prompt&&(q.type==='typing'?q.options.filter(Boolean).length>0:q.options.length>=2&&q.correctIndex>=1&&q.correctIndex<=q.options.length));
 }
 function nextQuestion(uid,seq,prev){
- const deck=run?.decks?.[uid]||[],idx=Number(deck[seq]);
+ const deck=run?.decks?.[uid]||[],questions=run?.questions||[];
+ const idx=continuingGoldQuestionIndex(deck,seq,questions.length,uid+':'+String(run?.createdAt||''));
  if(!run?.questions?.[idx])return {...prev,phase:'waiting',nonce:'done_'+seq,questionIndex:0,number:0,prompt:'준비된 문제를 모두 풀었습니다.',options:[],optionOrder:[],sequence:seq};
  const q=run.questions[idx],shuffled=q.type==='typing'?null:shuffleGoldChoices(q.options,null,Math.random,q.correctIndex);
  return {phase:'question',nonce:'q'+seq+'_'+crypto.randomUUID().replace(/-/g,'').slice(0,12),questionIndex:idx,
