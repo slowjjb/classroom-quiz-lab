@@ -320,7 +320,8 @@ function messageForState(question,uid,seq,previous){
     ...(shuffled?{optionOrder:shuffled.optionOrder}:{}),optionHistory,
     imageUrl:question.imageUrl||'',
     answered:previous?.answered||0,correct:previous?.correct||0,
-    lastMessage:previous?.lastMessage||'',lastCorrect:previous?.lastCorrect||''};
+    lastMessage:previous?.lastMessage||'',lastCorrect:previous?.lastCorrect||'',
+    lastWrongNonce:previous?.lastWrongNonce||'',lastWrongAnswer:previous?.lastWrongAnswer||''};
 }
 function nextQuestionFor(uid,seq,old){
   const deck=run?.decks?.[uid]||[];
@@ -443,9 +444,12 @@ async function processAnswer(uid,state,submission){
     let saved=tx.snapshot.val();
     if(!saved||saved.lastAnswerNonce!==nonce)saved=(await get(scoreRef)).val();
     if(!saved||saved.lastAnswerNonce!==nonce)throw Error('채점 트랜잭션을 확인하지 못했습니다.');
+    const answerLabel=q.type==='typing'?q.options.filter(Boolean).join(' / ')
+      :`${displayedGoldCorrectIndex(q,state.optionOrder)}번 · ${q.options[Number(q.correctIndex)-1]||''}`;
     const oldState={...state,answered:Number(saved.answered||0),correct:Number(saved.correct||0),
-      lastMessage:correct?'✨ 정답입니다! 보물상자를 골라 주세요.':`다음 문제에 도전하세요! 정답: ${q.type==='typing'?q.options.filter(Boolean).join(' / '):`${displayedGoldCorrectIndex(q,state.optionOrder)}번 ${q.options[Number(q.correctIndex)-1]}`}`,
-      lastCorrect:correct?'yes':'no'};
+      lastMessage:correct?'✨ 정답입니다! 보물상자를 골라 주세요.':`다음 문제에 도전하세요! 정답: ${answerLabel}`,
+      lastCorrect:correct?'yes':'no',
+      ...(!correct?{lastWrongNonce:nonce,lastWrongAnswer:answerLabel}:{lastWrongNonce:'',lastWrongAnswer:''})};
     const next=correct?{...oldState,phase:'treasure'}:nextQuestionFor(uid,Number(state.sequence||0)+1,oldState);
     await update(ref(db),{
       [`v4/memberState/${code}/${uid}`]:next,
