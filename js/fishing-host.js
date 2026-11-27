@@ -2,13 +2,13 @@
 import {auth,db,formatError} from './firebase.js';
 import {onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import {makeShuffleBag,continuingGoldQuestionIndex,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js?v=6.0.0-alpha.21';
+import {makeShuffleBag,continuingGoldQuestionIndex,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js?v=6.0.0-alpha.22';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
-import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.21';
+import {freshScore,resolveCatch,fishingRanking,FISHING_PENALTY_COOLDOWN_MS,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.22';
 import {makeRulesV6} from './rules-v6.js?v=6.0.0-alpha.4';
 import {buildGoldAccuracy} from './gold-analytics.js?v=6.0.0-alpha.14';
-import {CREATURES} from './fishing-core.js?v=6.0.0-alpha.21';
+import {CREATURES} from './fishing-core.js?v=6.0.0-alpha.22';
 import {renderFishingPodium} from './fishing-podium.js?v=5.0.11';
 const $=id=>document.getElementById(id);
 let teacher=null,code='',mode='',room=null,run=null,pub=null,states={},actions={},answers={},rights=false,operation=false,working=false,offset=0;
