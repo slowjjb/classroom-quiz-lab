@@ -2,7 +2,7 @@
 // Reuses existing QR rooms, Firebase identities, question sets and v6 rules.
 import {db,auth,formatError} from './firebase.js';
 import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices} from './gold-core.js';
+import {makeShuffleBag,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
@@ -244,7 +244,12 @@ async function processAnswer(uid,state,submission){
   let score=outcome.snapshot.val();
   if(!score||score.lastAnswerNonce!==nonce)score=(await get(scoreRef)).val();
   if(!score||score.lastAnswerNonce!==nonce)throw Error('채점 결과를 저장하지 못했습니다.');
-  const next=nextQuestion(uid,Number(state.sequence||0)+1,{answered:score.answered,correct:score.correct});
+  const correctAnswer=!correct?(question.type==='typing'
+    ?question.options.filter(Boolean).join(' / ')
+    :`${displayedGoldCorrectIndex(question,state.optionOrder)}번 · ${question.options[Number(question.correctIndex)-1]||''}`):'';
+  const next={...nextQuestion(uid,Number(state.sequence||0)+1,{answered:score.answered,correct:score.correct}),
+    lastFeedback:{nonce,correct:!!correct,...(!correct?{correctAnswer}:{})}};
+  // Only the submitting student and teacher can read this state.
   await runTransaction(ref(db,'v6/memberState/'+c+'/'+uid),old=>old?.nonce===nonce?next:undefined,{applyLocally:false});
   await update(ref(db),{['v6/privateRuns/'+c+'/answersLog/'+uid+'/'+nonce]:{
    questionIndex:Number(state.questionIndex),questionNumber:question.number,answer:String(submission.value),correct:!!correct,
