@@ -240,16 +240,20 @@ function showPenalty(evt){
   const ms=Math.max(0,Number(evt.durationMs||FISHING_PENALTY_DURATION_MS)-(now()-Number(evt.at||0)));
   if(ms<=0)return;
   const layer=$('fishing-penalty');layer.hidden=false;layer.dataset.effect=evt.effect||'school';
-  $('fishing-penalty-description').textContent=({school:'🐟 물고기 떼 출몰!',jelly:'🪼 해파리 떼 습격!',ink:'🐙 먹물 주의!',shrink:'🌊 갑자기 작아진 바다!'})[evt.effect]||'깜짝 벌칙!';
+  $('fishing-penalty-description').textContent=({school:'🐟 물고기 떼 출몰!',jelly:'🪼 해파리가 떠다녀요!',ink:'🐙 먹물이 바다를 뒤덮어요!',shrink:'🌊 화면이 작아졌어요!'})[evt.effect]||'깜짝 벌칙!';
   stage.classList.toggle('fishing-shrunken',evt.effect==='shrink');
+  // Re-trigger CSS animations without disabling question controls.
+  layer.classList.remove('fishing-penalty-playing');
+  void layer.offsetWidth;
+  layer.classList.add('fishing-penalty-playing');
   if(eventTimer)clearTimeout(eventTimer);
-  eventTimer=setTimeout(()=>{layer.hidden=true;stage.classList.remove('fishing-shrunken');},ms);
+  eventTimer=setTimeout(()=>{layer.hidden=true;layer.classList.remove('fishing-penalty-playing');stage.classList.remove('fishing-shrunken');},ms);
 }
 export function stopFishingView(){
   subs.forEach(fn=>fn());subs=[];code='';uid='';pub=null;own=null;answer=null;
   questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;hitPlayedNonce='';learningMode='first';learningSignature='';
   if(eventTimer)clearTimeout(eventTimer);if(animTimer)clearTimeout(animTimer);
-  $('fishing-penalty').hidden=true;stage.classList.remove('fishing-shrunken');setCodexOpen(false);stopBgm();show(false);
+  $('fishing-penalty').hidden=true;$('fishing-penalty').classList.remove('fishing-penalty-playing');stage.classList.remove('fishing-shrunken');setCodexOpen(false);stopBgm();show(false);
 }
 export function startFishingView(roomCode,userUid){
   stopFishingView();code=roomCode;uid=userUid;
