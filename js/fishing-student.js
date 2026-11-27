@@ -1,3 +1,4 @@
+import {gameIsPaused,gameRemainingSeconds,renderStudentPause} from './game-pause.js?v=6.0.0-alpha.22';
 // Purplekit v5.0 — Fishing Frenzy student interface.
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
@@ -183,12 +184,13 @@ function renderFishingLearning(score){
  }
 }
 function render(){
-  if(!code||!uid||!pub){show(false);return;}
+  if(!code||!uid||!pub){renderStudentPause(null,false);show(false);return;}
   const phase=pub.state||'lobby';
   show(['ready','playing','finished'].includes(phase));
+  renderStudentPause(pub,!stage.hidden);
   if(stage.hidden)return;
   const score=pub?.scores?.[uid]||{};
-  $('fishing-clock').textContent=phase==='playing'?formatClock((Number(pub.endsAt||0)-now())/1000):'—';
+  $('fishing-clock').textContent=phase==='playing'?formatClock(gameRemainingSeconds(pub,now())):'—';
   $('fishing-weight').textContent=`${Number(score.kg||0).toFixed(1)} kg`;
   setLureVisual(score.level||1);
   $('fishing-durability').textContent='❤️'.repeat(score.durability||0)+'🖤'.repeat(Math.max(0,5-(score.durability||0)));
@@ -201,7 +203,7 @@ function render(){
   if(own.phase==='waiting'){$('fishing-wait').hidden=false;$('fishing-wait').textContent='준비한 문제를 모두 풀었어요! 선생님의 종료 안내를 기다려 주세요.';return;}
   if(own.phase==='cast'||own.phase==='bite'){
     $('fishing-cast-view').hidden=false;
-    const bite=own.phase==='bite',hit=bite&&now()>=Number(own.biteAt||Infinity);
+    const bite=own.phase==='bite',hit=bite&&(gameIsPaused(pub)?Number(pub.pauseStartedAt):now())>=Number(own.biteAt||Infinity);
     const button=$('fishing-cast-button');
     button.textContent=bite?(hit?'🎣 HIT! 지금 낚아 올리기!':'🐟 입질을 기다리는 중…'):'🎣 낚싯대 던지기 · CAST!';
     button.disabled=(bite&&!hit)||pending||(action?.nonce===own.nonce&&action?.type===(bite?'hook':'cast'));
@@ -220,7 +222,7 @@ function render(){
 }
 function formatClock(sec){const v=Math.max(0,Math.ceil(sec));return `${Math.floor(v/60)}:${String(v%60).padStart(2,'0')}`;}
 async function sendAction(type){
-  if(!code||!uid||!own||pending||pub?.state!=='playing')return;
+  if(!code||!uid||!own||pending||pub?.state!=='playing'||gameIsPaused(pub))return;
   const nonce=own.nonce;
   ensureBgm();
   if(type==='cast')safePlay($('fishing-sfx-cast'),.49);
@@ -229,7 +231,7 @@ async function sendAction(type){
   catch(err){action=null;notice('낚시 진행 실패: '+formatError(err),true);}finally{pending=false;render();}
 }
 async function submitAnswer(){
-  if(!code||!uid||!own||own.phase!=='question'||!selected||answer||pending||pub?.state!=='playing')return;
+  if(!code||!uid||!own||own.phase!=='question'||!selected||answer||pending||pub?.state!=='playing'||gameIsPaused(pub))return;
   ensureBgm();
   const nonce=own.nonce;pending=true;render();
   try{
@@ -253,6 +255,7 @@ function showPenalty(evt){
   eventTimer=setTimeout(()=>{layer.hidden=true;layer.classList.remove('fishing-penalty-playing');stage.classList.remove('fishing-shrunken');},ms);
 }
 export function stopFishingView(){
+  renderStudentPause(null,false);
   subs.forEach(fn=>fn());subs=[];code='';uid='';pub=null;own=null;answer=null;
   questionNonce='';rewardNonce='';selected='';pending=false;shownEvent='';action=null;hitPlayedNonce='';learningMode='first';learningSignature='';
   if(eventTimer)clearTimeout(eventTimer);if(animTimer)clearTimeout(animTimer);
