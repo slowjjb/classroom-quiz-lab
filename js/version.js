@@ -1,6 +1,6 @@
 // Public build identifier: increment the build number on every protocol-changing release.
-export const APP_VERSION = '6.0.0-alpha.19';
-export const APP_BUILD = 615;
+export const APP_VERSION = '6.0.0-alpha.20';
+export const APP_BUILD = 616;
 export function classifyVersion(latest,roomMinBuild=0){
   const requested=Number(roomMinBuild)||0;
   const published=Number(latest?.build)||0;
