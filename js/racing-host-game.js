@@ -9,7 +9,7 @@ import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from '
 import {createRacingAudio} from './racing-audio.js';
 import {buildGoldAccuracy} from './gold-analytics.js';
 import {normalizedRacingGarage} from './racing-garage-core.js';
-import {renderRacingFinalResults,resetRacingFinalResults} from './racing-results.js?v=6.0.0-alpha.16';
+import {renderRacingFinalResults,resetRacingFinalResults} from './racing-results.js?v=6.0.0-alpha.17';
 const $=id=>document.getElementById(id);
 let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='',resultsMode='first',finalizing=false;
 const laneRows=new Map(),sound=createRacingAudio({role:'teacher'});
