@@ -12,7 +12,7 @@ const notice=(text,bad=false)=>{const el=$('racing-student-message');if(el){el.t
 const fmtTime=sec=>Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
 function timer(){
  if(!code||pub?.state!=='playing')return;
- $('racing-student-clock').textContent=fmtTime(Math.max(0,Math.ceil((Number(pub.endsAt||0)-Date.now())/1000)));
+ $('racing-student-clock').textContent=fmtTime(gameRemainingSeconds(pub,Date.now()));
 }
 function syncAudioButtons(){
  const label=sound.isOn?'🔊 배경음·효과음 끄기':'🔈 배경음·효과음 켜기';
@@ -160,10 +160,11 @@ function renderQuestion(){
 function render(){
  const stage=$('racing-student-play');if(!code){stage.hidden=true;return;}
  const state=pub?.state||'lobby';stage.hidden=state!=='playing'&&state!=='finished';
- sound.setPlaying(state==='playing');
+ sound.setPlaying(state==='playing'&&!gameIsPaused(pub));
  if(lastPhase==='playing'&&state==='finished')sound.play('finish');
  lastPhase=state;
  syncAudioButtons();
+ renderStudentPause(pub,!stage.hidden);
  if(stage.hidden)return;
  if(state==='playing'&&!stagePositioned){
   stagePositioned=true;
@@ -193,7 +194,7 @@ function render(){
  showResult(me);
 }
 async function submitAnswer(value){
- if(!code||!uid||pub?.state!=='playing'||own?.phase!=='question'||submitting)return;
+ if(!code||!uid||pub?.state!=='playing'||gameIsPaused(pub)||own?.phase!=='question'||submitting)return;
  if(!String(value).trim()){notice('답을 입력해 주세요.',true);return}
  const nonce=own.nonce;if(!nonce||nonce===submittedNonce)return;
  submitting=true;submittedNonce=nonce;
@@ -210,6 +211,7 @@ async function submitAnswer(value){
  }
 }
 export function stopRacingGame(){
+ renderStudentPause(null,false);
  session++;stopFns.forEach(fn=>{try{fn()}catch(_){}});
  stopFns=[];code='';uid='';pub=null;own=null;submitting=false;submittedNonce='';shownNonce='';
  clearTimeout(lastResultTimer);lastResultTimer=null;clearRoulette();sound.setPlaying(false);lastPhase='';stagePositioned=false;learningMode='first';learningSignature='';
