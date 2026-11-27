@@ -60,7 +60,7 @@ function render(){
  const panel=$('racing-play-controls');if(!code){panel.hidden=true;return;}
  panel.hidden=false;
  const state=pub?.state||'lobby',ready=Boolean(run),scores=pub?.scores||{},rank=racingStandings(scores);
- sound.setPlaying(state==='playing');
+ sound.setPlaying(state==='playing'&&!pub?.pauseStartedAt);
  if(lastRacePhase==='playing'&&state==='finished'){sound.play('finish');setFocus(true);}
  lastRacePhase=state;
  $('racing-play-audio').textContent=sound.isOn?'🔊 음악·효과음 끄기':'🔈 음악·효과음 켜기';
@@ -73,7 +73,7 @@ function render(){
  $('racing-play-distance').disabled=ready;$('racing-play-duration').disabled=ready;
  if(run){$('racing-play-distance').value=String(run.finishMeters||20);$('racing-play-duration').value=String(run.durationSec||300);}
  $('racing-play-summary').textContent=rank.length+'명 · 정답 '+rank.reduce((n,p)=>n+Number(p.correct||0),0)+'회 · 전체 풀이 '+rank.reduce((n,p)=>n+Number(p.answered||0),0)+'회 · 목표 '+meters+'m';
- const remain=state==='playing'?Math.max(0,Math.ceil((Number(pub?.endsAt||0)-Date.now())/1000)):state==='finished'?0:Number(run?.durationSec||300);
+ const remain=state==='playing'?Math.max(0,Math.ceil((Number(pub?.endsAt||0)-(Number(pub?.pauseStartedAt)||Date.now()))/1000)):state==='finished'?0:Number(run?.durationSec||300);
  $('racing-play-clock').textContent=state==='playing'||state==='lobby'&&ready?Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'):'—';
  $('racing-play-guide').textContent=state==='playing'?'진행 중 · 실제 자동차가 주행합니다. 정답 +1m, 정답 3회마다 룰렛!':state==='finished'?'결승선 또는 제한 시간으로 종료되었습니다.':'학생이 차를 고르면 게임 준비를 누른 뒤 시작하세요.';
  renderRacingFinalResults({run,pub,mode:resultsMode,members:room?.members||{}});
@@ -224,6 +224,28 @@ async function publishRaceResults(c,{endRace=false}={}){
   await update(ref(db,'v6/public/'+c),changes);
  }finally{finalizing=false}
 }
+
+async function toggleGamePause(){
+ if(!code||operation||!pub||pub.state!=='playing')return;
+ operation=true;
+ try{
+  for(let i=0;i<125&&processing;i++)await new Promise(r=>setTimeout(r,40));
+  if(processing)throw Error('처리 중인 답안이 있습니다. 다시 눌러 주세요.');
+  const c=code;
+  const snap=await get(ref(db,'v6/public/'+c)),live=snap.val();
+  if(c!==code||live?.state!=='playing')throw Error('게임이 이미 종료되었거나 방이 바뀌었습니다.');
+  if(!live.pauseStartedAt){
+   await update(ref(db,'v6/public/'+c),{pauseStartedAt:Date.now()});
+   notice('게임을 일시정지했습니다.');
+  }else{
+   const delta=Math.max(0,Date.now()-Number(live.pauseStartedAt));
+   const changes={['v6/public/'+c+'/pauseStartedAt']:null,['v6/public/'+c+'/endsAt']:Number(live.endsAt||0)+delta};
+   await update(ref(db),changes);
+   notice('일시정지를 해제하고 게임을 재개했습니다.');
+  }
+ }catch(e){notice('일시정지 처리 오류: '+formatError(e),true);}
+ finally{operation=false;render();}
+}
 async function finish(){
  if(!code||operation||pub?.state!=='playing')return;
  operation=true;
@@ -274,12 +296,12 @@ async function processAnswer(uid,state,submission){
  }catch(e){attempted.delete(key);notice('채점 처리 오류: '+formatError(e),true)}
 }
 async function pump(){
- if(processing||!code||pub?.state!=='playing'||!run)return;
+ if(processing||!code||pub?.state!=='playing'||pub?.pauseStartedAt||!run)return;
  processing=true;
  try{
   let jobs=0;
   for(const [uid,st] of Object.entries(states)){
-   if(!code||pub?.state!=='playing'||jobs>=50)break;
+   if(!code||pub?.state!=='playing'||pub?.pauseStartedAt||jobs>=50)break;
    const answer=answers?.[uid]?.[st?.nonce];
    if(st?.phase!=='question'||!answer||!run.roster?.[uid])continue;
    jobs++;await processAnswer(uid,st,answer);
@@ -323,6 +345,7 @@ function exportCsv(){
 $('racing-play-prepare').addEventListener('click',()=>void prepare());
 $('racing-play-start').addEventListener('click',()=>void start());
 $('racing-play-audio').addEventListener('click',()=>void sound.toggle().then(()=>{if(code)render()}));
+$('racing-play-pause').addEventListener('click',()=>void toggleGamePause());
 $('racing-play-end').addEventListener('click',()=>{if(confirm('현재 레이싱 경주를 종료할까요?'))void finish()});
 $('racing-play-export').addEventListener('click',exportCsv);
 $('racing-results-mode').addEventListener('change',e=>{resultsMode=e.target.value==='all'?'all':'first';renderRacingFinalResults({run,pub,mode:resultsMode,members:room?.members||{}});});
@@ -334,8 +357,8 @@ window.addEventListener('quizlab-room-meta',e=>{
  if(mode==='racing')bind(c,mode);else if(c===code)stop();
 });
 // Pick up answers that arrived while an earlier batch was being graded.
-setInterval(()=>{if(code&&pub?.state==='playing')void pump()},350);
+setInterval(()=>{if(code&&pub?.state==='playing'&&!pub?.pauseStartedAt)void pump()},350);
 setInterval(()=>{if(pub?.state==='playing'&&code){
  $('racing-play-clock').textContent=Math.floor(Math.max(0,Math.ceil((Number(pub.endsAt||0)-Date.now())/1000))/60)+':'+String(Math.max(0,Math.ceil((Number(pub.endsAt||0)-Date.now())/1000))%60).padStart(2,'0');
- if(Number(pub.endsAt||0)>0&&Date.now()>Number(pub.endsAt||0)+500&&!operation)void finish();
+ if(!pub.pauseStartedAt&&Number(pub.endsAt||0)>0&&Date.now()>Number(pub.endsAt||0)+500&&!operation)void finish();
 }},1000);
