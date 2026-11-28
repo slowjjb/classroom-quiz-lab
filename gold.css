@@ -261,3 +261,11 @@
 /* v6 alpha18: obvious learning feedback without obscuring the next question. */
 .gold-wrong-review{position:sticky;top:8px;z-index:35;padding:14px 18px;border:3px solid #f6ad50;border-radius:15px;background:#fff5d7;color:#823b13;font-size:clamp(16px,2.3vw,23px);line-height:1.45;font-weight:950;box-shadow:0 7px 25px #170b3860;overflow-wrap:anywhere;pointer-events:none}
 .gold-wrong-review[hidden]{display:none!important}
+
+/* Alpha.24 — same compact control density as teacher Racing and Fishing. */
+.gold-focus{padding:9px clamp(10px,1.5vw,22px) 18px}
+.gold-focus .quiz-stage-head{padding:10px 17px;border-radius:14px}
+.gold-focus-actions{gap:6px;margin:7px 0 10px}
+.gold-focus-actions button{min-height:36px;padding:7px 11px;font-size:13px}
+.gold-focus-main{gap:10px}
+.gold-focus .gold-stage-board,.gold-focus .gold-stage-leaders{min-width:0}
