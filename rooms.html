@@ -207,7 +207,7 @@
     <div class="racing-play-hud"><div><small>남은 시간</small><strong id="racing-play-clock">—</strong></div><div><small>현재 경기</small><strong id="racing-play-summary">준비 전</strong></div></div>
     <p id="racing-play-guide" class="helper">자동차 선택 후 준비 버튼을 눌러 주세요.</p>
     <p id="racing-play-status" class="feedback" role="status">문제 세트를 확인하고 있습니다.</p>
-    <div class="racing-control-actions"><button type="button" id="racing-play-focus-toggle" class="btn btn-outline">🏁 경주 상황판 크게 보기</button><button type="button" id="racing-play-audio" class="btn btn-outline" aria-label="레이싱 배경음악 및 효과음 켜기">🔈 음악·효과음 켜기</button></div>
+    <div class="racing-control-actions"><button type="button" id="racing-play-focus-toggle" class="btn btn-outline">🏁 경주 상황판 크게 보기</button><button type="button" id="racing-play-focus-pause" class="btn btn-outline" disabled>⏸️ 일시정지</button><button type="button" id="racing-play-focus-end" class="btn btn-danger" disabled>경주 종료</button><button type="button" id="racing-play-audio" class="btn btn-outline" aria-label="레이싱 배경음악 및 효과음 켜기">🔈 음악·효과음 켜기</button></div>
     <div id="racing-play-ranking" class="racing-play-ranking" aria-label="레이싱 거리별 실시간 순위"></div>
     <p id="racing-play-footer" class="racing-play-footer">정답 +1m · 정답 3회마다 랜덤 룰렛 · 결승선 도착 또는 제한 시간 종료</p>
     <section id="racing-final-results" class="racing-final-results" hidden aria-label="레이싱 최종 결과 및 학습 분석">
@@ -253,7 +253,7 @@
             <div class="fishing-focus-heading"><p>PURPLEKIT · FISHING FRENZY</p><h2>🎣 실시간 낚시 현황</h2><small id="fishing-focus-room">게임방 대기 중</small>
               <div class="fishing-focus-summary" aria-label="낚시 진행 요약"><strong id="fishing-focus-count">0명 참여</strong><strong id="fishing-focus-solved">풀이 0회</strong><strong id="fishing-focus-pending">채점 대기 0명</strong></div>
             </div>
-            <div class="fishing-focus-actions"><strong id="fishing-focus-clock">—</strong><button id="fishing-focus-close" class="btn btn-outline" type="button">✕ 관리 화면으로</button></div>
+            <div class="fishing-focus-actions"><strong id="fishing-focus-clock">—</strong><button id="fishing-focus-pause" class="btn btn-outline" type="button" disabled>⏸️ 일시정지</button><button id="fishing-focus-end" class="btn btn-danger" type="button" disabled>게임 종료</button><button id="fishing-focus-export" class="btn btn-outline" type="button" disabled>결과 CSV</button><button id="fishing-focus-close" class="btn btn-outline" type="button">✕ 관리 화면으로</button></div>
           </header>
           <div id="fishing-focus-live" class="fishing-focus-live">
             <div class="fishing-focus-columns">
