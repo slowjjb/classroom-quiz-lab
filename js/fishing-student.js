@@ -5,18 +5,20 @@ import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasej
 import {fullQuestionImageUrl} from './image-utils.js';
 import {fishingRanking,CREATURES,FISHING_PENALTY_DURATION_MS} from './fishing-core.js?v=6.0.0-alpha.24';
 import {createFishingCodex,updateFishingCodex} from './fishing-codex.js?v=6.0.0-alpha.10';
+import {createFishingBgm,FISHING_TRACKS} from './fishing-bgm.js?v=6.0.0-alpha.25';
 const $=id=>document.getElementById(id),stage=$('fishing-student');
 let code='',uid='',pub=null,own=null,answer=null,subs=[],offset=0,selected='',pending=false;
 let action=null,shownEvent='',eventTimer=null,animTimer=null,questionNonce='',rewardNonce='';
-let audioEnabled=true,bgmStarted=false,codex=null,hitPlayedNonce='',learningMode='first',learningSignature='';
+let audioEnabled=true,codex=null,hitPlayedNonce='',learningMode='first',learningSignature='';
+const studentBgm=createFishingBgm({role:'student',fileElement:$('fishing-bgm')});
 const now=()=>Date.now()+offset;
 function notice(text,isError=false){$('fishing-message').textContent=text;$('fishing-message').dataset.kind=isError?'error':'';}
 function lureAsset(level){const n=Math.min(8,Math.max(1,Math.floor(Number(level)||1)));return `images/fishing/lures/lure${n}.png?v=5.0.11`; }
 function setAudioToggle(){const btn=$('fishing-audio-toggle');if(!btn)return;btn.textContent=audioEnabled?'🔊 소리 켜짐':'🔇 소리 꺼짐';btn.setAttribute('aria-pressed',audioEnabled?'true':'false');}
 function safePlay(el,vol=.6){if(!el||!audioEnabled)return;el.volume=vol;try{el.currentTime=0;}catch{};el.play().catch(()=>{});}
-function ensureBgm(){const bgm=$('fishing-bgm');if(!bgm||!audioEnabled)return;if(bgmStarted&& !bgm.paused)return;bgm.volume=.28;bgm.play().then(()=>{bgmStarted=true;}).catch(()=>{});}
-function stopBgm(){const bgm=$('fishing-bgm');if(bgm)bgm.pause();}
-function setAudioEnabled(flag){audioEnabled=!!flag;try{localStorage.setItem('purplekit_fishing_audio',audioEnabled?'on':'off');}catch{};setAudioToggle();if(audioEnabled)ensureBgm();else stopBgm();}
+function ensureBgm(){if(audioEnabled)studentBgm.setPlaying(true);}
+function stopBgm(){studentBgm.setPlaying(false);}
+function setAudioEnabled(flag){audioEnabled=!!flag;try{localStorage.setItem('purplekit_fishing_audio',audioEnabled?'on':'off');}catch{};studentBgm.setEnabled(audioEnabled);setAudioToggle();if(audioEnabled)ensureBgm();else stopBgm();}
 function playResultSound(type,tier='normal'){
   if(type==='fish'&&tier==='legend')safePlay($('fishing-sfx-legend'),.64);
   else if(type==='broken')safePlay($('fishing-sfx-break'),.65);
@@ -267,6 +269,8 @@ export function startFishingView(roomCode,userUid){
   $('fishing-learning-mode').onchange=e=>{learningMode=e.target.value==='all'?'all':'first';learningSignature='';renderFishingLearning(pub?.scores?.[uid]||{});};
   codex=createFishingCodex($('fishing-codex-left'),$('fishing-codex-right'),CREATURES);
   try{audioEnabled=(localStorage.getItem('purplekit_fishing_audio')||'on')!=='off';}catch{audioEnabled=true;}
+  studentBgm.setEnabled(audioEnabled);
+  $('fishing-student-track').value=studentBgm.trackId;
   setAudioToggle();
   for(const [key,path] of [['pub',`v5/public/${code}`],['own',`v5/memberState/${code}/${uid}`],['answer',`v5/answers/${code}/${uid}`]]){
     const currentCode=code;
@@ -293,6 +297,14 @@ $('fishing-cast-button').addEventListener('click',()=>{
 $('fishing-submit').addEventListener('click',()=>void submitAnswer());
 $('fishing-next').addEventListener('click',()=>void sendAction('next'));
 
+for(const track of FISHING_TRACKS){
+ const option=document.createElement('option');option.value=track.id;option.textContent=track.name;
+ $('fishing-student-track').append(option);
+}
+$('fishing-student-track').addEventListener('change',e=>{
+ studentBgm.setTrack(e.target.value);
+ if(audioEnabled&&pub?.state==='playing')ensureBgm();
+});
 $('fishing-audio-toggle')?.addEventListener('click',()=>setAudioEnabled(!audioEnabled));
 
 $('fishing-codex-toggle').addEventListener('click',()=>setCodexOpen(!stage.classList.contains('fishing-codex-open')));
