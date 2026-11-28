@@ -196,7 +196,11 @@
   <div id="racing-host-lanes" class="racing-host-lanes" aria-label="30대 차량 점유 현황"></div>
   <p class="helper">교사 화면을 켜두면 차량 배정과 실제 문제 채점·경주 이동이 자동으로 처리됩니다.</p>
   <section id="racing-play-controls" class="racing-play-controls" hidden aria-label="실시간 레이싱 경주">
+    <div class="racing-compact-toolbar">
     <div class="racing-play-header"><div><span class="racing-mini-kicker">PURPLEKIT RACING · LIVE</span><h3>🏁 실시간 경주 상황판</h3></div><span id="racing-play-badge" class="pill pill-neutral">대기 중</span></div>
+    <div class="racing-play-hud"><div><small>남은 시간</small><strong id="racing-play-clock">—</strong></div><div><small>현재 경기</small><strong id="racing-play-summary">준비 전</strong></div></div>
+    <div class="racing-control-actions"><button type="button" id="racing-play-focus-toggle" class="btn btn-outline">🏁 경주 상황판 크게 보기</button><button type="button" id="racing-play-focus-pause" class="btn btn-outline" disabled>⏸️ 일시정지</button><button type="button" id="racing-play-focus-end" class="btn btn-danger" disabled>경주 종료</button><button type="button" id="racing-play-audio" class="btn btn-outline" aria-label="레이싱 배경음악 및 효과음 켜기">🔈 음악·효과음 켜기</button></div>
+    </div>
     <div class="racing-play-settings">
       <label for="racing-play-distance">결승선 거리
         <select id="racing-play-distance"><option value="20" selected>20m</option><option value="25">25m</option><option value="30">30m</option><option value="40">40m</option><option value="50">50m</option><option value="100">100m</option></select>
@@ -211,10 +215,8 @@
         <button type="button" class="btn btn-outline" id="racing-play-export" disabled>결과 CSV</button>
       </div>
     </div>
-    <div class="racing-play-hud"><div><small>남은 시간</small><strong id="racing-play-clock">—</strong></div><div><small>현재 경기</small><strong id="racing-play-summary">준비 전</strong></div></div>
     <p id="racing-play-guide" class="helper">자동차 선택 후 준비 버튼을 눌러 주세요.</p>
     <p id="racing-play-status" class="feedback" role="status">문제 세트를 확인하고 있습니다.</p>
-    <div class="racing-control-actions"><button type="button" id="racing-play-focus-toggle" class="btn btn-outline">🏁 경주 상황판 크게 보기</button><button type="button" id="racing-play-focus-pause" class="btn btn-outline" disabled>⏸️ 일시정지</button><button type="button" id="racing-play-focus-end" class="btn btn-danger" disabled>경주 종료</button><button type="button" id="racing-play-audio" class="btn btn-outline" aria-label="레이싱 배경음악 및 효과음 켜기">🔈 음악·효과음 켜기</button></div>
     <div id="racing-play-ranking" class="racing-play-ranking" aria-label="레이싱 거리별 실시간 순위"></div>
     <p id="racing-play-footer" class="racing-play-footer">정답 +1m · 정답 3회마다 랜덤 룰렛 · 결승선 도착 또는 제한 시간 종료</p>
     <section id="racing-final-results" class="racing-final-results" hidden aria-label="레이싱 최종 결과 및 학습 분석">
