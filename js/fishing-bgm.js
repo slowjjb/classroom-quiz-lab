@@ -29,7 +29,7 @@ export function createFishingBgm({role='teacher',fileElement=null}={}){
  }catch{}
  const file=fileElement||(typeof Audio==='function'?new Audio(new URL('../audio/fishing-bgm.wav',import.meta.url).href):null);
  if(file){file.loop=true;file.preload='none';file.volume=percent/100;}
- let context=null,master=null,timer=null,index=0,nextAt=0,playingType='';
+ let context=null,master=null,timer=null,index=0,nextAt=0,playingType='',starting=false,generation=0;
  const current=()=>FISHING_TRACKS.find(t=>t.id===trackId)||FISHING_TRACKS[0];
  function setup(){
   if(context)return true;
@@ -58,6 +58,7 @@ export function createFishingBgm({role='teacher',fileElement=null}={}){
   }
  }
  function stopOutput(){
+  generation++;starting=false;
   file?.pause();
   if(timer){clearInterval(timer);timer=null;}
   if(context&&master){const at=context.currentTime;master.gain.cancelScheduledValues(at);
@@ -72,16 +73,17 @@ export function createFishingBgm({role='teacher',fileElement=null}={}){
    stopOutput();playingType='file';
    if(file){file.volume=percent/100;void file.play().catch(()=>{});}return true;
   }
-  if(playingType==='synth'&&timer)return true;
+  if((playingType==='synth'&&timer)||starting)return true;
   stopOutput();
   if(!setup())return false;
+  starting=true;const ticket=generation;
   const begin=()=>{
-   if(!wanted||!enabled||current().kind!=='synth'||!context)return;
-   playingType='synth';index=0;nextAt=context.currentTime+.08;
+   if(ticket!==generation||!wanted||!enabled||current().kind!=='synth'||!context)return;
+   starting=false;playingType='synth';index=0;nextAt=context.currentTime+.08;
    master.gain.setTargetAtTime(.38*percent/100,context.currentTime,.035);
    schedule();timer=setInterval(schedule,175);
   };
-  if(context.state==='suspended')void context.resume().then(begin).catch(()=>{});
+  if(context.state==='suspended')void context.resume().then(begin).catch(()=>{if(ticket===generation)starting=false;});
   else begin();
   return true;
  }
