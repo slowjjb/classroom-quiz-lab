@@ -318,7 +318,7 @@ body.racing-focus-active{overflow:hidden}
 
 /* v6.0.0-alpha.25: teacher/student music choices that respect compact dashboard. */
 .racing-teacher-bgm-label,.racing-student-bgm-label{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:850;color:#444184;white-space:nowrap}
-.racing-teacher-bgm-label select{min-height:34px;max-width:155px;border:1px solid #bdb5ea;border-radius:9px;background:#fff;color:#30216b;padding:5px 7px;font:inherit;font-size:12px}
+.racing-teacher-bgm-label select{width:150px;min-height:34px;max-width:155px;border:1px solid #bdb5ea;border-radius:9px;background:#fff;color:#30216b;padding:5px 7px;font:inherit;font-size:12px}
 .racing-student-bgm-label select{min-height:38px;max-width:170px;border:1px solid #c3b8ed;border-radius:10px;background:#fff;color:#30216b;padding:7px;font:inherit;font-size:13px}
 .racing-play-focus .racing-control-actions .racing-teacher-bgm-label{font-size:11px}
 .racing-play-focus .racing-control-actions .racing-teacher-bgm-label select{min-height:34px;max-width:135px}
