@@ -10,13 +10,15 @@ import {makeRulesV6} from './rules-v6.js?v=6.0.0-alpha.4';
 import {buildGoldAccuracy} from './gold-analytics.js?v=6.0.0-alpha.14';
 import {CREATURES} from './fishing-core.js?v=6.0.0-alpha.24';
 import {renderFishingPodium} from './fishing-podium.js?v=5.0.11';
+import {createFishingBgm,FISHING_TRACKS} from './fishing-bgm.js?v=6.0.0-alpha.25';
 const $=id=>document.getElementById(id);
+const teacherBgm=createFishingBgm({role:'teacher'});
 let teacher=null,code='',mode='',room=null,run=null,pub=null,states={},actions={},answers={},rights=false,operation=false,working=false,offset=0;
 let subs=[],authVersion=0,focusOpen=false,teacherPenaltyId='',teacherPenaltyTimer=null;
 let recentCatches=[],resultsMode='first',podiumCollapsed=false,podiumSignature='';
 const serverNow=()=>Date.now()+offset;
 function status(msg,err=false){const el=$('fishing-host-message');el.textContent=msg;el.dataset.kind=err?'error':'success';}
-function stop(){focus(false);subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;teacherPenaltyId='';recentCatches=[];podiumCollapsed=false;podiumSignature='';if(teacherPenaltyTimer)clearTimeout(teacherPenaltyTimer);}
+function stop(){teacherBgm.setPlaying(false);focus(false);subs.forEach(fn=>fn());subs=[];room=null;run=null;pub=null;states={};actions={};answers={};rights=false;teacherPenaltyId='';recentCatches=[];podiumCollapsed=false;podiumSignature='';if(teacherPenaltyTimer)clearTimeout(teacherPenaltyTimer);}
 function formatClock(sec){const n=Math.max(0,Math.ceil(sec));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;}
 function phaseDescription(uid,score){
   const state=states?.[uid],phase=state?.phase;
@@ -159,8 +161,11 @@ function focus(open){
 function render(){
   const active=Boolean(code&&(mode==='fishing'||room?.meta?.mode==='fishing'));
   $('fishing-panel').hidden=!active;
-  if(!active)return;
+  if(!active){teacherBgm.setPlaying(false);return;}
   const phase=pub?.state||'lobby';
+  teacherBgm.setPlaying(phase==='playing'&&!pub?.pauseStartedAt);
+  $('fishing-focus-audio').textContent=teacherBgm.isEnabled?'🔊 BGM 끄기':'🔈 BGM 켜기';
+  $('fishing-focus-audio').setAttribute('aria-pressed',String(teacherBgm.isEnabled));
   $('fishing-host-badge').textContent=({lobby:'대기 중',ready:'시작 준비',playing:'진행 중',finished:'종료'})[phase]||'대기 중';
   $('fishing-host-room').textContent=code?`${code} · ${room?.meta?.title||'게임방'} · ${room?.meta?.setTitle||'문제 미선택'}`:'게임방을 선택해 주세요.';
   $('fishing-prepare').disabled=!rights||operation||!!run||!room?.meta?.setId||room.meta.state==='ended';
@@ -277,6 +282,8 @@ async function prepare(){
 async function start(){
   if(operation||!run||pub?.state!=='ready')return;
   operation=true;render();
+  // A direct teacher click grants browser audio permission before Firebase awaits.
+  teacherBgm.setPlaying(true);
   try{
     const endsAt=serverNow()+Number(run.durationSec||420)*1000;
     const patches={
@@ -292,7 +299,7 @@ async function start(){
     await update(ref(db),patches);
     focus(true);
     status('낚시를 시작했습니다! 상황판에서 일시정지·재개와 종료를 관리할 수 있습니다.');
-  }catch(err){status('시작 실패: '+formatError(err),true);}finally{operation=false;render();}
+  }catch(err){teacherBgm.setPlaying(false);status('시작 실패: '+formatError(err),true);}finally{operation=false;render();}
 }
 function publicFishingLearning(record){
   const common={roster:record.roster||{},questions:record.questions||[],answersLog:record.answersLog||{}};
@@ -473,6 +480,19 @@ if(auth)onAuthStateChanged(auth,user=>{
 if(db)onValue(ref(db,'.info/serverTimeOffset'),snap=>{offset=Number(snap.val()||0);});
 $('fishing-prepare').addEventListener('click',()=>void prepare());
 $('fishing-start').addEventListener('click',()=>void start());
+for(const track of FISHING_TRACKS){
+ const option=document.createElement('option');option.value=track.id;option.textContent=track.name;
+ $('fishing-focus-track').append(option);
+}
+$('fishing-focus-track').value=teacherBgm.trackId;
+$('fishing-focus-volume').value=String(teacherBgm.volume);
+$('fishing-focus-track').addEventListener('change',e=>teacherBgm.setTrack(e.target.value));
+$('fishing-focus-volume').addEventListener('input',e=>teacherBgm.setVolume(e.target.value));
+$('fishing-focus-audio').addEventListener('click',()=>{
+ teacherBgm.setEnabled(!teacherBgm.isEnabled);
+ teacherBgm.setPlaying(pub?.state==='playing'&&!pub?.pauseStartedAt);
+ render();
+});
 $('fishing-focus-open').addEventListener('click',()=>focus(true));
 $('fishing-focus-close').addEventListener('click',()=>focus(false));
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)focus(false);});
