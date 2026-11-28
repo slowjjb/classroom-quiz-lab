@@ -6,7 +6,7 @@ import {racingStandings,RACING_REWARDS} from './racing-game-core.js';
 import {createRacingAudio} from './racing-audio.js';
 import {fullQuestionImageUrl} from './image-utils.js';
 const $=id=>document.getElementById(id);
-let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null,stagePositioned=false,learningMode='first',learningSignature='';
+let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,selectedAnswer='',submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null,stagePositioned=false,learningMode='first',learningSignature='';
 const sound=createRacingAudio({role:'student'});
 const notice=(text,bad=false)=>{const el=$('racing-student-message');if(el){el.textContent=text;el.dataset.kind=bad?'error':'success'}};
 const fmtTime=sec=>Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
@@ -136,7 +136,8 @@ function renderQuestion(){
  if(content.hidden)return;
  const marker=state?.nonce||'';
  if(content.dataset.nonce===marker)return;
- content.dataset.nonce=marker;submitting=false;submittedNonce='';
+ content.dataset.nonce=marker;submitting=false;selectedAnswer='';submittedNonce='';
+ $('racing-student-submit').disabled=true;
  $('racing-student-question-no').textContent='문제 '+Number(state?.number||1)+'번 · 정답은 1m 전진!';
  $('racing-student-question-text').textContent=String(state.prompt||'문제를 불러오는 중…');
  const image=$('racing-student-question-image'),wrap=$('racing-student-question-image-wrap');
@@ -145,17 +146,17 @@ function renderQuestion(){
  $('racing-student-input-wrap').hidden=state.type!=='typing';
  if(state.type==='typing'){
   const input=$('racing-student-typing');input.value='';
-  $('racing-student-typing-submit').disabled=false;
+  $('racing-student-typing').oninput=()=>updateSubmitAvailability();
  }else{
   for(let i=0;i<(state.options||[]).length;i++){
    const b=document.createElement('button');b.type='button';b.className='racing-answer-button';
    const key=document.createElement('strong');key.textContent=(i+1)+'.';
    const label=document.createElement('span');label.textContent=String(state.options[i]);
-   b.append(key,label);b.onclick=()=>void submitAnswer(String(i+1));
+   b.append(key,label);b.onclick=()=>selectAnswer(String(i+1));
    options.append(b);
   }
  }
- notice('정답을 골라 주세요!');
+ notice(state.type==='typing'?'정답을 입력한 뒤 제출하기를 눌러 주세요.':'보기를 선택한 뒤 제출하기를 눌러 주세요.');
 }
 function render(){
  const stage=$('racing-student-play');if(!code){stage.hidden=true;return;}
@@ -186,12 +187,27 @@ function render(){
   $('racing-student-final').textContent='경주 종료! '+(ranking.findIndex(x=>x.uid===uid)+1||'—')+'위 · '+meters+'m 주행 기록';
   renderLearning(me);
  }else{
-  timer();renderQuestion();
+  timer();renderQuestion();updateSubmitAvailability();
   if(!me){$('racing-student-question-zone').hidden=true;notice('경기 참가 정보가 없습니다. 선생님께 참가 명단을 확인해 달라고 요청하세요.',true);}
   else if(own?.phase==='waiting')notice('준비된 문제를 모두 풀었습니다. 경주 종료를 기다려 주세요.');
   else if(!own)notice('선생님이 출발 신호를 보내는 중입니다.');
  }
  showResult(me);
+}
+function updateSubmitAvailability(){
+ const candidate=own?.type==='typing'?$('racing-student-typing').value.trim():selectedAnswer;
+ $('racing-student-submit').disabled=Boolean(!candidate||submitting||submittedNonce===own?.nonce||gameIsPaused(pub)||pub?.state!=='playing');
+}
+function selectAnswer(choice){
+ if(!own||own.phase!=='question'||submitting||submittedNonce===own.nonce||gameIsPaused(pub))return;
+ selectedAnswer=choice;
+ $('racing-student-options').querySelectorAll('button').forEach((button,i)=>{
+  const selected=String(i+1)===choice;
+  button.classList.toggle('racing-answer-selected',selected);
+  button.setAttribute('aria-pressed',String(selected));
+ });
+ updateSubmitAvailability();
+ notice('선택했습니다. 아래 정답 제출하기를 눌러 확정하세요.');
 }
 async function submitAnswer(value){
  if(!code||!uid||pub?.state!=='playing'||gameIsPaused(pub)||own?.phase!=='question'||submitting)return;
@@ -200,20 +216,20 @@ async function submitAnswer(value){
  submitting=true;submittedNonce=nonce;
  void sound.unlock().then(()=>sound.play('submit'));
  for(const button of $('racing-student-options').querySelectorAll('button'))button.disabled=true;
- $('racing-student-typing-submit').disabled=true;
+ $('racing-student-submit').disabled=true;
  notice('답을 제출했습니다. 선생님이 채점하는 중…');
  try{
   await set(ref(db,'v6/answers/'+code+'/'+uid+'/'+nonce),{value:String(value).slice(0,200),at:serverTimestamp()});
  }catch(err){
   submitting=false;submittedNonce='';notice('답안 제출 실패: '+formatError(err),true);
   for(const button of $('racing-student-options').querySelectorAll('button'))button.disabled=false;
-  $('racing-student-typing-submit').disabled=false;
+  updateSubmitAvailability();
  }
 }
 export function stopRacingGame(){
  renderStudentPause(null,false);
  session++;stopFns.forEach(fn=>{try{fn()}catch(_){}});
- stopFns=[];code='';uid='';pub=null;own=null;submitting=false;submittedNonce='';shownNonce='';
+ stopFns=[];code='';uid='';pub=null;own=null;submitting=false;selectedAnswer='';submittedNonce='';shownNonce='';
  clearTimeout(lastResultTimer);lastResultTimer=null;clearRoulette();sound.setPlaying(false);lastPhase='';stagePositioned=false;learningMode='first';learningSignature='';
  if(unlockListener){document.removeEventListener('pointerdown',unlockListener,true);unlockListener=null}
  $('racing-student-play').hidden=true;$('racing-student-question-zone').dataset.nonce='';
@@ -232,8 +248,8 @@ export function startRacingGame(nextCode,nextUid){
  };
  document.addEventListener('pointerdown',unlockListener,true);
  syncAudioButtons();
- $('racing-student-typing-submit').onclick=()=>void submitAnswer($('racing-student-typing').value);
- $('racing-student-typing').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();void submitAnswer(e.target.value)}};
+ $('racing-student-submit').onclick=()=>void submitAnswer(own?.type==='typing'?$('racing-student-typing').value:selectedAnswer);
+ $('racing-student-typing').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('racing-student-submit').focus();}};
  stopFns.push(onValue(ref(db,'v6/public/'+code),snap=>{if(session!==token)return;pub=snap.val();render()},e=>notice('실시간 경기 연결 실패: '+formatError(e),true)));
  stopFns.push(onValue(ref(db,'v6/memberState/'+code+'/'+uid),snap=>{if(session!==token)return;own=snap.val();render()},e=>notice('현재 문제 읽기 실패: '+formatError(e),true)));
 }
