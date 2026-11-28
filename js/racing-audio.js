@@ -1,16 +1,32 @@
 // Purplekit Racing alpha7: original procedural BGM + sound effects.
 // No external audio files, tracks or copyright-encumbered compositions.
 // Browser sound starts only after an actual user gesture.
-const MELODY=[392,0,523.25,587.33,659.25,523.25,392,0,
-  440,523.25,659.25,783.99,659.25,587.33,523.25,0,
-  392,493.88,587.33,659.25,783.99,659.25,587.33,493.88,
-  523.25,0,587.33,659.25,523.25,493.88,392,0];
-const BASS=[130.81,130.81,174.61,196,146.83,146.83,196,196];
-const BEAT=.197;
+// Each tune is an original 32-step procedural phrase with distinct rhythmic pacing.
+export const RACING_TRACKS=Object.freeze([
+ {id:'sprint',name:'스타트 대시',beat:.197,
+  melody:[392,0,523.25,587.33,659.25,523.25,392,0,440,523.25,659.25,783.99,659.25,587.33,523.25,0,
+    392,493.88,587.33,659.25,783.99,659.25,587.33,493.88,523.25,0,587.33,659.25,523.25,493.88,392,0],
+  bass:[130.81,130.81,174.61,196,146.83,146.83,196,196]},
+ {id:'sunset',name:'노을빛 서킷',beat:.224,
+  melody:[329.63,392,440,0,523.25,440,392,0,349.23,392,523.25,587.33,523.25,440,392,0,
+    440,523.25,659.25,0,587.33,523.25,440,392,349.23,392,440,523.25,440,392,329.63,0],
+  bass:[174.61,174.61,130.81,130.81,146.83,146.83,196,196]},
+ {id:'neon',name:'네온 가속',beat:.181,
+  melody:[523.25,659.25,783.99,0,659.25,587.33,523.25,0,493.88,587.33,659.25,783.99,880,783.99,659.25,0,
+    587.33,659.25,783.99,659.25,523.25,587.33,659.25,0,440,523.25,587.33,659.25,783.99,659.25,523.25,0],
+  bass:[110,110,146.83,146.83,164.81,164.81,130.81,130.81]},
+ {id:'rainbow',name:'무지개 결승선',beat:.208,
+  melody:[392,440,523.25,0,587.33,659.25,587.33,523.25,440,0,523.25,659.25,783.99,0,659.25,587.33,
+    523.25,587.33,659.25,0,880,783.99,659.25,523.25,587.33,659.25,783.99,659.25,587.33,523.25,392,0],
+  bass:[196,196,146.83,146.83,174.61,174.61,130.81,130.81]}
+]);
 const failSilently=()=>{};
 export function createRacingAudio({role='student'}={}){
  let context=null,bus=null,bgmBus=null,fxBus=null,timer=null,step=0,nextTime=0;
  let unlocked=false,muted=false,playing=false,ended=false;
+  const key='purplekit-racing-track-'+role;
+  let trackId='sprint';try{const saved=localStorage.getItem(key);if(RACING_TRACKS.some(t=>t.id===saved))trackId=saved;}catch{}
+  const current=()=>RACING_TRACKS.find(t=>t.id===trackId)||RACING_TRACKS[0];
  function setup(){
   if(ended)return false;
   if(context)return true;
