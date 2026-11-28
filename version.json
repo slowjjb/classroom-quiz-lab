@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.25",
-  "build": 621,
+  "version": "6.0.0-alpha.26",
+  "build": 622,
   "minSupportedBuild": 412,
-  "purpose": "2단계 BGM 확장: 클래식 5곡, 골드 4곡, 피싱 4곡, 레이싱 4곡 및 피싱 교사 상황판 음악 제어"
+  "purpose": "교사용 순위판/바다/레이싱 대기실·25레인 크기 개선, 학생 이름 가독성 및 교사 BGM 출력·음량 통일"
 }
