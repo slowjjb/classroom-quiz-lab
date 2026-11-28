@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0-alpha.22",
-  "build": 618,
+  "version": "6.0.0-alpha.23",
+  "build": 619,
   "minSupportedBuild": 412,
-  "purpose": "2단계 사용성: 골드·피싱·레이싱 일시정지, 게임 결과 복습 세트, 문제 CSV 내용 경고"
+  "purpose": "2단계 UI 통일: 피싱·레이싱 상황판에서 일시정지와 종료, 피싱 자동 상황판, 레이싱 명시적 정답 제출"
 }
