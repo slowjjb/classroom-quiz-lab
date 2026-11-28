@@ -27,7 +27,17 @@ export const CALM_TRACKS = Object.freeze([
     melody:['B4',null,'D5','B4','G4',null,'A4',null,'B4',null,'D5','E5','D5',null,'B4',null,
             'A4',null,'B4','D5','G5',null,'E5',null,'D5',null,'B4','A4','G4',null,'D5',null],
     bass:['G3','G3','E3','E3','C3','C3','D3','D3'],
-    chords:[['G3','B3','D4'],['E3','G3','B3'],['C3','E3','G3'],['D3','F4','A3']] })
+    chords:[['G3','B3','D4'],['E3','G3','B3'],['C3','E3','G3'],['D3','F4','A3']] }),
+  Object.freeze({id:'morning',name:'햇살 교실',beat:.27,wave:'triangle',
+    melody:['C5',null,'E5','G5','A5',null,'G5','E5','D5',null,'F5','E5','C5',null,'D5',null,
+            'E5','G5','E5',null,'D5','C5','A4',null,'C5','D5','E5',null,'G5','E5','C5',null],
+    bass:['F3','F3','C3','C3','G3','G3','A3','A3'],
+    chords:[['F3','A3','C4'],['C3','E4','G4'],['G3','B3','D4'],['A3','C4','E4']] }),
+  Object.freeze({id:'breeze',name:'숲속 바람',beat:.34,wave:'sine',
+    melody:['F4',null,'A4',null,'C5','D5','C5',null,'A4',null,'G4','F4','G4',null,'A4',null,
+            'C5',null,'D5','E5','F5',null,'E5','C5','A4',null,'G4','A4','C5',null,'F4',null],
+    bass:['D3','D3','Bb2','Bb2','F3','F3','C3','C3'],
+    chords:[['D3','F3','A3'],['Bb2','D4','F4'],['F3','A3','C4'],['C3','E4','G4']] })
 ]);
 // v4 Gold Quest 전용 오리지널 모험 음악. 클래식의 편안한 곡은 그대로 유지합니다.
 export const GOLD_TRACKS=Object.freeze([
@@ -40,7 +50,17 @@ export const GOLD_TRACKS=Object.freeze([
     melody:['G4','C5','E5','G5','E5','C5','D5','E5','F5',null,'A5','G5','F5','E5','D5',null,
             'E5','G5','A5',null,'G5','E5','D5','C5','D5','E5','G5','E5','D5','C5','G4',null],
     bass:['C3','C3','G3','G3','A3','A3','F3','F3'],
-    chords:[['C3','E4','G4'],['G3','B3','D4'],['A3','C4','E4'],['F3','A3','C4']] })
+    chords:[['C3','E4','G4'],['G3','B3','D4'],['A3','C4','E4'],['F3','A3','C4']] }),
+  Object.freeze({id:'gold-castle',name:'수정 성의 지도',beat:.26,wave:'triangle',
+    melody:['D5',null,'F5','A5','G5',null,'F5','D5','C5',null,'D5','F5','G5',null,'A5',null,
+            'A5','G5','F5',null,'E5','D5','C5',null,'D5','E5','F5','G5','F5',null,'D5',null],
+    bass:['D3','D3','Bb2','Bb2','C3','C3','A3','A3'],
+    chords:[['D3','F3','A3'],['Bb2','D4','F4'],['C3','E4','G4'],['A3','C4','E4']] }),
+  Object.freeze({id:'gold-spark',name:'별의 보물 지도',beat:.225,wave:'triangle',
+    melody:['G5','E5','C5',null,'D5','F5','A5',null,'G5',null,'E5','D5','C5','D5','E5',null,
+            'F5','A5','G5','E5','D5',null,'C5','E5','G5','A5','G5','F5','E5','D5','C5',null],
+    bass:['F3','F3','A3','A3','C3','C3','G3','G3'],
+    chords:[['F3','A3','C4'],['A3','C4','E4'],['C3','E4','G4'],['G3','B3','D4']] })
 ]);
 const noop=()=>{};
 const MUSIC_MAX_GAIN=2.55; // 기존 v3.13의 100% BGM 대비 1음 출력 약 5배 목표
