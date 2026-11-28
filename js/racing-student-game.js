@@ -3,7 +3,7 @@ import {gameIsPaused,gameRemainingSeconds,renderStudentPause} from './game-pause
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import {racingStandings,RACING_REWARDS} from './racing-game-core.js';
-import {createRacingAudio} from './racing-audio.js';
+import {createRacingAudio,RACING_TRACKS} from './racing-audio.js?v=6.0.0-alpha.25';
 import {fullQuestionImageUrl} from './image-utils.js';
 const $=id=>document.getElementById(id);
 let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,selectedAnswer='',submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null,stagePositioned=false,learningMode='first',learningSignature='';
@@ -13,6 +13,20 @@ const fmtTime=sec=>Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
 function timer(){
  if(!code||pub?.state!=='playing')return;
  $('racing-student-clock').textContent=fmtTime(gameRemainingSeconds(pub,Date.now()));
+}
+for(const track of RACING_TRACKS){
+ for(const id of ['racing-lobby-track','racing-student-track']){
+  const option=document.createElement('option');option.value=track.id;option.textContent=track.name;
+  $(id).append(option);
+ }
+}
+function chooseTrack(id){
+ sound.setTrack(id);
+ $('racing-lobby-track').value=sound.trackId;
+ $('racing-student-track').value=sound.trackId;
+}
+for(const id of ['racing-lobby-track','racing-student-track']){
+ $(id).addEventListener('change',e=>chooseTrack(e.target.value));
 }
 function syncAudioButtons(){
  const label=sound.isOn?'🔊 배경음·효과음 끄기':'🔈 배경음·효과음 켜기';
@@ -238,6 +252,8 @@ export function startRacingGame(nextCode,nextUid){
  stopRacingGame();code=nextCode;uid=nextUid;const token=session;
  $('racing-my-question-mode').value='first';
  $('racing-my-question-mode').onchange=e=>{learningMode=e.target.value==='all'?'all':'first';learningSignature='';renderLearning(pub?.scores?.[uid]);};
+ $('racing-lobby-track').value=sound.trackId;
+ $('racing-student-track').value=sound.trackId;
  $('racing-lobby-sound-toggle').onclick=()=>void toggleAudio();
  $('racing-student-sound-toggle').onclick=()=>void toggleAudio();
  // Audio may not autoplay on mobiles: unlock on the first car-choice tap.
