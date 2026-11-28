@@ -416,3 +416,11 @@
  .fishing-student-bgm-label select{max-width:180px}
  .fishing-focus-actions .fishing-teacher-bgm-volume{width:auto}
 }
+
+
+/* Alpha.26: fill vertical room with teacher aquarium and rankings. */
+@media(min-width:901px){.fishing-focus .fishing-focus-columns>section{min-height:clamp(590px,78dvh,800px)}
+.fishing-focus .fishing-focus-pond{height:clamp(445px,67dvh,710px)}
+.fishing-focus #fishing-focus-ranking{max-height:calc(100dvh - 195px);overflow-y:auto;overscroll-behavior:contain}}
+@media(min-width:901px) and (max-height:740px){.fishing-focus .fishing-focus-columns>section{min-height:0}.fishing-focus .fishing-focus-pond{height:clamp(365px,59dvh,515px)}}
+@media(max-width:900px){.fishing-focus .fishing-focus-pond{height:clamp(330px,52dvh,510px)}}
