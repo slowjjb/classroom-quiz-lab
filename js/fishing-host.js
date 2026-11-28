@@ -171,8 +171,8 @@ function render(){
   $('fishing-focus-pause').disabled=$('fishing-pause').disabled;
   $('fishing-focus-pause').textContent=$('fishing-pause').textContent;
   $('fishing-focus-end').disabled=$('fishing-end').disabled;
-  $('fishing-focus-export').disabled=$('fishing-export').disabled;
   $('fishing-export').disabled=!run;
+  $('fishing-focus-export').disabled=$('fishing-export').disabled;
   $('fishing-rules').hidden=rights;
   const sec=phase==='playing'?(Number(pub?.endsAt||0)-(Number(pub?.pauseStartedAt)||serverNow()))/1000:phase==='ready'?Number(run?.durationSec||0):0;
   $('fishing-host-clock').textContent=formatClock(sec);
