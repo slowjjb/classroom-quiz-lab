@@ -168,6 +168,10 @@ function render(){
   $('fishing-end').disabled=!rights||operation||phase!=='playing';
   $('fishing-pause').disabled=!rights||operation||phase!=='playing';
   $('fishing-pause').textContent=pub?.pauseStartedAt?'▶️ 계속하기':'⏸️ 일시정지';
+  $('fishing-focus-pause').disabled=$('fishing-pause').disabled;
+  $('fishing-focus-pause').textContent=$('fishing-pause').textContent;
+  $('fishing-focus-end').disabled=$('fishing-end').disabled;
+  $('fishing-focus-export').disabled=$('fishing-export').disabled;
   $('fishing-export').disabled=!run;
   $('fishing-rules').hidden=rights;
   const sec=phase==='playing'?(Number(pub?.endsAt||0)-(Number(pub?.pauseStartedAt)||serverNow()))/1000:phase==='ready'?Number(run?.durationSec||0):0;
@@ -286,7 +290,8 @@ async function start(){
       patches[`v5/memberState/${code}/${uid}`]=makeCast(uid,0,old);
     }
     await update(ref(db),patches);
-    status('낚시를 시작했습니다! 교사 화면을 게임 종료까지 열어 두세요.');
+    focus(true);
+    status('낚시를 시작했습니다! 상황판에서 일시정지·재개와 종료를 관리할 수 있습니다.');
   }catch(err){status('시작 실패: '+formatError(err),true);}finally{operation=false;render();}
 }
 function publicFishingLearning(record){
@@ -472,6 +477,9 @@ $('fishing-focus-open').addEventListener('click',()=>focus(true));
 $('fishing-focus-close').addEventListener('click',()=>focus(false));
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focusOpen)focus(false);});
 $('fishing-pause').addEventListener('click',()=>void toggleGamePause());
+ $('fishing-focus-pause').addEventListener('click',()=>void toggleGamePause());
+ $('fishing-focus-end').addEventListener('click',()=>{if(confirm('피싱 프렌지를 지금 종료할까요?'))void finish();});
+ $('fishing-focus-export').addEventListener('click',exportCsv);
 $('fishing-end').addEventListener('click',()=>{if(confirm('피싱 프렌지를 지금 종료할까요?'))void finish();});
 $('fishing-export').addEventListener('click',exportCsv);
 $('fishing-results-mode').addEventListener('change',event=>{resultsMode=event.target.value==='all'?'all':'first';renderFinalResults();});
