@@ -230,7 +230,7 @@ export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
   const bar=document.createElement('div');bar.className='arcade-time-fill';track.append(bar);
   const toast=document.createElement('div');toast.className='arcade-toast';toast.setAttribute('aria-hidden','true');
   stage.querySelector('.quiz-stage-inner').append(toast);
-  let toggle=null,volumeControl=null,fxControl=null,trackControl=null,trackCurrent=null;
+  let toggle=null,volumeControl=null,trackControl=null,trackCurrent=null;
   // 학생 화면: BGM은 없고 효과음만. 첫 클릭 후 오디오가 활성화됩니다.
   const activateStudentSound=()=>{
     if(role!=='student'||enabled)return;
@@ -266,7 +266,6 @@ export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
       return input;
     };
     volumeControl=makeVolume('BGM 음량','arcade-teacher-volume',65,v=>audio.setMusicVolume(v));
-    fxControl=makeVolume('효과음 음량','arcade-teacher-fx-volume',75,v=>audio.setFxVolume(v));
     trackControl.addEventListener('change',()=>{
       const selected=trackControl.value;
       if(selected!=='auto'){
@@ -301,7 +300,7 @@ export function createArcadeUi(stageId,{role='student',mode='classic'}={}){
     }
     enabled=true;effectsArmed=true;
     audio.setMusicVolume(volumeControl?.value??65);
-    audio.setFxVolume(fxControl?.value??75);
+    audio.setFxVolume(75);
     if(trackControl?.value==='auto'&&trackCurrent?.textContent.includes('게임 준비 시'))
       trackCurrent.textContent=`재생곡: ${tracks.find(t=>t.id===audio.currentTrackId)?.name}`;
     if(toggle){toggle.textContent='🔊 BGM 끄기';toggle.setAttribute('aria-pressed','true');}
