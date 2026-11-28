@@ -328,3 +328,25 @@ body.racing-focus-active{overflow:hidden}
  .racing-student-audio-controls{justify-content:space-between}
  .racing-play-focus .racing-teacher-bgm-label select{max-width:120px}
 }
+
+
+/* Alpha.26: racing preparation compaction and responsive fullscreen lane sizes. */
+.racing-play-controls:not(.racing-play-focus) .racing-compact-toolbar{grid-template-columns:minmax(200px,.68fr) minmax(0,1.32fr);gap:7px 10px}
+.racing-play-controls:not(.racing-play-focus) .racing-play-hud{flex-wrap:nowrap;gap:7px}
+.racing-play-controls:not(.racing-play-focus) .racing-play-hud>div{padding:6px 9px;gap:1px;min-width:0}
+.racing-play-controls:not(.racing-play-focus) .racing-play-hud>div:first-child{flex:0 0 100px}
+.racing-play-controls:not(.racing-play-focus) .racing-play-hud>div:last-child{flex:1 1 auto}
+.racing-play-controls:not(.racing-play-focus) .racing-play-hud strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(12px,1.05vw,15px);line-height:1.3}
+.racing-play-controls:not(.racing-play-focus) .racing-play-hud small{font-size:10px}
+.racing-play-controls:not(.racing-play-focus) .racing-play-settings{margin:8px 0;gap:8px;align-items:center}
+.racing-play-controls:not(.racing-play-focus) .racing-play-settings select{min-height:36px;padding:6px 9px}
+.racing-play-focus #racing-play-summary{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.racing-play-focus .racing-play-ranking{max-height:calc(100dvh - 100px);gap:3px}
+.racing-play-focus .racing-track-row{height:var(--racing-focus-row-height,29px);min-height:var(--racing-focus-row-height,29px);padding:1px 8px;box-sizing:border-box}
+.racing-play-focus .racing-track-lane{height:calc(var(--racing-focus-row-height,29px) - 7px)}
+.racing-play-focus .racing-track-car{height:calc(var(--racing-focus-row-height,29px) - 3px);width:var(--racing-focus-car-width,46px)}
+.racing-teacher-bgm-volume{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;white-space:nowrap;color:#484180}
+.racing-teacher-bgm-volume input{width:92px;min-height:28px;accent-color:#6c4ed5;cursor:pointer}
+.racing-play-focus .racing-teacher-bgm-volume input{width:78px}
+@media(max-width:1150px){.racing-play-controls:not(.racing-play-focus) .racing-compact-toolbar{grid-template-columns:1fr}.racing-play-controls:not(.racing-play-focus) .racing-play-hud{grid-column:1}}
+@media(max-width:680px){.racing-play-controls:not(.racing-play-focus) .racing-play-hud{flex-wrap:wrap}.racing-play-controls:not(.racing-play-focus) .racing-play-hud>div:last-child{min-width:190px}.racing-play-focus .racing-play-ranking{max-height:calc(100dvh - 196px)}}
