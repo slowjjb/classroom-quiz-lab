@@ -404,7 +404,7 @@
 .fishing-teacher-bgm-label,.fishing-teacher-bgm-volume{
  display:inline-flex;align-items:center;gap:5px;color:#e7f6ff;font-size:12px;font-weight:850;white-space:nowrap;
 }
-.fishing-teacher-bgm-label select{max-width:145px;min-height:34px;padding:5px 7px;border-radius:8px;border:1px solid #83cce9;
+.fishing-teacher-bgm-label select{width:140px;max-width:145px;min-height:34px;padding:5px 7px;border-radius:8px;border:1px solid #83cce9;
  color:#173b65;background:#fff;font:inherit;font-weight:750}
 .fishing-teacher-bgm-volume input{width:80px;min-height:26px;accent-color:#ffe27a;cursor:pointer}
 .fishing-head-side{gap:7px}
