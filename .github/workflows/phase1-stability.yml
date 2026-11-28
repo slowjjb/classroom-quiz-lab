@@ -9,9 +9,12 @@ on:
       - 'tests/phase2-ui-consistency.test.mjs'
       - 'tests/phase2-layout.test.mjs'
       - 'tests/phase2-music.test.mjs'
+      - 'tests/phase2-layout-audio.test.mjs'
       - 'tests/test-gold-unlimited.mjs'
       - 'tests/racing-game.test.mjs'
       - '.github/workflows/phase1-stability.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 jobs:
   stability:
@@ -27,4 +30,4 @@ jobs:
           for f in js/*.js; do node --check "$f"; done
       - name: Run core scoring, question sequence and regression tests
         run: |
-          node --test tests/phase1-stability.test.mjs tests/phase2-usability.test.mjs tests/phase2-ui-consistency.test.mjs tests/test-gold-unlimited.mjs tests/racing-game.test.mjs tests/phase2-layout.test.mjs tests/phase2-music.test.mjs
+          node --test tests/phase1-stability.test.mjs tests/phase2-usability.test.mjs tests/phase2-ui-consistency.test.mjs tests/test-gold-unlimited.mjs tests/racing-game.test.mjs tests/phase2-layout.test.mjs tests/phase2-music.test.mjs tests/phase2-layout-audio.test.mjs

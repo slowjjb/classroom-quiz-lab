@@ -269,3 +269,24 @@
 .gold-focus-actions button{min-height:36px;padding:7px 11px;font-size:13px}
 .gold-focus-main{gap:10px}
 .gold-focus .gold-stage-board,.gold-focus .gold-stage-leaders{min-width:0}
+
+
+/* Alpha.26: compact gold teacher toolbar, extra leaderboard height. */
+.gold-focus.arcade-enhanced .quiz-stage-head{display:grid;grid-template-columns:minmax(170px,auto) auto minmax(290px,1fr);align-items:center;gap:5px 12px;padding:7px 12px;min-height:0}
+.gold-focus .quiz-stage-head>div:first-child{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;min-width:0}
+.gold-focus #gold-focus-state{font-size:clamp(17px,1.6vw,24px);line-height:1.2}
+.gold-focus .quiz-stage-meta{margin:0;gap:4px}
+.gold-focus #gold-focus-clock{font-size:clamp(22px,2.1vw,30px);line-height:1}
+.gold-focus .arcade-audio-settings{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;min-width:0}
+.gold-focus .arcade-audio-track-label{display:inline-flex;align-items:center;gap:5px;flex:1 1 180px;min-width:170px}
+.gold-focus .arcade-audio-track{min-height:34px;min-width:120px;max-width:300px}
+.gold-focus .arcade-audio-track-current{display:none}
+.gold-focus .arcade-audio-toggle{min-height:34px;padding:5px 10px;margin:0;font-size:12px}
+.gold-focus .arcade-audio-volume-label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px}
+.gold-focus .arcade-audio-volume{width:90px;min-height:18px}
+.gold-focus .arcade-time-track{grid-column:1/-1;height:4px;margin:2px 0 0}
+.gold-focus-actions{margin:5px 0 7px}
+.gold-focus:not(.gold-is-finished) .gold-stage-board{min-height:max(450px,calc(100dvh - 185px))}
+.gold-focus:not(.gold-is-finished) .gold-stage-board .gold-rank-list{max-height:max(350px,calc(100dvh - 260px));overflow-y:auto}
+@media(max-width:1080px){.gold-focus.arcade-enhanced .quiz-stage-head{grid-template-columns:minmax(0,1fr) auto}.gold-focus .arcade-audio-settings{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:800px){.gold-focus:not(.gold-is-finished) .gold-stage-board{min-height:0}.gold-focus:not(.gold-is-finished) .gold-stage-board .gold-rank-list{max-height:55dvh}}

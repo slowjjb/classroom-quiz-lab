@@ -24,6 +24,10 @@ const failSilently=()=>{};
 export function createRacingAudio({role='student'}={}){
  let context=null,bus=null,bgmBus=null,fxBus=null,timer=null,step=0,nextTime=0;
  let unlocked=false,muted=false,playing=false,ended=false;
+  const volumeKey='purplekit-racing-bgm-volume-'+role+'-v626';
+  let volumePercent=role==='teacher'?75:100;
+  try{const saved=localStorage.getItem(volumeKey);if(saved!==null&&role==='teacher')volumePercent=Math.min(100,Math.max(0,Number(saved)||0));}catch{}
+  const musicGain=()=> (role==='teacher'?.90:.52)*volumePercent/100;
   const key='purplekit-racing-track-'+role;
   let trackId='sprint';try{const saved=localStorage.getItem(key);if(RACING_TRACKS.some(t=>t.id===saved))trackId=saved;}catch{}
   const current=()=>RACING_TRACKS.find(t=>t.id===trackId)||RACING_TRACKS[0];
@@ -34,8 +38,8 @@ export function createRacingAudio({role='student'}={}){
   if(!Context)return false;
   try{
    context=new Context();
-   bus=context.createGain();bus.gain.value=role==='teacher'?.20:.13;
-   bgmBus=context.createGain();bgmBus.gain.value=.52;
+   bus=context.createGain();bus.gain.value=role==='teacher'?.75:.13;
+   bgmBus=context.createGain();bgmBus.gain.value=musicGain();
    fxBus=context.createGain();fxBus.gain.value=.90;
    bgmBus.connect(bus);fxBus.connect(bus);
    bus.connect(context.destination);return true;
@@ -68,7 +72,7 @@ export function createRacingAudio({role='student'}={}){
  }
  function beginMusic(){
   if(!unlocked||muted||!playing||timer||!context)return;
-  bgmBus.gain.setTargetAtTime(.52,context.currentTime,.025);
+  bgmBus.gain.setTargetAtTime(musicGain(),context.currentTime,.025);
   step=0;nextTime=context.currentTime+.09;schedule();timer=setInterval(schedule,190);
  }
  function stopMusic(){
@@ -84,6 +88,12 @@ export function createRacingAudio({role='student'}={}){
   try{localStorage.setItem(key,id);}catch{}
   if(restart&&unlocked&&!muted&&playing)beginMusic();
   return true;
+ }
+ function setVolume(value){
+   volumePercent=Math.min(100,Math.max(0,Number(value)||0));
+   if(role==='teacher')try{localStorage.setItem(volumeKey,String(volumePercent));}catch{}
+   if(context&&bgmBus&&!muted&&playing)bgmBus.gain.setTargetAtTime(musicGain(),context.currentTime,.035);
+   return volumePercent;
  }
  function play(name){
   if(ended||muted||!unlocked||!context)return;
@@ -110,12 +120,13 @@ export function createRacingAudio({role='student'}={}){
   if(!unlocked){muted=false;return await unlock()}
   muted=!muted;
   if(muted){stopMusic();if(bgmBus&&context)bgmBus.gain.setTargetAtTime(0,context.currentTime,.02)}
-  else{if(bgmBus&&context)bgmBus.gain.setTargetAtTime(.52,context.currentTime,.02);if(playing)beginMusic()}
+  else{if(bgmBus&&context)bgmBus.gain.setTargetAtTime(musicGain(),context.currentTime,.02);if(playing)beginMusic()}
   return !muted;
  }
  function destroy(){ended=true;playing=false;stopMusic();context?.close?.().catch?.(failSilently);context=null}
- return {unlock,toggle,setPlaying,setTrack,play,destroy,
+ return {unlock,toggle,setPlaying,setTrack,setVolume,play,destroy,
   get trackId(){return trackId},
+   get volume(){return volumePercent},
   get isOn(){return unlocked&&!muted},
   get canPlay(){return !!(window.AudioContext||window.webkitAudioContext)}
  };
