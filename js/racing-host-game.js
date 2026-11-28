@@ -2,14 +2,14 @@
 // Reuses existing QR rooms, Firebase identities, question sets and v6 rules.
 import {db,auth,formatError} from './firebase.js';
 import {ref,get,onValue,update,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import {makeShuffleBag,continuingGoldQuestionIndex,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js?v=6.0.0-alpha.22';
+import {makeShuffleBag,continuingGoldQuestionIndex,verifyGoldAnswer,shuffleGoldChoices,displayedGoldCorrectIndex} from './gold-core.js?v=6.0.0-alpha.23';
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
 import {createRacingAudio} from './racing-audio.js';
 import {buildGoldAccuracy} from './gold-analytics.js';
 import {normalizedRacingGarage} from './racing-garage-core.js';
-import {renderRacingFinalResults,resetRacingFinalResults} from './racing-results.js?v=6.0.0-alpha.22';
+import {renderRacingFinalResults,resetRacingFinalResults} from './racing-results.js?v=6.0.0-alpha.23';
 const $=id=>document.getElementById(id);
 let code='',room=null,run=null,pub=null,states={},answers={},garage=null,unsubs=[],token=0,processing=false,operation=false,attempted=new Set(),focus=false,rankingSignature='',lastRacePhase='',resultsMode='first',finalizing=false;
 const laneRows=new Map(),sound=createRacingAudio({role:'teacher'});
