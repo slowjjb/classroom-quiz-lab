@@ -244,3 +244,10 @@ body.racing-focus-active{overflow:hidden}
 
 /* v6 alpha18: legible incorrect-answer toast for school tablets. */
 .racing-student-play .racing-student-reward:not([hidden]){white-space:normal;overflow-wrap:anywhere;text-align:center;font-size:clamp(16px,2.4vw,21px);line-height:1.45;padding:14px 18px;border-width:3px;background:#fff1c9;color:#773914;max-height:min(40dvh,220px);overflow-y:auto}
+
+/* v6.0.0-alpha.23: same monitor controls as Gold Quest; large explicit submit area. */
+.racing-play-focus .racing-control-actions{position:sticky;top:0;z-index:5;background:#f1effe;padding:6px 0;margin:4px 0}
+.racing-student-submit{display:block;width:100%;margin:12px 0 4px;min-height:52px;font-size:1.05rem;font-weight:800}
+.racing-student-submit:disabled{opacity:.5;cursor:not-allowed}
+.racing-answer-button.racing-answer-selected,.racing-answer-button.racing-answer-selected:hover{border-color:#5d38c5;background:#ede6ff;box-shadow:0 0 0 2px #8a70e5 inset}
+@media(max-width:900px){.fishing-focus-actions{flex-wrap:wrap}.racing-play-focus .racing-control-actions{gap:6px}}
