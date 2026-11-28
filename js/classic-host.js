@@ -5,7 +5,7 @@ import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.4';
 import { createAvatarImage } from './avatars.js';
 import { gradeAnswer, correctDisplay, optionsArray, totalScores, ranking, escapeCsv, buildRoundReport, autoRevealAttendance } from './classic-core.js?v=3.8';
 import { normalizeQuestionImage, fullQuestionImageUrl } from './image-utils.js?v=3.4';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=6.0.0-alpha.25';
 import { buildClassAccuracy } from './classic-analytics.js?v=3.13';
 
 const $ = x => document.getElementById(x);
