@@ -59,21 +59,31 @@ export function createRacingAudio({role='student'}={}){
  function schedule(){
   if(!unlocked||!playing||muted||!context)return;
   while(nextTime<context.currentTime+.42){
-   const index=step%MELODY.length,t=nextTime;
-   if(MELODY[index])tone(MELODY[index],t,BEAT*.78,.21,index%8===0?'sawtooth':'triangle');
-   if(index%4===0)tone(BASS[Math.floor(index/4)%BASS.length],t,BEAT*2.9,.19,'sine');
-   if(index%8===4)tone(MELODY[index]||392,t,BEAT*.35,.09,'square');
-   nextTime+=BEAT;step++;
+   const track=current(),index=step%track.melody.length,beat=track.beat,t=nextTime;
+   if(track.melody[index])tone(track.melody[index],t,beat*.78,.21,index%8===0?'sawtooth':'triangle');
+   if(index%4===0)tone(track.bass[Math.floor(index/4)%track.bass.length],t,beat*2.9,.19,'sine');
+   if(index%8===4)tone(track.melody[index]||392,t,beat*.35,.09,'square');
+   nextTime+=beat;step++;
   }
  }
  function beginMusic(){
   if(!unlocked||muted||!playing||timer||!context)return;
+  bgmBus.gain.setTargetAtTime(.52,context.currentTime,.025);
   step=0;nextTime=context.currentTime+.09;schedule();timer=setInterval(schedule,190);
  }
  function stopMusic(){
   if(timer){clearInterval(timer);timer=null}
   if(bgmBus&&context){const t=context.currentTime;bgmBus.gain.cancelScheduledValues(t);
-   bgmBus.gain.setTargetAtTime((!playing||muted)?0:.52,t,.03)}
+   bgmBus.gain.setTargetAtTime(0,t,.03)}
+ }
+ function setTrack(id){
+  if(!RACING_TRACKS.some(t=>t.id===id))return false;
+  if(trackId===id)return true;
+  const restart=Boolean(timer);
+  stopMusic();trackId=id;
+  try{localStorage.setItem(key,id);}catch{}
+  if(restart&&unlocked&&!muted&&playing)beginMusic();
+  return true;
  }
  function play(name){
   if(ended||muted||!unlocked||!context)return;
@@ -104,5 +114,9 @@ export function createRacingAudio({role='student'}={}){
   return !muted;
  }
  function destroy(){ended=true;playing=false;stopMusic();context?.close?.().catch?.(failSilently);context=null}
- return {unlock,toggle,setPlaying,play,destroy,get isOn(){return unlocked&&!muted},get canPlay(){return !!(window.AudioContext||window.webkitAudioContext)}};
+ return {unlock,toggle,setPlaying,setTrack,play,destroy,
+  get trackId(){return trackId},
+  get isOn(){return unlocked&&!muted},
+  get canPlay(){return !!(window.AudioContext||window.webkitAudioContext)}
+ };
 }
