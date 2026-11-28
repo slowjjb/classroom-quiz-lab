@@ -28,7 +28,7 @@ export function createFishingBgm({role='teacher',fileElement=null}={}){
   enabled=localStorage.getItem(enabledKey)!=='off';
  }catch{}
  const file=fileElement||(typeof Audio==='function'?new Audio(new URL('../audio/fishing-bgm.wav',import.meta.url).href):null);
- if(file){file.loop=true;file.preload='none';file.volume=percent/100;}
+ if(file){file.loop=true;file.preload=fileElement?'auto':'metadata';file.volume=percent/100;}
  let context=null,master=null,timer=null,index=0,nextAt=0,playingType='',starting=false,generation=0;
  const current=()=>FISHING_TRACKS.find(t=>t.id===trackId)||FISHING_TRACKS[0];
  function setup(){
