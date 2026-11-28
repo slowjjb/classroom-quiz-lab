@@ -1,9 +1,9 @@
-import {gameIsPaused,gameRemainingSeconds,renderStudentPause} from './game-pause.js?v=6.0.0-alpha.25';
+import {gameIsPaused,gameRemainingSeconds,renderStudentPause} from './game-pause.js?v=6.0.0-alpha.26';
 // Racing v6 alpha5 — student race stage with teacher-graded answers.
 import {db,formatError} from './firebase.js';
 import {ref,onValue,set,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 import {racingStandings,RACING_REWARDS} from './racing-game-core.js';
-import {createRacingAudio,RACING_TRACKS} from './racing-audio.js?v=6.0.0-alpha.25';
+import {createRacingAudio,RACING_TRACKS} from './racing-audio.js?v=6.0.0-alpha.26';
 import {fullQuestionImageUrl} from './image-utils.js';
 const $=id=>document.getElementById(id);
 let code='',uid='',pub=null,own=null,stopFns=[],session=0,submitting=false,selectedAnswer='',submittedNonce='',shownNonce='',lastResultTimer=null,rouletteTimer=null,spinningNonce='',lastPhase='',unlockListener=null,stagePositioned=false,learningMode='first',learningSignature='';
