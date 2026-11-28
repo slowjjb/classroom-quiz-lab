@@ -17,9 +17,9 @@ export const FISHING_TRACKS=Object.freeze([
 ]);
 export function createFishingBgm({role='teacher',fileElement=null}={}){
  const storageKey='purplekit-fishing-bgm-track-'+role;
- const volumeKey='purplekit-fishing-bgm-volume-'+role;
+ const volumeKey='purplekit-fishing-bgm-volume-'+role+(role==='teacher'?'-v626':'');
  const enabledKey='purplekit-fishing-bgm-enabled-'+role;
- let trackId='sea-original',percent=role==='teacher'?32:28,enabled=true,wanted=false;
+ let trackId='sea-original',percent=role==='teacher'?75:28,enabled=true,wanted=false;
  try{
   const saved=localStorage.getItem(storageKey);
   if(FISHING_TRACKS.some(t=>t.id===saved))trackId=saved;
@@ -80,7 +80,7 @@ export function createFishingBgm({role='teacher',fileElement=null}={}){
   const begin=()=>{
    if(ticket!==generation||!wanted||!enabled||current().kind!=='synth'||!context)return;
    starting=false;playingType='synth';index=0;nextAt=context.currentTime+.08;
-   master.gain.setTargetAtTime(.38*percent/100,context.currentTime,.035);
+   master.gain.setTargetAtTime((role==='teacher'?1.05:.38)*percent/100,context.currentTime,.035);
    schedule();timer=setInterval(schedule,175);
   };
   if(context.state==='suspended')void context.resume().then(begin).catch(()=>{if(ticket===generation)starting=false;});
@@ -105,7 +105,7 @@ export function createFishingBgm({role='teacher',fileElement=null}={}){
   percent=Math.max(0,Math.min(100,Number(value)||0));
   try{localStorage.setItem(volumeKey,String(percent));}catch{}
   if(file)file.volume=percent/100;
-  if(master&&context&&playingType==='synth')master.gain.setTargetAtTime(.38*percent/100,context.currentTime,.035);
+  if(master&&context&&playingType==='synth')master.gain.setTargetAtTime((role==='teacher'?1.05:.38)*percent/100,context.currentTime,.035);
  }
  function destroy(){stopOutput();if(context)void context.close().catch(()=>{});context=null;}
  return {setPlaying,setEnabled,setTrack,setVolume,destroy,
