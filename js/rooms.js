@@ -37,8 +37,11 @@ function stopListeners() {
 }
 function setAuthorized(next) {
   authorized = next;
-  $('room-workspace').classList.toggle('workspace-locked', !next);
-  $('room-workspace').setAttribute('aria-disabled', String(!next));
+  for(const id of ['room-workspace','room-saved-workspace']){
+    const area=$(id);if(!area)continue;
+    area.classList.toggle('workspace-locked', !next);
+    area.setAttribute('aria-disabled', String(!next));
+  }
 }
 function syncRoomBulkControls(){
   const valid = [...selectedRoomCodes].filter(code=>hostRooms[code]);
