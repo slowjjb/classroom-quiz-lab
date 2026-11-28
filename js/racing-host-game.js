@@ -56,6 +56,14 @@ function loadSpriteImages(){
  })().catch(e=>{spritePromise=null;throw e});
  return spritePromise;
 }
+function updateLaneSizing(count){
+ const panel=$('racing-play-controls');if(!panel)return;
+ const width=window.innerWidth||1366,height=Math.max(360,window.innerHeight||720);
+ const reserved=width<=680?208:width<=1280?145:104,n=Math.max(1,Math.min(25,Number(count)||1));
+ const h=Math.max(25,Math.min(68,Math.floor((height-reserved-(n-1)*3)/n)));
+ panel.style.setProperty('--racing-focus-row-height',h+'px');
+ panel.style.setProperty('--racing-focus-car-width',Math.round(Math.min(100,h*1.55))+'px');
+}
 function render(){
  const panel=$('racing-play-controls');if(!code){panel.hidden=true;return;}
  panel.hidden=false;
@@ -64,7 +72,8 @@ function render(){
  if(lastRacePhase==='playing'&&state==='finished'){sound.play('finish');setFocus(true);}
  lastRacePhase=state;
  $('racing-play-audio').textContent=sound.isOn?'🔊 음악·효과음 끄기':'🔈 음악·효과음 켜기';
- const meters=Number(pub?.finishMeters||20);
+ updateLaneSizing(rank.length);
+  const meters=Number(pub?.finishMeters||20);
  $('racing-play-badge').textContent=state==='finished'?'경기 종료':state==='playing'?'경기 중':ready?'준비 완료':'대기 중';
  $('racing-play-prepare').disabled=operation||ready||!room?.meta?.setId||!['lobby','locked'].includes(room?.meta?.state);
  $('racing-play-start').disabled=operation||!ready||state!=='lobby';
@@ -128,7 +137,8 @@ function render(){
 }
 function setFocus(value){
  focus=Boolean(value);const el=$('racing-play-controls');if(!el)return;el.classList.toggle('racing-play-focus',focus);
- $('racing-play-focus-toggle').textContent=focus?'관리 화면으로 돌아가기':'🏁 경주 상황판 크게 보기';
+ updateLaneSizing(Object.keys(pub?.scores||{}).length);
+  $('racing-play-focus-toggle').textContent=focus?'관리 화면으로 돌아가기':'🏁 경주 상황판 크게 보기';
  document.body.classList.toggle('racing-focus-active',focus);
 }
 async function prepare(){
@@ -352,7 +362,9 @@ for(const track of RACING_TRACKS){
  $('racing-play-track').append(option);
 }
 $('racing-play-track').value=sound.trackId;
+$('racing-play-volume').value=String(sound.volume);
 $('racing-play-track').addEventListener('change',e=>sound.setTrack(e.target.value));
+$('racing-play-volume').addEventListener('input',e=>sound.setVolume(e.target.value));
 $('racing-play-prepare').addEventListener('click',()=>void prepare());
 $('racing-play-start').addEventListener('click',()=>void start());
 $('racing-play-audio').addEventListener('click',()=>void sound.toggle().then(()=>{if(code)render()}));
@@ -364,6 +376,7 @@ $('racing-play-export').addEventListener('click',exportCsv);
 $('racing-results-mode').addEventListener('change',e=>{resultsMode=e.target.value==='all'?'all':'first';renderRacingFinalResults({run,pub,mode:resultsMode,members:room?.members||{}});});
 $('racing-play-focus-toggle').addEventListener('click',()=>setFocus(!focus));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&focus)setFocus(false)});
+window.addEventListener('resize',()=>{if(focus)updateLaneSizing(Object.keys(pub?.scores||{}).length)});
 window.addEventListener('quizlab-room-open',e=>bind(e.detail?.code||'',e.detail?.mode||''));
 window.addEventListener('quizlab-room-meta',e=>{
  const c=e.detail?.code||'',mode=e.detail?.meta?.mode||'';
