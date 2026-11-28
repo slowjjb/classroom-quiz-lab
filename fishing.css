@@ -378,3 +378,8 @@
 /* v6 alpha18: make the answer visible on the existing catch-result panel. */
 .fishing-correct-review{display:block;margin:12px 0;padding:14px;border:3px solid #f3ac49;border-radius:13px;background:#fff2c9;color:#713911;font-size:clamp(16px,2.3vw,23px);font-weight:950;line-height:1.45;overflow-wrap:anywhere}
 .fishing-correct-review[hidden]{display:none!important}
+
+/* v6.0.0-alpha.23: teacher monitor keeps pause/end/export accessible. */
+.fishing-focus-actions{flex-wrap:wrap;justify-content:flex-end;row-gap:7px}
+.fishing-focus-actions .btn{white-space:nowrap}
+@media(max-width:900px){.fishing-focus-actions{justify-content:flex-start}}
