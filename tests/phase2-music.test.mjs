@@ -77,3 +77,46 @@ test('teacher Racing monitor track list and music selectors are in teacher contr
  assert.match(host,/racing-play-track'\)\.addEventListener\('change'/);
  assert.match(host,/RACING_TRACKS/);
 });
+
+test('Web Audio scheduler actually plays the selected Fishing/Racing melodies and clears timers',async()=>{
+ const frequencies=[];
+ class FakeParam{
+  value=0;
+  setValueAtTime(v){this.value=v}
+  exponentialRampToValueAtTime(v){this.value=v}
+  cancelScheduledValues(){}
+  setTargetAtTime(v){this.value=v}
+ }
+ class FakeAudioContext{
+  currentTime=0;state='running';destination={};
+  createGain(){return {gain:new FakeParam(),connect(){}}}
+  createOscillator(){
+   const frequency=new FakeParam();
+   return {frequency,connect(){},start(){frequencies.push(frequency.value)},stop(){}};
+  }
+  resume(){return Promise.resolve()}
+  close(){return Promise.resolve()}
+ }
+ const prior=globalThis.window;
+ globalThis.window={AudioContext:FakeAudioContext};
+ try{
+  const racing=createRacingAudio({role:'teacher'});
+  racing.setPlaying(true);
+  assert.equal(await racing.unlock(),true);
+  assert.ok(frequencies.includes(392),'original Racing track not scheduled');
+  frequencies.length=0;
+  assert.equal(racing.setTrack('sunset'),true);
+  assert.ok(frequencies.includes(329.63),'selected Racing track did not reach scheduler');
+  racing.destroy();
+  const file={loop:true,preload:'none',volume:.25,play(){return Promise.resolve()},pause(){}};
+  const fishing=createFishingBgm({role:'student',fileElement:file});
+  fishing.setTrack('sea-breeze');fishing.setPlaying(true);
+  assert.ok(frequencies.includes(392),'selected Fishing synthesizer did not start');
+  frequencies.length=0;
+  fishing.setTrack('coral');
+  assert.ok(frequencies.includes(523.25),'selected Fishing melody did not replace previous melody');
+  fishing.destroy();
+ }finally{
+  if(prior===undefined)delete globalThis.window;else globalThis.window=prior;
+ }
+});
