@@ -71,6 +71,9 @@ function render(){
  $('racing-play-end').disabled=operation||state!=='playing';
  $('racing-play-pause').disabled=operation||state!=='playing';
  $('racing-play-pause').textContent=pub?.pauseStartedAt?'▶️ 계속하기':'⏸️ 일시정지';
+ $('racing-play-focus-pause').disabled=$('racing-play-pause').disabled;
+ $('racing-play-focus-pause').textContent=$('racing-play-pause').textContent;
+ $('racing-play-focus-end').disabled=$('racing-play-end').disabled;
  $('racing-play-export').disabled=!ready;
  $('racing-play-distance').disabled=ready;$('racing-play-duration').disabled=ready;
  if(run){$('racing-play-distance').value=String(run.finishMeters||20);$('racing-play-duration').value=String(run.durationSec||300);}
@@ -348,6 +351,8 @@ $('racing-play-prepare').addEventListener('click',()=>void prepare());
 $('racing-play-start').addEventListener('click',()=>void start());
 $('racing-play-audio').addEventListener('click',()=>void sound.toggle().then(()=>{if(code)render()}));
 $('racing-play-pause').addEventListener('click',()=>void toggleGamePause());
+$('racing-play-focus-pause').addEventListener('click',()=>void toggleGamePause());
+$('racing-play-focus-end').addEventListener('click',()=>{if(confirm('현재 레이싱 경주를 종료할까요?'))void finish()});
 $('racing-play-end').addEventListener('click',()=>{if(confirm('현재 레이싱 경주를 종료할까요?'))void finish()});
 $('racing-play-export').addEventListener('click',exportCsv);
 $('racing-results-mode').addEventListener('change',e=>{resultsMode=e.target.value==='all'?'all':'first';renderRacingFinalResults({run,pub,mode:resultsMode,members:room?.members||{}});});
