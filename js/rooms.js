@@ -151,18 +151,20 @@ function renderMembers(record) {
     const btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-small';
     btn.textContent='내보내기·이름 해제';btn.disabled=memberRemovalBusy.has(item.uid);
     btn.addEventListener('click',()=>void removeRoomMember(item.uid,item.name));
-    el.append(num,name,more,btn);list.append(el);
+    const identity=document.createElement('div');identity.className='room-member-identity';identity.append(name,more);
+    el.append(num,identity,btn);list.append(el);
   });
   // 이전 기기에서 나간 학생은 재접속을 위해 이름을 유지합니다. 교사가 오프라인인 경우에만 해제할 수 있습니다.
   if(offline.length){
     const title=document.createElement('div');title.className='helper';title.style.gridColumn='1/-1';
     title.textContent=`오프라인 · 이름 예약 ${offline.length}개 (기기 변경 시 교사가 해제)`;list.append(title);
     offline.forEach(item=>{
-      const el=document.createElement('div');el.className='student-item';
+      const el=document.createElement('div');el.className='student-item room-member-offline';
       const text=document.createElement('span');text.textContent=`${item.name} · 오프라인`;
       const btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-small';btn.textContent='내보내기·이름 해제';
       btn.disabled=memberRemovalBusy.has(item.uid);btn.addEventListener('click',()=>void removeRoomMember(item.uid,item.name));
-      el.append(text,btn);list.append(el);
+      const identity=document.createElement('div');identity.className='room-member-identity';identity.append(text);
+      el.append(identity,btn);list.append(el);
     });
   }
 }
