@@ -6,7 +6,7 @@ import {makeShuffleBag,continuingGoldQuestionIndex,verifyGoldAnswer,shuffleGoldC
 import {optionsArray,escapeCsv} from './classic-core.js';
 import {normalizeQuestionImage} from './image-utils.js';
 import {chooseRacingReward,racingScore,scoreRacingAnswer,racingStandings} from './racing-game-core.js';
-import {createRacingAudio} from './racing-audio.js';
+import {createRacingAudio,RACING_TRACKS} from './racing-audio.js?v=6.0.0-alpha.25';
 import {buildGoldAccuracy} from './gold-analytics.js';
 import {normalizedRacingGarage} from './racing-garage-core.js';
 import {renderRacingFinalResults,resetRacingFinalResults} from './racing-results.js?v=6.0.0-alpha.24';
@@ -347,6 +347,12 @@ function exportCsv(){
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  const a=document.createElement('a');a.href=url;a.download='퍼플킷_레이싱_'+code+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
+for(const track of RACING_TRACKS){
+ const option=document.createElement('option');option.value=track.id;option.textContent=track.name;
+ $('racing-play-track').append(option);
+}
+$('racing-play-track').value=sound.trackId;
+$('racing-play-track').addEventListener('change',e=>sound.setTrack(e.target.value));
 $('racing-play-prepare').addEventListener('click',()=>void prepare());
 $('racing-play-start').addEventListener('click',()=>void start());
 $('racing-play-audio').addEventListener('click',()=>void sound.toggle().then(()=>{if(code)render()}));
