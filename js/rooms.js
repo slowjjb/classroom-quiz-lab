@@ -189,6 +189,7 @@ function openRoom(code, knownMode="") {
   selectedCode=code;window.__purplekitOpenRoomCode=code;localStorage.setItem(LAST_ROOM_KEY,code);
   window.dispatchEvent(new CustomEvent('quizlab-room-open',{detail:{code,mode:knownMode||hostRooms[code]?.mode||''}}));
   $('room-detail').hidden=false;$('room-code').textContent=code;
+  const createDisclosure=$('room-create-disclosure');if(createDisclosure)createDisclosure.open=false;
   makeQR(joinLink(code));
   unsubscribeRoom=onValue(ref(db,`v2/rooms/${code}`),snapshot=>renderRoom(snapshot.val()),error=>{
     info('room-live-message',`실시간 방 조회 실패: ${formatError(error)}`,'error');
