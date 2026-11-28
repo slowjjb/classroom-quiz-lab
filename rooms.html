@@ -61,7 +61,9 @@
       </div></aside>
       <div id="room-workspace" class="workspace-locked rooms-main" aria-disabled="true">
       <section class="panel rooms-create-panel">
-        <div class="panel-header"><h2>새 게임 방</h2><span class="pill pill-neutral">실습 모드</span></div>
+        <details id="room-create-disclosure" class="room-create-disclosure" open>
+          <summary><strong>✦ 새 게임 방 만들기</strong><span class="room-disclosure-hint">설정 펼치기·접기</span></summary>
+          <div class="room-create-content">
         <div class="two-col-form">
           <div><label class="field-label" for="new-room-title">방 이름</label><input id="new-room-title" maxlength="80" type="text" value="퍼플킷 테스트"></div>
           <div><label class="field-label" for="room-target">운영 기준 인원</label><input id="room-target" type="number" min="1" max="200" value="25"><p class="helper">표시 기준이며 실제 최대 인원을 제한하지 않습니다.</p></div>
@@ -75,6 +77,8 @@
         </div>
         <div class="button-row"><button class="btn btn-primary" id="room-create">6자리 참여 코드로 방 만들기</button></div>
         <p class="helper" id="room-create-message" role="status"></p>
+          </div>
+        </details>
       </section>
 
       <section class="panel" id="room-detail" hidden>
