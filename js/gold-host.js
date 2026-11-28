@@ -1,12 +1,12 @@
 import { auth, db, formatError } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { ref, get, onValue, update, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
-import { makeShuffleBag, continuingGoldQuestionIndex, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=6.0.0-alpha.24';
+import { makeShuffleBag, continuingGoldQuestionIndex, verifyGoldAnswer, shuffleGoldChoices, originalGoldChoiceIndex, displayedGoldCorrectIndex, chooseGoldOutcome, applyGoldOutcome, goldRanking, goldRewardOdds, validGoldTarget } from './gold-core.js?v=6.0.0-alpha.25';
 import { optionsArray, escapeCsv } from './classic-core.js';
 import { buildGoldAccuracy, makeGoldPublicLearningResults } from './gold-analytics.js?v=6.0.0-alpha.14';
 import { normalizeQuestionImage } from './image-utils.js';
 import { createAvatarImage } from './avatars.js';
-import { createArcadeUi, renderPodium } from './arcade-ui.js?v=4.3';
+import { createArcadeUi, renderPodium } from './arcade-ui.js?v=6.0.0-alpha.25';
 import { makeRulesV6 } from './rules-v6.js?v=6.0.0-alpha.4';
 
 const $=id=>document.getElementById(id);
